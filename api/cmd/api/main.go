@@ -48,7 +48,7 @@ func main() {
 
 	// Protected Routes
 	r.Group(func(r chi.Router) {
-		r.Use(middleware.AuthMiddleware)
+		r.Use(middleware.AuthMiddleware(cfg))
 		r.Get("/me", handlers.HandleMe)
 	})
 

@@ -3,15 +3,22 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/danirisdiandita/malas-monorepo/api/ent"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/user"
 	"github.com/danirisdiandita/malas-monorepo/api/internal/auth"
 	"github.com/danirisdiandita/malas-monorepo/api/internal/config"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 type GoogleLoginRequest struct {
 	IDToken string `json:"idToken"`
+}
+
+type LoginResponse struct {
+	User  *ent.User `json:"user"`
+	Token string    `json:"token"`
 }
 
 func HandleGoogleLogin(client *ent.Client, cfg *config.Config) http.HandlerFunc {
@@ -24,7 +31,6 @@ func HandleGoogleLogin(client *ent.Client, cfg *config.Config) http.HandlerFunc 
 
 		googleUser, err := auth.VerifyGoogleToken(r.Context(), req.IDToken, cfg.GoogleClientID)
 		if err != nil {
-
 			http.Error(w, "invalid id token", http.StatusUnauthorized)
 			return
 		}
@@ -54,8 +60,24 @@ func HandleGoogleLogin(client *ent.Client, cfg *config.Config) http.HandlerFunc 
 			return
 		}
 
+		// Generate JWT Token
+		token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+			"sub":   u.ID,
+			"email": u.Email,
+			"exp":   time.Now().Add(time.Hour * 72).Unix(),
+		})
+
+		tokenString, err := token.SignedString([]byte(cfg.JWTSecret))
+		if err != nil {
+			http.Error(w, "failed to generate token", http.StatusInternalServerError)
+			return
+		}
+
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(u)
+		json.NewEncoder(w).Encode(LoginResponse{
+			User:  u,
+			Token: tokenString,
+		})
 	}
 }
 

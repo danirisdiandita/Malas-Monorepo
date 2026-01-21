@@ -1,9 +1,12 @@
 import { Link } from '@tanstack/react-router'
 import { Button } from "@/components/ui/button"
-import { LayoutDashboard } from "lucide-react"
+import { LayoutDashboard, LogOut } from "lucide-react"
 import { GoogleLoginButton } from './GoogleLoginButton'
+import { useSession } from '../store/authStore'
 
 export function Navbar() {
+    const { user, isAuthenticated, logout } = useSession()
+
     return (
         <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <div className="container flex h-16 items-center justify-between">
@@ -30,7 +33,20 @@ export function Navbar() {
                     </div>
                 </div>
                 <div className="flex items-center gap-4">
-                    <GoogleLoginButton />
+                    {isAuthenticated ? (
+                        <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-2">
+                                <img src={user?.picture} alt={user?.name} className="h-8 w-8 rounded-full border" />
+                                <span className="text-sm font-medium hidden sm:inline-block">{user?.name}</span>
+                            </div>
+                            <Button variant="ghost" size="sm" onClick={logout} className="gap-2">
+                                <LogOut className="h-4 w-4" />
+                                <span className="hidden sm:inline-block">Logout</span>
+                            </Button>
+                        </div>
+                    ) : (
+                        <GoogleLoginButton />
+                    )}
                     <Link to="/dashboard">
                         <Button size="sm">
                             Get Started
@@ -39,6 +55,5 @@ export function Navbar() {
                 </div>
             </div>
         </nav>
-
     )
 }

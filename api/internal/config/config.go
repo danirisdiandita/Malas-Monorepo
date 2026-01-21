@@ -11,6 +11,7 @@ type Config struct {
 	Port           string
 	DatabaseURL    string
 	GoogleClientID string
+	JWTSecret      string
 }
 
 func LoadConfig() *Config {
@@ -22,6 +23,7 @@ func LoadConfig() *Config {
 		Port:           getEnv("PORT", "8080"),
 		DatabaseURL:    getEnv("DATABASE_URL", ""),
 		GoogleClientID: getEnv("GOOGLE_CLIENT_ID", ""),
+		JWTSecret:      getEnv("JWT_SECRET", "super-secret-key-change-this"),
 	}
 }
 

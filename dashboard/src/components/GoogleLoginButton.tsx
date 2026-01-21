@@ -1,7 +1,10 @@
 import { GoogleLogin } from '@react-oauth/google';
 import { config } from '../lib/config';
+import { useAuthStore } from '../store/authStore';
 
 export function GoogleLoginButton() {
+    const setAuth = useAuthStore((state) => state.setAuth);
+
     const handleSuccess = async (credentialResponse: any) => {
         try {
             const response = await fetch(`${config.apiUrl}/auth/google`, {
@@ -20,8 +23,9 @@ export function GoogleLoginButton() {
                 throw new Error('Failed to authenticate with backend');
             }
 
-            const data = await response.json();
-            console.log('Login Success:', data);
+            const { user, token } = await response.json();
+            setAuth(user, token);
+            console.log('Login Success:', user);
 
             // Here you would typically store the user data or token in your state management
             // e.g., localStorage.setItem('user', JSON.stringify(data));

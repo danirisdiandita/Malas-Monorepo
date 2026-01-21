@@ -1,11 +1,21 @@
-import { createFileRoute, useRouter } from '@tanstack/react-router'
+import { createFileRoute, useRouter, redirect } from '@tanstack/react-router'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Users, Activity, Target, Zap } from "lucide-react"
 import { Button } from '@/components/ui/button'
+import { useAuthStore } from '../../store/authStore'
 
 export const Route = createFileRoute('/dashboard/')({
+    beforeLoad: () => {
+        const { isAuthenticated } = useAuthStore.getState()
+        if (!isAuthenticated) {
+            throw redirect({
+                to: '/',
+            })
+        }
+    },
     component: Dashboard,
 })
+
 
 function Dashboard() {
     const metrics = [
