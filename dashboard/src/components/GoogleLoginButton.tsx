@@ -9,8 +9,6 @@ export function GoogleLoginButton() {
         try {
             const response = await fetch(`${config.apiUrl}/auth/google`, {
                 method: 'POST',
-
-
                 headers: {
                     'Content-Type': 'application/json',
                 },
