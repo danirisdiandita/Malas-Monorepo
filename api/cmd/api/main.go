@@ -43,8 +43,8 @@ func main() {
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Malas API is running!"))
 	})
-
 	r.Post("/auth/google", handlers.HandleGoogleLogin(client, cfg))
+	r.Post("/auth/refresh", handlers.HandleRefreshToken(client, cfg))
 
 	// Protected Routes
 	r.Group(func(r chi.Router) {

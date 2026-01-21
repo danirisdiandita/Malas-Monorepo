@@ -1,11 +1,14 @@
 package handlers
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"net/http"
 	"time"
 
 	"github.com/danirisdiandita/malas-monorepo/api/ent"
+	"github.com/danirisdiandita/malas-monorepo/api/ent/refreshtoken"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/user"
 	"github.com/danirisdiandita/malas-monorepo/api/internal/auth"
 	"github.com/danirisdiandita/malas-monorepo/api/internal/config"
@@ -17,8 +20,17 @@ type GoogleLoginRequest struct {
 }
 
 type LoginResponse struct {
-	User  *ent.User `json:"user"`
-	Token string    `json:"token"`
+	User         *ent.User `json:"user"`
+	AccessToken  string    `json:"accessToken"`
+	RefreshToken string    `json:"refreshToken"`
+}
+
+func generateRandomString(n int) string {
+	b := make([]byte, n)
+	if _, err := rand.Read(b); err != nil {
+		return ""
+	}
+	return hex.EncodeToString(b)
 }
 
 func HandleGoogleLogin(client *ent.Client, cfg *config.Config) http.HandlerFunc {
@@ -60,23 +72,92 @@ func HandleGoogleLogin(client *ent.Client, cfg *config.Config) http.HandlerFunc 
 			return
 		}
 
-		// Generate JWT Token
-		token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		// Generate Access Token (short-lived)
+		accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 			"sub":   u.ID,
 			"email": u.Email,
-			"exp":   time.Now().Add(time.Hour * 72).Unix(),
+			"exp":   time.Now().Add(time.Minute * 15).Unix(), // 15 minutes
 		})
 
-		tokenString, err := token.SignedString([]byte(cfg.JWTSecret))
+		accessTokenString, err := accessToken.SignedString([]byte(cfg.JWTSecret))
 		if err != nil {
-			http.Error(w, "failed to generate token", http.StatusInternalServerError)
+			http.Error(w, "failed to generate access token", http.StatusInternalServerError)
+			return
+		}
+
+		// Generate Refresh Token (long-lived)
+		rt := generateRandomString(32)
+		_, err = client.RefreshToken.Create().
+			SetToken(rt).
+			SetExpiresAt(time.Now().Add(time.Hour * 24 * 7)). // 7 days
+			SetOwner(u).
+			Save(r.Context())
+
+		if err != nil {
+			http.Error(w, "failed to save refresh token", http.StatusInternalServerError)
 			return
 		}
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(LoginResponse{
-			User:  u,
-			Token: tokenString,
+			User:         u,
+			AccessToken:  accessTokenString,
+			RefreshToken: rt,
+		})
+	}
+}
+
+type RefreshRequest struct {
+	RefreshToken string `json:"refreshToken"`
+}
+
+type RefreshResponse struct {
+	AccessToken string `json:"accessToken"`
+}
+
+func HandleRefreshToken(client *ent.Client, cfg *config.Config) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var req RefreshRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, "invalid request body", http.StatusBadRequest)
+			return
+		}
+
+		// Validate refresh token
+		rt, err := client.RefreshToken.Query().
+			Where(refreshtoken.Token(req.RefreshToken)).
+			WithOwner().
+			Only(r.Context())
+
+		if err != nil {
+			http.Error(w, "invalid refresh token", http.StatusUnauthorized)
+			return
+		}
+
+		if rt.ExpiresAt.Before(time.Now()) {
+			client.RefreshToken.DeleteOne(rt).Exec(r.Context())
+			http.Error(w, "refresh token expired", http.StatusUnauthorized)
+			return
+		}
+
+		u := rt.Edges.Owner
+
+		// Generate new Access Token
+		accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+			"sub":   u.ID,
+			"email": u.Email,
+			"exp":   time.Now().Add(time.Minute * 15).Unix(),
+		})
+
+		accessTokenString, err := accessToken.SignedString([]byte(cfg.JWTSecret))
+		if err != nil {
+			http.Error(w, "failed to generate access token", http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(RefreshResponse{
+			AccessToken: accessTokenString,
 		})
 	}
 }

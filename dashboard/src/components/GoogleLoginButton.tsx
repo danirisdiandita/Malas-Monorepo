@@ -23,8 +23,8 @@ export function GoogleLoginButton() {
                 throw new Error('Failed to authenticate with backend');
             }
 
-            const { user, token } = await response.json();
-            setAuth(user, token);
+            const { user, accessToken, refreshToken } = await response.json();
+            setAuth(user, accessToken, refreshToken);
             console.log('Login Success:', user);
 
             // Here you would typically store the user data or token in your state management
