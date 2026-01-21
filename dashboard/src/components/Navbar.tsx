@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import { Button } from "@/components/ui/button"
 import { LayoutDashboard } from "lucide-react"
+import { GoogleLoginButton } from './GoogleLoginButton'
 
 export function Navbar() {
     return (
@@ -29,9 +30,7 @@ export function Navbar() {
                     </div>
                 </div>
                 <div className="flex items-center gap-4">
-                    <Button variant="ghost" size="sm">
-                        Sign In
-                    </Button>
+                    <GoogleLoginButton />
                     <Link to="/dashboard">
                         <Button size="sm">
                             Get Started
@@ -40,5 +39,6 @@ export function Navbar() {
                 </div>
             </div>
         </nav>
+
     )
 }
