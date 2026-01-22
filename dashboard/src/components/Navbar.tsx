@@ -3,9 +3,23 @@ import { Button } from "@/components/ui/button"
 import { Coffee, LogOut } from "lucide-react"
 import { GoogleLoginButton } from './GoogleLoginButton'
 import { useSession } from '../store/authStore'
+import { config } from '../lib/config'
 
 export function Navbar() {
     const { user, isAuthenticated, logout } = useSession()
+
+    const handleLogout = async () => {
+        try {
+            await fetch(`${config.apiUrl}/auth/logout`, {
+                method: 'POST',
+                credentials: 'include',
+            });
+        } catch (error) {
+            console.error('Logout failed:', error);
+        } finally {
+            logout();
+        }
+    }
 
     return (
         <nav className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60">
@@ -41,7 +55,7 @@ export function Navbar() {
                                 <img src={user?.picture} alt={user?.name} className="h-8 w-8 rounded-full border shadow-sm" />
                                 <span className="text-sm font-semibold hidden sm:inline-block">{user?.name}</span>
                             </div>
-                            <Button variant="ghost" size="sm" onClick={logout} className="h-9 px-3 gap-2 hover:bg-destructive/10 hover:text-destructive">
+                            <Button variant="ghost" size="sm" onClick={handleLogout} className="h-9 px-3 gap-2 hover:bg-destructive/10 hover:text-destructive">
                                 <LogOut className="h-4 w-4" />
                                 <span className="hidden sm:inline-block font-medium">Logout</span>
                             </Button>
@@ -59,6 +73,7 @@ export function Navbar() {
                 </div>
             </div>
         </nav>
+
 
     )
 }

@@ -31,7 +31,7 @@ func main() {
 	r.Use(mid.Logger)
 	r.Use(mid.Recoverer)
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"*"}, // Adjust as needed
+		AllowedOrigins:   []string{"http://localhost:5173"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
 		ExposedHeaders:   []string{"Link"},
@@ -45,6 +45,7 @@ func main() {
 	})
 	r.Post("/auth/google", handlers.HandleGoogleLogin(client, cfg))
 	r.Post("/auth/refresh", handlers.HandleRefreshToken(client, cfg))
+	r.Post("/auth/logout", handlers.HandleLogout)
 
 	// Protected Routes
 	r.Group(func(r chi.Router) {

@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Users, Activity, Target, Zap } from "lucide-react"
 import { Button } from '@/components/ui/button'
 import { useAuthStore } from '../../store/authStore'
+import { useUser } from '../../hooks/useUser'
 
 export const Route = createFileRoute('/dashboard/')({
     beforeLoad: () => {
@@ -16,14 +17,19 @@ export const Route = createFileRoute('/dashboard/')({
     component: Dashboard,
 })
 
-
 function Dashboard() {
+    const { data: user, isLoading, error } = useUser()
+
+
     const metrics = [
         { label: 'Total Users', value: '1,234', change: '+12.5%', icon: Users },
         { label: 'Active Sessions', value: '56', change: '+5.2%', icon: Activity },
         { label: 'Conversion Rate', value: '12.5%', change: '+1.4%', icon: Target },
         { label: 'System Health', value: '99.9%', change: 'Stable', icon: Zap },
     ]
+
+    if (isLoading) return <div className="container py-32 text-center animate-pulse">Loading dashboard...</div>
+    if (error) return <div className="container py-32 text-center text-destructive">Error loading dashboard: {error.message}</div>
 
     const router = useRouter()
 
@@ -32,9 +38,10 @@ function Dashboard() {
             <div className="flex flex-col gap-2">
                 <h1 className="text-3xl font-bold tracking-tight">Dashboard Overview</h1>
                 <p className="text-muted-foreground font-medium">
-                    Welcome back! Here's what's happening today.
+                    Welcome back, {user?.name}! Here's what's happening today.
                 </p>
             </div>
+
 
             <Button onClick={() => router.navigate({ to: '/' })}>Go to Home</Button>
 

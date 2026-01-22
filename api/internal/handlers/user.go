@@ -20,9 +20,7 @@ type GoogleLoginRequest struct {
 }
 
 type LoginResponse struct {
-	User         *ent.User `json:"user"`
-	AccessToken  string    `json:"accessToken"`
-	RefreshToken string    `json:"refreshToken"`
+	User *ent.User `json:"user"`
 }
 
 func generateRandomString(n int) string {
@@ -98,34 +96,53 @@ func HandleGoogleLogin(client *ent.Client, cfg *config.Config) http.HandlerFunc 
 			return
 		}
 
+		// Set Access Token Cookie
+		http.SetCookie(w, &http.Cookie{
+			Name:     "access_token",
+			Value:    accessTokenString,
+			Path:     "/",
+			HttpOnly: true,
+			Secure:   false, // Set to true in production
+			SameSite: http.SameSiteLaxMode,
+			MaxAge:   15 * 60, // 15 minutes
+		})
+
+		// Set Refresh Token Cookie
+		http.SetCookie(w, &http.Cookie{
+			Name:     "refresh_token",
+			Value:    rt,
+			Path:     "/", // Set to / so logout can clear it easily, or /auth
+			HttpOnly: true,
+			Secure:   false, // Set to true in production
+			SameSite: http.SameSiteLaxMode,
+			MaxAge:   7 * 24 * 60 * 60, // 7 days
+		})
+
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(LoginResponse{
-			User:         u,
-			AccessToken:  accessTokenString,
-			RefreshToken: rt,
+			User: u,
 		})
 	}
 }
 
-type RefreshRequest struct {
-	RefreshToken string `json:"refreshToken"`
-}
-
 type RefreshResponse struct {
-	AccessToken string `json:"accessToken"`
+	// Empty body as everything is in cookies
 }
 
 func HandleRefreshToken(client *ent.Client, cfg *config.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var req RefreshRequest
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			http.Error(w, "invalid request body", http.StatusBadRequest)
+		// Read refresh token from cookie
+		cookie, err := r.Cookie("refresh_token")
+		if err != nil {
+			http.Error(w, "missing refresh token", http.StatusUnauthorized)
 			return
 		}
 
+		tokenStr := cookie.Value
+
 		// Validate refresh token
 		rt, err := client.RefreshToken.Query().
-			Where(refreshtoken.Token(req.RefreshToken)).
+			Where(refreshtoken.Token(tokenStr)).
 			WithOwner().
 			Only(r.Context())
 
@@ -155,11 +172,41 @@ func HandleRefreshToken(client *ent.Client, cfg *config.Config) http.HandlerFunc
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(RefreshResponse{
-			AccessToken: accessTokenString,
+		// Set New Access Token Cookie
+		http.SetCookie(w, &http.Cookie{
+			Name:     "access_token",
+			Value:    accessTokenString,
+			Path:     "/",
+			HttpOnly: true,
+			Secure:   false, // Set to true in production
+			SameSite: http.SameSiteLaxMode,
+			MaxAge:   15 * 60,
 		})
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 	}
+}
+
+func HandleLogout(w http.ResponseWriter, r *http.Request) {
+	// Clear cookies
+	http.SetCookie(w, &http.Cookie{
+		Name:     "access_token",
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: true,
+	})
+	http.SetCookie(w, &http.Cookie{
+		Name:     "refresh_token",
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: true,
+	})
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 }
 
 func HandleMe(w http.ResponseWriter, r *http.Request) {
