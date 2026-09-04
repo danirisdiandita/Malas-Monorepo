@@ -1,16 +1,20 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { ArrowRight, ChevronRight, Code2, Coffee, GitBranch, Terminal, Zap } from 'lucide-react'
+import { useAuthStore } from '../store/authStore'
 
 export const Route = createFileRoute('/')({ component: Landing })
 
 function Landing() {
+    const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+    const destination = isAuthenticated ? '/dashboard' : '/sign-in'
+
     return (
         <div className="min-h-screen overflow-hidden bg-[#0A0A0A] text-white">
             <section className="relative min-h-[620px] bg-[#A855F7] text-[#0A0A0A]">
                 <nav className="absolute inset-x-0 top-0 z-10 mx-auto flex max-w-7xl items-center justify-between px-6 py-7 lg:px-10">
                     <Link to="/" className="flex items-center gap-2.5"><span className="flex h-[38px] w-[38px] items-center justify-center rounded-lg bg-[#0A0A0A]"><Coffee className="h-5 w-5 text-[#A855F7]" /></span><span className="font-mono text-lg font-bold">MALAS/</span></Link>
                     <div className="hidden items-center gap-7 font-sans text-sm font-semibold md:flex"><a href="#product">Product</a><a href="#components">Components</a><a href="#docs">Docs</a></div>
-                    <Link to="/sign-in" className="inline-flex items-center gap-2 rounded-full bg-[#0A0A0A] px-4 py-2.5 font-mono text-xs font-bold text-white">GET STARTED <ArrowRight className="h-4 w-4" /></Link>
+                    <Link to={destination} className="inline-flex items-center gap-2 rounded-full bg-[#0A0A0A] px-4 py-2.5 font-mono text-xs font-bold text-white">{isAuthenticated ? 'DASHBOARD' : 'GET STARTED'} <ArrowRight className="h-4 w-4" /></Link>
                 </nav>
                 <div className="mx-auto grid max-w-7xl grid-cols-1 gap-12 px-6 pb-24 pt-32 lg:grid-cols-[1fr_540px] lg:px-10 lg:pt-36">
                     <div className="max-w-[650px] self-start">
@@ -21,7 +25,7 @@ function Landing() {
                         <h1 className="text-6xl font-bold leading-[.9] tracking-[-4px] sm:text-8xl">Build less.<br />Ship more.</h1>
                         <p className="mt-7 max-w-xl text-lg font-medium leading-7 text-black/80">Monorepo Golang + Vite yang sudah siap tempur. Backend ringan, frontend super cepat, dan sengaja dibuat agar kamu fokus ke produk.</p>
                         <div className="mt-8 flex flex-wrap gap-3">
-                            <Link to="/sign-in" className="inline-flex items-center gap-2 rounded-full bg-[#0A0A0A] px-5 py-3 font-mono text-xs font-bold text-white">START BUILDING <ArrowRight className="h-4 w-4" /></Link>
+                            <Link to={destination} className="inline-flex items-center gap-2 rounded-full bg-[#0A0A0A] px-5 py-3 font-mono text-xs font-bold text-white">{isAuthenticated ? 'OPEN DASHBOARD' : 'START BUILDING'} <ArrowRight className="h-4 w-4" /></Link>
                             <a href="https://github.com/danirisdiandita/malas-monorepo" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-full px-5 py-3 font-mono text-xs font-bold outline outline-1 outline-[#0A0A0A]"><GitBranch className="h-4 w-4" /> VIEW GITHUB</a>
                         </div>
                     </div>

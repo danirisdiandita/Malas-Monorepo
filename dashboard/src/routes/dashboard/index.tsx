@@ -4,15 +4,17 @@ import { Users, Activity, Target, Zap } from "lucide-react"
 import { Button } from '@/components/ui/button'
 import { useAuthStore } from '../../store/authStore'
 import { useUser } from '../../hooks/useUser'
+import { config } from '../../lib/config'
+import { fetchWithAuth } from '../../lib/fetch'
 
 export const Route = createFileRoute('/dashboard/')({
-    beforeLoad: () => {
-        const { isAuthenticated } = useAuthStore.getState()
-        if (!isAuthenticated) {
-            throw redirect({
-                to: '/',
-            })
+    beforeLoad: async () => {
+        const response = await fetchWithAuth(`${config.apiUrl}/auth/user`)
+        if (!response.ok) {
+            useAuthStore.getState().logout()
+            throw redirect({ to: '/sign-in' })
         }
+        useAuthStore.getState().setAuth(await response.json())
     },
     component: Dashboard,
 })

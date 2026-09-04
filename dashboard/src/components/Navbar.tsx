@@ -2,24 +2,15 @@ import { Link } from '@tanstack/react-router'
 import { Button } from "@/components/ui/button"
 import { Coffee, LogOut } from "lucide-react"
 import { AppleLoginButton, GoogleLoginButton } from './GoogleLoginButton'
-import { useAuthStore, useSession } from '../store/authStore'
+import { useSession } from '../store/authStore'
 import { config } from '../lib/config'
-import { useEffect } from 'react'
+import { fetchWithAuth } from '../lib/fetch'
 
 export function Navbar() {
     const { user, isAuthenticated, logout } = useSession()
-    const setAuth = useAuthStore((state) => state.setAuth)
-
-    useEffect(() => {
-        fetch(`${config.apiUrl}/auth/user`, { credentials: 'include' })
-            .then((response) => response.ok ? response.json() : null)
-            .then((user) => user ? setAuth(user) : logout())
-            .catch(logout)
-    }, [logout, setAuth])
-
     const handleLogout = async () => {
         try {
-            await fetch(`${config.apiUrl}/auth/logout`, {
+            await fetchWithAuth(`${config.apiUrl}/auth/logout`, {
                 method: 'GET',
                 credentials: 'include',
             });

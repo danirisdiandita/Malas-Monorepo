@@ -4,7 +4,7 @@ import { config } from '../lib/config';
 
 export function GoogleLoginButton() {
     const login = () => {
-        const from = encodeURIComponent(window.location.origin);
+        const from = encodeURIComponent(`${window.location.origin}/dashboard`);
         window.location.assign(`${config.apiUrl}/auth/google/login?from=${from}`);
     };
 
@@ -13,7 +13,7 @@ export function GoogleLoginButton() {
 
 export function AppleLoginButton() {
     const login = () => {
-        const from = encodeURIComponent(window.location.origin);
+        const from = encodeURIComponent(`${window.location.origin}/dashboard`);
         window.location.assign(`${config.apiUrl}/auth/apple/login?from=${from}`);
     };
 

@@ -1,8 +1,25 @@
 import { ArrowLeft, Check, Coffee, Layers, LockKeyhole, Sparkles } from 'lucide-react'
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, Link, redirect } from '@tanstack/react-router'
 import { AppleLoginButton, GoogleLoginButton } from '../components/GoogleLoginButton'
+import { config } from '../lib/config'
+import { useAuthStore } from '../store/authStore'
+import { fetchWithAuth } from '../lib/fetch'
 
-export const Route = createFileRoute('/sign-in')({ component: SignIn })
+export const Route = createFileRoute('/sign-in')({
+    beforeLoad: async () => {
+        let response: Response
+        try {
+            response = await fetchWithAuth(`${config.apiUrl}/auth/user`)
+        } catch {
+            return
+        }
+        if (response.ok) {
+            useAuthStore.getState().setAuth(await response.json())
+            throw redirect({ to: '/dashboard' })
+        }
+    },
+    component: SignIn,
+})
 
 function SignIn() {
     return <div className="min-h-screen bg-[#0A0A0A] text-white md:grid md:grid-cols-[minmax(420px,610px)_1fr]">
