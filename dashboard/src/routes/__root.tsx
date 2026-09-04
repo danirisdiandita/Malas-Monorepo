@@ -10,7 +10,7 @@ export const Route = createRootRoute({ component: Root })
 
 function Root() {
     const pathname = useRouterState({ select: (state) => state.location.pathname })
-    const isFullBleed = pathname === '/' || pathname === '/sign-in'
+    const isFullBleed = pathname === '/' || pathname === '/sign-in' || pathname === '/dashboard'
 
     return <>
         {!isFullBleed && <Navbar />}

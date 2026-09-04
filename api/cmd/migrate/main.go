@@ -2,15 +2,20 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log"
 	"os"
+	"sort"
+	"strings"
 
 	"github.com/danirisdiandita/malas-monorepo/api/ent"
 	"github.com/danirisdiandita/malas-monorepo/api/internal/config"
 	"github.com/danirisdiandita/malas-monorepo/api/internal/db"
 	_ "github.com/lib/pq"
 )
+
+const migrationDir = "ent/migrate/migrations"
 
 func main() {
 	if len(os.Args) < 2 {
@@ -35,10 +40,8 @@ func main() {
 
 	switch cmd {
 	case "up":
-		fmt.Println("Running schema migration...")
-		// db.NewClient already runs migration, but we can call it again to be explicit
-		if err := client.Schema.Create(ctx); err != nil {
-			log.Fatalf("failed to create schema resources: %v", err)
+		if err := migrate(ctx, cfg.DatabaseURL); err != nil {
+			log.Fatalf("migration failed: %v", err)
 		}
 		fmt.Println("Migration completed successfully!")
 
@@ -54,6 +57,68 @@ func main() {
 		fmt.Printf("Unknown command: %s\n", cmd)
 		os.Exit(1)
 	}
+}
+
+func migrate(ctx context.Context, databaseURL string) error {
+	db, err := sql.Open("postgres", databaseURL)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	if err := db.PingContext(ctx); err != nil {
+		return err
+	}
+	if _, err := db.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS schema_migrations (
+		version VARCHAR(255) PRIMARY KEY,
+		applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+	)`); err != nil {
+		return err
+	}
+
+	entries, err := os.ReadDir(migrationDir)
+	if err != nil {
+		return err
+	}
+	sort.Slice(entries, func(i, j int) bool { return entries[i].Name() < entries[j].Name() })
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".sql") {
+			continue
+		}
+		var applied bool
+		if err := db.QueryRowContext(ctx, "SELECT EXISTS (SELECT 1 FROM schema_migrations WHERE version = $1)", entry.Name()).Scan(&applied); err != nil {
+			return err
+		}
+		if applied {
+			continue
+		}
+		contents, err := os.ReadFile(migrationDir + "/" + entry.Name())
+		if err != nil {
+			return err
+		}
+		tx, err := db.BeginTx(ctx, nil)
+		if err != nil {
+			return err
+		}
+		for _, statement := range strings.Split(string(contents), ";") {
+			statement = strings.TrimSpace(statement)
+			if statement == "" || strings.HasPrefix(statement, "--") {
+				continue
+			}
+			if _, err := tx.ExecContext(ctx, statement); err != nil {
+				_ = tx.Rollback()
+				return fmt.Errorf("%s: %w", entry.Name(), err)
+			}
+		}
+		if _, err := tx.ExecContext(ctx, "INSERT INTO schema_migrations (version) VALUES ($1)", entry.Name()); err != nil {
+			_ = tx.Rollback()
+			return err
+		}
+		if err := tx.Commit(); err != nil {
+			return err
+		}
+		fmt.Printf("Applied %s\n", entry.Name())
+	}
+	return nil
 }
 
 func seed(ctx context.Context, client *ent.Client) {

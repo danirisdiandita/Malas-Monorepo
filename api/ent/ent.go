@@ -12,7 +12,9 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/danirisdiandita/malas-monorepo/api/ent/account"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/refreshtoken"
+	"github.com/danirisdiandita/malas-monorepo/api/ent/session"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/user"
 )
 
@@ -74,7 +76,9 @@ var (
 func checkColumn(t, c string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
+			account.Table:      account.ValidColumn,
 			refreshtoken.Table: refreshtoken.ValidColumn,
+			session.Table:      session.ValidColumn,
 			user.Table:         user.ValidColumn,
 		})
 	})

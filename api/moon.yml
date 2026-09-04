@@ -6,3 +6,12 @@ tasks:
     command: "go run ./cmd/api"
     options:
       persistent: true
+
+  migrate-up:
+    command: "go run ./cmd/migrate up"
+
+  migrate-up-seed:
+    command: "go run ./cmd/migrate up seed"
+
+  generate:
+    command: "go generate ./ent"

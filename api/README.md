@@ -20,35 +20,43 @@ Pastikan `DATABASE_URL` diatur dengan benar:
 
 ## Database Migration
 
-Kami menggunakan **Ent** yang mendukung auto-migration. Anda dapat menjalankan migrasi secara eksplisit menggunakan Makefile:
+Kami menggunakan migrasi SQL berversi yang disimpan di `ent/migrate/migrations/`. API tidak mengubah skema database saat startup; jalankan migrasi secara eksplisit menggunakan Moon sebelum menjalankan API.
 
 ### 1. Jalankan Migrasi (Migration Up)
 Perintah ini akan menyinkronkan skema database dengan kode `ent/schema`.
 
 ```bash
-make migrate-up
+moon run api:migrate-up
+```
+
+Perintah ini aman dijalankan berulang kali. Hanya file migrasi yang belum tercatat di tabel `schema_migrations` yang akan diterapkan. Gunakan perintah yang sama di production saat deployment:
+
+```bash
+moon run api:migrate-up
 ```
 
 ### 2. Jalankan Migrasi dengan Seeding
 Jika Anda ingin mengisi database dengan data awal (seed) setelah migrasi:
 
 ```bash
-make migrate-up-seed
+moon run api:migrate-up-seed
 ```
 
-### 3. Generate Skema Ent
+### 3. Generate Kode Ent
 Jika Anda mengubah file di `ent/schema/*`, jalankan perintah ini untuk memperbarui kode yang dihasilkan:
 
 ```bash
-make generate
+moon run api:generate
 ```
+
+Setelah mengubah schema, buat file migrasi SQL baru di `ent/migrate/migrations/` dan beri nama berurutan, misalnya `000002_add_foo.sql`. Jangan mengedit migrasi yang sudah pernah dijalankan di environment mana pun.
 
 ## Menjalankan API (Run API)
 
 Untuk menjalankan server dalam mode pengembangan:
 
 ```bash
-make dev
+moon run api:dev
 ```
 
 Server akan berjalan di `http://localhost:8080`.

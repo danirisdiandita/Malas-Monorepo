@@ -1,7 +1,6 @@
 package db
 
 import (
-	"context"
 	"log"
 
 	"github.com/danirisdiandita/malas-monorepo/api/ent"
@@ -16,12 +15,6 @@ func NewClient(dbURL string) (*ent.Client, error) {
 	client, err := ent.Open("postgres", dbURL)
 
 	if err != nil {
-		return nil, err
-	}
-
-	// Run migration
-	if err := client.Schema.Create(context.Background()); err != nil {
-		client.Close()
 		return nil, err
 	}
 

@@ -1,12 +1,14 @@
 package main
 
 import (
+	"crypto/sha1"
 	"fmt"
 	"log"
 	"net/http"
 
 	"time"
 
+	appauth "github.com/danirisdiandita/malas-monorepo/api/internal/auth"
 	"github.com/danirisdiandita/malas-monorepo/api/internal/config"
 	"github.com/danirisdiandita/malas-monorepo/api/internal/db"
 	"github.com/danirisdiandita/malas-monorepo/api/internal/handlers"
@@ -17,6 +19,7 @@ import (
 	"github.com/go-pkgz/auth/v2/avatar"
 	"github.com/go-pkgz/auth/v2/provider"
 	"github.com/go-pkgz/auth/v2/token"
+	"golang.org/x/oauth2/google"
 )
 
 func main() {
@@ -46,7 +49,20 @@ func main() {
 	}
 
 	service := auth.NewService(options)
-	service.AddProvider("google", cfg.GoogleClientID, cfg.GoogleClientSecret) // add github provider
+	service.AddCustomProvider("google", auth.Client{Cid: cfg.GoogleClientID, Csecret: cfg.GoogleClientSecret}, provider.CustomHandlerOpt{
+		Endpoint: google.Endpoint,
+		InfoURL:  "https://www.googleapis.com/oauth2/v3/userinfo",
+		Scopes:   []string{"openid", "profile", "email"},
+		MapUserFn: func(data provider.UserData, _ []byte) token.User {
+			id := "google_" + token.HashID(sha1.New(), data.Value("sub"))
+			return token.User{
+				ID:      id,
+				Name:    data.Value("name"),
+				Picture: data.Value("picture"),
+				Email:   data.Value("email"),
+			}
+		},
+	})
 	if cfg.ApplePrivateKeyPath != "" {
 		if err := service.AddAppleProvider(provider.AppleConfig{
 			ClientID: cfg.AppleClientID,
@@ -78,13 +94,14 @@ func main() {
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Malas API is running!"))
 	})
-	r.Mount("/auth", authRoutes)
+	r.Mount("/auth", handlers.HandleAuthUser(client, m.Auth, authRoutes))
 	r.Mount("/avatar", avatarRoutes)
 
 	// Protected Routes
 	r.Group(func(r chi.Router) {
 		r.Use(m.Auth)
-		r.Get("/me", handlers.HandleMe)
+		r.Use(appauth.RequireSession(client))
+		r.Get("/me", handlers.HandleMe(client))
 	})
 
 	fmt.Printf("Server starting on port %s...\n", cfg.Port)
