@@ -73,7 +73,7 @@ export function Navbar() {
                         <div className="flex items-center gap-3">
                             <GoogleLoginButton />
                             <AppleLoginButton />
-                            <Link to="/dashboard">
+                            <Link to="/sign-in">
                                 <Button size="sm" className="h-9 px-4 font-semibold shadow-sm">
                                     Get Started
                                 </Button>

@@ -1,78 +1,62 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { ArrowRight, Terminal, Code2, Rocket, Zap } from "lucide-react"
+import { ArrowRight, ChevronRight, Code2, Coffee, GitBranch, Terminal, Zap } from 'lucide-react'
 
-export const Route = createFileRoute('/')({
-    component: Index,
-})
+export const Route = createFileRoute('/')({ component: Landing })
 
-function Index() {
+function Landing() {
     return (
-        <div className="relative min-h-screen bg-background flex flex-col items-center justify-center overflow-hidden">
-            {/* Ambient Background Glows */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-6xl h-full -z-10 pointer-events-none">
-                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/20 rounded-full blur-[120px] animate-pulse" />
-                <div className="absolute bottom-[10%] right-[-5%] w-[35%] h-[35%] bg-purple-500/10 rounded-full blur-[100px]" />
-            </div>
-
-            <main className="relative z-10 container px-6 py-24 text-center sm:py-32">
-                <div className="flex justify-center mb-8">
-                    <Badge variant="outline" className="px-4 py-2 bg-secondary/50 backdrop-blur-sm border-primary/20 text-primary animate-in fade-in slide-in-from-bottom-3 duration-1000">
-                        <Terminal className="w-4 h-4 mr-2" />
-                        <span>The Ultimate Monorepo Stack</span>
-                    </Badge>
-                </div>
-
-                <h1 className="text-5xl font-extrabold tracking-tight sm:text-7xl mb-6 bg-gradient-to-b from-foreground to-foreground/50 bg-clip-text text-transparent">
-                    Malas Monorepo
-                </h1>
-
-                <p className="max-w-[42rem] mx-auto text-xl text-muted-foreground sm:text-2xl mb-10 leading-relaxed">
-                    Budayakan Malas ngoding. <br />
-                    <span className="text-foreground/80">Simple, nggak ribet, dan elegan. Fokus pada produk Anda, biar kami yang urus boilerplate-nya.</span>
-                </p>
-
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                    <Link to="/dashboard">
-                        <Button size="lg" className="h-14 px-10 text-lg rounded-full shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all duration-300">
-                            Launch Dashboard
-                            <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                        </Button>
-                    </Link>
-                    <Button variant="outline" size="lg" className="h-14 px-10 text-lg rounded-full backdrop-blur-sm hover:bg-secondary/80">
-                        View Components
-                    </Button>
-                </div>
-
-                <div className="mt-20 grid grid-cols-1 gap-8 sm:grid-cols-3 text-left max-w-4xl mx-auto border-t border-border pt-12">
-                    <div className="space-y-2">
-                        <div className="p-2 w-fit rounded-md bg-primary/10 text-primary">
-                            <Code2 className="w-5 h-5" />
+        <div className="min-h-screen overflow-hidden bg-[#0A0A0A] text-white">
+            <section className="relative min-h-[620px] bg-[#A855F7] text-[#0A0A0A]">
+                <nav className="absolute inset-x-0 top-0 z-10 mx-auto flex max-w-7xl items-center justify-between px-6 py-7 lg:px-10">
+                    <Link to="/" className="flex items-center gap-2.5"><span className="flex h-[38px] w-[38px] items-center justify-center rounded-lg bg-[#0A0A0A]"><Coffee className="h-5 w-5 text-[#A855F7]" /></span><span className="font-mono text-lg font-bold">MALAS/</span></Link>
+                    <div className="hidden items-center gap-7 font-sans text-sm font-semibold md:flex"><a href="#product">Product</a><a href="#components">Components</a><a href="#docs">Docs</a></div>
+                    <Link to="/sign-in" className="inline-flex items-center gap-2 rounded-full bg-[#0A0A0A] px-4 py-2.5 font-mono text-xs font-bold text-white">GET STARTED <ArrowRight className="h-4 w-4" /></Link>
+                </nav>
+                <div className="mx-auto grid max-w-7xl grid-cols-1 gap-12 px-6 pb-24 pt-32 lg:grid-cols-[1fr_540px] lg:px-10 lg:pt-36">
+                    <div className="max-w-[650px] self-start">
+                        <div className="mb-6 inline-flex items-center gap-2 rounded bg-white/20 px-3 py-2 font-mono text-[11px] font-bold tracking-[0.6px] outline outline-1 outline-black/20">
+                            <span className="h-2 w-2 rounded-full bg-[#BEF264]" />
+                            V1.0 — THE LAZY STACK IS LIVE
                         </div>
-                        <h3 className="font-bold">Typed Everywhere</h3>
-                        <p className="text-sm text-muted-foreground">Type-safe routes & API calls with TanStack.</p>
+                        <h1 className="text-6xl font-bold leading-[.9] tracking-[-4px] sm:text-8xl">Build less.<br />Ship more.</h1>
+                        <p className="mt-7 max-w-xl text-lg font-medium leading-7 text-black/80">Monorepo Golang + Vite yang sudah siap tempur. Backend ringan, frontend super cepat, dan sengaja dibuat agar kamu fokus ke produk.</p>
+                        <div className="mt-8 flex flex-wrap gap-3">
+                            <Link to="/sign-in" className="inline-flex items-center gap-2 rounded-full bg-[#0A0A0A] px-5 py-3 font-mono text-xs font-bold text-white">START BUILDING <ArrowRight className="h-4 w-4" /></Link>
+                            <a href="https://github.com/danirisdiandita/malas-monorepo" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-full px-5 py-3 font-mono text-xs font-bold outline outline-1 outline-[#0A0A0A]"><GitBranch className="h-4 w-4" /> VIEW GITHUB</a>
+                        </div>
                     </div>
-                    <div className="space-y-2">
-                        <div className="p-2 w-fit rounded-md bg-primary/10 text-primary">
-                            <Zap className="w-5 h-5" />
-                        </div>
-                        <h3 className="font-bold">Ultra Fast</h3>
-                        <p className="text-sm text-muted-foreground">Powered by Vite & Go for near-instant DX.</p>
+                    <PreviewCard />
+                </div>
+                <span className="absolute bottom-8 right-10 font-mono text-xs font-bold text-black/60">01</span>
+            </section>
+
+            <section className="mx-auto max-w-7xl px-6 py-24 lg:px-10">
+                <div className="grid gap-12 lg:grid-cols-[380px_1fr]">
+                    <div>
+                        <div className="mb-3 flex items-center gap-2 font-mono text-[11px] font-bold tracking-[0.7px] text-[#A855F7]"><span className="h-0.5 w-7 bg-[#A855F7]" /> DESIGNED FOR MOMENTUM</div>
+                        <h2 className="text-3xl leading-tight tracking-tight sm:text-4xl">Everything you need.<br />Nothing you don’t.</h2>
                     </div>
-                    <div className="space-y-2">
-                        <div className="p-2 w-fit rounded-md bg-primary/10 text-primary">
-                            <Rocket className="w-5 h-5" />
-                        </div>
-                        <h3 className="font-bold">Ready to Scale</h3>
-                        <p className="text-sm text-muted-foreground">Modular architecture for serious projects.</p>
+                    <div className="grid gap-8 sm:grid-cols-3">
+                        <Feature number="01" title="Go-powered API" text="Kontrak API Go dan frontend Vite tetap jelas, cepat, dan mudah dirawat." />
+                        <Feature number="02" title="Vite-fast frontend" text="Vite HMR di frontend, binary Go yang ringan di backend." />
+                        <Feature number="03" title="Scales cleanly" text="Pisahkan web dan API tanpa kehilangan workflow satu repo." />
                     </div>
                 </div>
-            </main>
-
-            {/* Grid Pattern Background */}
-            <div className="absolute inset-0 -z-20 h-full w-full bg-background bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+                <div className="mt-20 grid gap-6 border-t border-[#27272A] pt-6 sm:grid-cols-4">
+                    <Stat value="GO" label="BACKEND" /><Stat value="&lt; 1s" label="VITE HMR" /><Stat value="02" label="APPS, ONE REPO" /><Stat value="0" label="BORING SETUP" />
+                </div>
+            </section>
         </div>
     )
 }
 
+function PreviewCard() {
+    return <div className="overflow-hidden rounded-lg border border-white/10 bg-[#111113] text-white shadow-2xl shadow-black/50 lg:mt-[-6px]">
+        <div className="flex h-14 items-center justify-between border-b border-[#27272A] px-5 font-mono text-[11px] text-[#A1A1AA]"><div className="flex gap-2"><i className="h-2 w-2 rounded-full bg-[#FB7185]" /><i className="h-2 w-2 rounded-full bg-[#FBBF24]" /><i className="h-2 w-2 rounded-full bg-[#BEF264]" /></div>workspace · go + vite<ChevronRight className="h-4 w-4 rotate-90" /></div>
+        <div className="grid grid-cols-[24px_1fr] gap-4 bg-[#0D0D0F] p-6 font-mono text-xs leading-[22px]"><div className="text-right text-[#52525B]">01<br />02<br />03<br />04<br />05<br />06<br />07<br />08<br />09</div><div><div className="text-[#BEF264]">$ moon run :dev</div><br /><div>✓ web Vite ready on :5173</div><div>✓ api Go ready on :8080</div><br /><div className="text-[#A855F7]">apps/</div><div className="text-[#60A5FA]">├── api/ main.go</div><div className="text-[#60A5FA]">└── dashboard/ vite.config.ts</div><div className="text-[#71717A]">ready in 0.8s — ship it.</div></div></div>
+        <div className="space-y-4 border-t border-[#27272A] p-6"><div className="flex items-center justify-between font-mono text-[11px] font-bold"><span className="flex items-center gap-2"><Terminal className="h-4 w-4 text-[#BEF264]" /> BUILD STATUS</span><span className="text-[#BEF264]">0.8s</span></div><div className="h-1 rounded-full bg-[#27272A]"><div className="h-full w-[87%] rounded-full bg-[#BEF264]" /></div><div className="flex flex-wrap gap-2 font-mono text-[9px] font-bold text-[#A1A1AA]"><span className="rounded border border-[#27272A] bg-[#18181B] px-2 py-2"><Code2 className="mr-1 inline h-3.5 w-3.5" /> GOLANG</span><span className="rounded border border-[#27272A] bg-[#18181B] px-2 py-2"><Zap className="mr-1 inline h-3.5 w-3.5" /> VITE</span><span className="rounded border border-[#27272A] bg-[#18181B] px-2 py-2"><GitBranch className="mr-1 inline h-3.5 w-3.5" /> MONOREPO</span></div></div>
+    </div>
+}
+
+function Feature({ number, title, text }: { number: string; title: string; text: string }) { return <div><div className="mb-2 font-mono text-[11px] font-bold text-[#A855F7]">{number}</div><h3 className="text-lg">{title}</h3><p className="mt-2 text-sm leading-5 text-[#A1A1AA]">{text}</p></div> }
+function Stat({ value, label }: { value: string; label: string }) { return <div className="flex items-center gap-3"><span className="font-mono text-[22px] font-bold">{value}</span><span className="font-mono text-[10px] font-bold tracking-[0.6px] text-[#A1A1AA]">{label}</span></div> }
