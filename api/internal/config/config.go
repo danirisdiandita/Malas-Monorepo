@@ -8,10 +8,16 @@ import (
 )
 
 type Config struct {
-	Port           string
-	DatabaseURL    string
-	GoogleClientID string
-	JWTSecret      string
+	Port                string
+	DatabaseURL         string
+	GoogleClientID      string
+	GoogleClientSecret  string
+	AppleClientID       string
+	AppleTeamID         string
+	AppleKeyID          string
+	ApplePrivateKeyPath string
+	AuthURL             string
+	JWTSecret           string
 }
 
 func LoadConfig() *Config {
@@ -20,10 +26,16 @@ func LoadConfig() *Config {
 	}
 
 	return &Config{
-		Port:           getEnv("PORT", "8080"),
-		DatabaseURL:    getEnv("DATABASE_URL", ""),
-		GoogleClientID: getEnv("GOOGLE_CLIENT_ID", ""),
-		JWTSecret:      getEnv("JWT_SECRET", "super-secret-key-change-this"),
+		Port:                getEnv("PORT", "8080"),
+		DatabaseURL:         getEnv("DATABASE_URL", ""),
+		GoogleClientID:      getEnv("GOOGLE_CLIENT_ID", ""),
+		GoogleClientSecret:  getEnv("GOOGLE_CLIENT_SECRET", ""),
+		AppleClientID:       getEnv("APPLE_CLIENT_ID", ""),
+		AppleTeamID:         getEnv("APPLE_TEAM_ID", ""),
+		AppleKeyID:          getEnv("APPLE_KEY_ID", ""),
+		ApplePrivateKeyPath: getEnv("APPLE_PRIVATE_KEY_PATH", ""),
+		AuthURL:             getEnv("AUTH_URL", "http://localhost:8080"),
+		JWTSecret:           getEnv("JWT_SECRET", "super-secret-key-change-this"),
 	}
 }
 

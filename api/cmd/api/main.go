@@ -5,13 +5,18 @@ import (
 	"log"
 	"net/http"
 
+	"time"
+
 	"github.com/danirisdiandita/malas-monorepo/api/internal/config"
 	"github.com/danirisdiandita/malas-monorepo/api/internal/db"
 	"github.com/danirisdiandita/malas-monorepo/api/internal/handlers"
-	"github.com/danirisdiandita/malas-monorepo/api/internal/middleware"
 	"github.com/go-chi/chi/v5"
 	mid "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	"github.com/go-pkgz/auth/v2"
+	"github.com/go-pkgz/auth/v2/avatar"
+	"github.com/go-pkgz/auth/v2/provider"
+	"github.com/go-pkgz/auth/v2/token"
 )
 
 func main() {
@@ -24,6 +29,36 @@ func main() {
 		log.Fatalf("failed initializing database: %v", err)
 	}
 	defer client.Close()
+
+	// define options
+	options := auth.Opts{
+		SecretReader: token.SecretFunc(func(_ string) (string, error) {
+			return cfg.JWTSecret, nil
+		}),
+		TokenDuration:  time.Minute * 5, // token expires in 5 minutes
+		CookieDuration: time.Hour * 24,  // cookie expires in 1 day and will enforce re-login
+		Issuer:         "my-test-app",
+		URL:            cfg.AuthURL,
+		AvatarStore:    avatar.NewLocalFS("/tmp"),
+		Validator: token.ValidatorFunc(func(_ string, claims token.Claims) bool {
+			return claims.User != nil && claims.User.ID != ""
+		}),
+	}
+
+	service := auth.NewService(options)
+	service.AddProvider("google", cfg.GoogleClientID, cfg.GoogleClientSecret) // add github provider
+	if cfg.ApplePrivateKeyPath != "" {
+		if err := service.AddAppleProvider(provider.AppleConfig{
+			ClientID: cfg.AppleClientID,
+			TeamID:   cfg.AppleTeamID,
+			KeyID:    cfg.AppleKeyID,
+		}, provider.LoadApplePrivateKeyFromFile(cfg.ApplePrivateKeyPath)); err != nil {
+			log.Fatalf("failed to configure Apple auth: %v", err)
+		}
+	}
+
+	m := service.Middleware()
+	authRoutes, avatarRoutes := service.Handlers()
 
 	r := chi.NewRouter()
 
@@ -43,13 +78,12 @@ func main() {
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Malas API is running!"))
 	})
-	r.Post("/auth/google", handlers.HandleGoogleLogin(client, cfg))
-	r.Post("/auth/refresh", handlers.HandleRefreshToken(client, cfg))
-	r.Post("/auth/logout", handlers.HandleLogout)
+	r.Mount("/auth", authRoutes)
+	r.Mount("/avatar", avatarRoutes)
 
 	// Protected Routes
 	r.Group(func(r chi.Router) {
-		r.Use(middleware.AuthMiddleware(cfg))
+		r.Use(m.Auth)
 		r.Get("/me", handlers.HandleMe)
 	})
 

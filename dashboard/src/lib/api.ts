@@ -2,7 +2,7 @@ import { fetchWithAuth } from "./fetch";
 import { config } from "./config";
 
 export interface User {
-    id: number;
+    id: string;
     email: string;
     name: string;
     picture: string;
