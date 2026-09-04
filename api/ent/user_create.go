@@ -23,20 +23,6 @@ type UserCreate struct {
 	hooks    []Hook
 }
 
-// SetGoogleID sets the "google_id" field.
-func (_c *UserCreate) SetGoogleID(v string) *UserCreate {
-	_c.mutation.SetGoogleID(v)
-	return _c
-}
-
-// SetNillableGoogleID sets the "google_id" field if the given value is not nil.
-func (_c *UserCreate) SetNillableGoogleID(v *string) *UserCreate {
-	if v != nil {
-		_c.SetGoogleID(*v)
-	}
-	return _c
-}
-
 // SetEmail sets the "email" field.
 func (_c *UserCreate) SetEmail(v string) *UserCreate {
 	_c.mutation.SetEmail(v)
@@ -242,10 +228,6 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 		_node = &User{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(user.Table, sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt))
 	)
-	if value, ok := _c.mutation.GoogleID(); ok {
-		_spec.SetField(user.FieldGoogleID, field.TypeString, value)
-		_node.GoogleID = &value
-	}
 	if value, ok := _c.mutation.Email(); ok {
 		_spec.SetField(user.FieldEmail, field.TypeString, value)
 		_node.Email = value

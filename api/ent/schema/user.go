@@ -16,7 +16,6 @@ type User struct {
 // Fields of the User.
 func (User) Fields() []ent.Field {
 	return []ent.Field{
-		field.String("google_id").Optional().Nillable().Unique(), // legacy; provider identities live in accounts
 		field.String("email").Unique(),
 		field.String("name"),
 		field.String("picture").Optional(),

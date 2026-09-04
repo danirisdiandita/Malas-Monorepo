@@ -31,26 +31,6 @@ func (_u *UserUpdate) Where(ps ...predicate.User) *UserUpdate {
 	return _u
 }
 
-// SetGoogleID sets the "google_id" field.
-func (_u *UserUpdate) SetGoogleID(v string) *UserUpdate {
-	_u.mutation.SetGoogleID(v)
-	return _u
-}
-
-// SetNillableGoogleID sets the "google_id" field if the given value is not nil.
-func (_u *UserUpdate) SetNillableGoogleID(v *string) *UserUpdate {
-	if v != nil {
-		_u.SetGoogleID(*v)
-	}
-	return _u
-}
-
-// ClearGoogleID clears the value of the "google_id" field.
-func (_u *UserUpdate) ClearGoogleID() *UserUpdate {
-	_u.mutation.ClearGoogleID()
-	return _u
-}
-
 // SetEmail sets the "email" field.
 func (_u *UserUpdate) SetEmail(v string) *UserUpdate {
 	_u.mutation.SetEmail(v)
@@ -291,12 +271,6 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			}
 		}
 	}
-	if value, ok := _u.mutation.GoogleID(); ok {
-		_spec.SetField(user.FieldGoogleID, field.TypeString, value)
-	}
-	if _u.mutation.GoogleIDCleared() {
-		_spec.ClearField(user.FieldGoogleID, field.TypeString)
-	}
 	if value, ok := _u.mutation.Email(); ok {
 		_spec.SetField(user.FieldEmail, field.TypeString, value)
 	}
@@ -471,26 +445,6 @@ type UserUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *UserMutation
-}
-
-// SetGoogleID sets the "google_id" field.
-func (_u *UserUpdateOne) SetGoogleID(v string) *UserUpdateOne {
-	_u.mutation.SetGoogleID(v)
-	return _u
-}
-
-// SetNillableGoogleID sets the "google_id" field if the given value is not nil.
-func (_u *UserUpdateOne) SetNillableGoogleID(v *string) *UserUpdateOne {
-	if v != nil {
-		_u.SetGoogleID(*v)
-	}
-	return _u
-}
-
-// ClearGoogleID clears the value of the "google_id" field.
-func (_u *UserUpdateOne) ClearGoogleID() *UserUpdateOne {
-	_u.mutation.ClearGoogleID()
-	return _u
 }
 
 // SetEmail sets the "email" field.
@@ -762,12 +716,6 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 				ps[i](selector)
 			}
 		}
-	}
-	if value, ok := _u.mutation.GoogleID(); ok {
-		_spec.SetField(user.FieldGoogleID, field.TypeString, value)
-	}
-	if _u.mutation.GoogleIDCleared() {
-		_spec.ClearField(user.FieldGoogleID, field.TypeString)
 	}
 	if value, ok := _u.mutation.Email(); ok {
 		_spec.SetField(user.FieldEmail, field.TypeString, value)

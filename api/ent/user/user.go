@@ -14,8 +14,6 @@ const (
 	Label = "user"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
-	// FieldGoogleID holds the string denoting the google_id field in the database.
-	FieldGoogleID = "google_id"
 	// FieldEmail holds the string denoting the email field in the database.
 	FieldEmail = "email"
 	// FieldName holds the string denoting the name field in the database.
@@ -62,7 +60,6 @@ const (
 // Columns holds all SQL columns for user fields.
 var Columns = []string{
 	FieldID,
-	FieldGoogleID,
 	FieldEmail,
 	FieldName,
 	FieldPicture,
@@ -98,11 +95,6 @@ type OrderOption func(*sql.Selector)
 // ByID orders the results by the id field.
 func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
-}
-
-// ByGoogleID orders the results by the google_id field.
-func ByGoogleID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldGoogleID, opts...).ToFunc()
 }
 
 // ByEmail orders the results by the email field.
