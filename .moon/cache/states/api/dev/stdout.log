@@ -1,17 +1,8 @@
 Server starting on port 8080...
-2026/09/04 21:06:07 "GET http://localhost:8080/auth/user HTTP/1.1" from [::1]:40616 - 401 13B in 37.815µs
-2026/09/04 21:06:07 "GET http://localhost:8080/auth/user HTTP/1.1" from [::1]:40616 - 401 13B in 18.527µs
-2026/09/04 21:06:07 "GET http://localhost:8080/auth/user HTTP/1.1" from [::1]:40630 - 401 13B in 46.078µs
-2026/09/04 21:06:14 "GET http://localhost:8080/auth/user HTTP/1.1" from [::1]:40630 - 401 13B in 19.113µs
-2026/09/04 21:06:14 "GET http://localhost:8080/auth/user HTTP/1.1" from [::1]:40630 - 401 13B in 19.501µs
-2026/09/04 21:06:14 "GET http://localhost:8080/auth/user HTTP/1.1" from [::1]:40616 - 401 13B in 13.366µs
-2026/09/04 21:06:16 "GET http://localhost:8080/auth/google/login?from=http%3A%2F%2Flocalhost%3A5173%2Fdashboard HTTP/1.1" from [::1]:40616 - 302 326B in 496.908µs
-2026/09/04 21:06:16 "GET http://localhost:8080/auth/google/callback?state=675876ef5cbed305e3c9f6adc3e9698a93e4eb57&iss=https%3A%2F%2Faccounts.google.com&code=4%2F0ATsMZqA0e0SP2ZqnxUyxQUKfwy8WLC1EbVBpuEQpGtmPW_x_kXoGzHRLg62DIGWUwQOZlQ&scope=email+profile+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.profile+openid+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email&authuser=0&prompt=none HTTP/1.1" from [::1]:40616 - 307 67B in 421.509928ms
-2026/09/04 21:06:16 "GET http://localhost:8080/auth/user HTTP/1.1" from [::1]:40616 - 200 285B in 9.108204ms
-2026/09/04 21:06:17 "OPTIONS http://localhost:8080/me HTTP/1.1" from [::1]:54414 - 200 0B in 6.077µs
-2026/09/04 21:06:17 "GET http://localhost:8080/auth/user HTTP/1.1" from [::1]:40616 - 200 285B in 5.359239ms
-2026/09/04 21:06:17 "GET http://localhost:8080/me HTTP/1.1" from [::1]:40630 - 200 285B in 8.072104ms
-2026/09/04 21:06:17 "GET http://localhost:8080/auth/user HTTP/1.1" from [::1]:54422 - 200 285B in 5.101083ms
-2026/09/04 21:06:18 "OPTIONS http://localhost:8080/auth/logout HTTP/1.1" from [::1]:54414 - 200 0B in 22.312µs
-2026/09/04 21:06:18 "GET http://localhost:8080/auth/logout HTTP/1.1" from [::1]:54422 - 000 0B in 4.521481ms
-2026/09/04 21:06:18 "GET http://localhost:8080/auth/user HTTP/1.1" from [::1]:54422 - 401 13B in 14.995µs
+2026/09/04 21:06:28 "GET http://localhost:8080/auth/user HTTP/1.1" from [::1]:35642 - 401 13B in 29.53µs
+2026/09/04 21:06:28 "GET http://localhost:8080/auth/user HTTP/1.1" from [::1]:35642 - 401 13B in 13.033µs
+2026/09/04 21:06:28 "GET http://localhost:8080/auth/user HTTP/1.1" from [::1]:35656 - 401 13B in 25.818µs
+2026/09/04 21:24:35 "OPTIONS http://localhost:8080/auth/user HTTP/1.1" from [::1]:34788 - 200 0B in 11.457µs
+2026/09/04 21:24:35 "OPTIONS http://localhost:8080/auth/user HTTP/1.1" from [::1]:34796 - 200 0B in 10.521µs
+2026/09/04 21:24:35 "GET http://localhost:8080/auth/user HTTP/1.1" from [::1]:34802 - 401 13B in 107.485µs
+2026/09/04 21:24:35 "GET http://localhost:8080/auth/user HTTP/1.1" from [::1]:34812 - 401 13B in 28.826µs
