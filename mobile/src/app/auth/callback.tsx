@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { storeToken } from '@/lib/api';
+import { getCurrentUser, storeToken } from '@/lib/api';
 
 export default function AuthCallbackScreen() {
   const queryClient = useQueryClient();
@@ -17,7 +17,7 @@ export default function AuthCallbackScreen() {
     }
 
     storeToken(token)
-      .then(() => queryClient.invalidateQueries({ queryKey: ['auth', 'user'] }))
+      .then(() => queryClient.fetchQuery({ queryKey: ['auth', 'user'], queryFn: getCurrentUser }))
       .then(() => router.replace('/tab1'))
       .catch(() => router.replace('/sign-in'));
   }, [token, queryClient]);

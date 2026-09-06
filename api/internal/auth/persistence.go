@@ -172,6 +172,13 @@ func PersistSession(ctx context.Context, client *ent.Client, userID int, r *http
 		SetUserAgent(r.UserAgent()).
 		SetUserID(userID).
 		Save(ctx)
+	if err != nil {
+		// OAuth callbacks can make two identical /auth/user requests at once.
+		// Reuse the session created by the winning request.
+		if existing, queryErr := client.Session.Query().Where(session.TokenHash(hash)).Only(ctx); queryErr == nil {
+			_, err = existing.Update().SetLastSeenAt(time.Now()).ClearRevokedAt().Save(ctx)
+		}
+	}
 	return err
 }
 

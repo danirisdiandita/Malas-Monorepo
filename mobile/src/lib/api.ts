@@ -4,6 +4,8 @@ import * as SecureStore from 'expo-secure-store';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 
+WebBrowser.maybeCompleteAuthSession();
+
 export type AuthProvider = 'google' | 'apple';
 
 export interface User {
@@ -19,6 +21,7 @@ const apiUrl =
   process.env.EXPO_PUBLIC_API_URL ??
   (Platform.OS === 'android' ? 'http://10.0.2.2:8080' : 'http://localhost:8080');
 const authUrl = process.env.EXPO_PUBLIC_AUTH_URL ?? apiUrl;
+let currentUserRequest: Promise<User> | undefined;
 
 export async function storeToken(token: string) {
   await SecureStore.setItemAsync(tokenKey, token);
@@ -29,7 +32,7 @@ async function storeRefreshToken(token: string) {
 }
 
 export async function signIn(provider: AuthProvider): Promise<User> {
-  const redirectUri = Linking.createURL('auth/callback');
+  const redirectUri = Linking.createURL('auth/callback', { scheme: 'mobile' });
   const result = await WebBrowser.openAuthSessionAsync(
     `${authUrl}/auth/${provider}/login?from=${encodeURIComponent(redirectUri)}`,
     redirectUri,
@@ -38,6 +41,8 @@ export async function signIn(provider: AuthProvider): Promise<User> {
   if (result.type !== 'success') {
     throw new Error('Sign in was cancelled.');
   }
+
+  WebBrowser.dismissBrowser();
 
   const token = Linking.parse(result.url).queryParams?.token;
   if (typeof token !== 'string' || token === '') {
@@ -48,7 +53,16 @@ export async function signIn(provider: AuthProvider): Promise<User> {
   return getCurrentUser();
 }
 
-export async function getCurrentUser(): Promise<User> {
+export function getCurrentUser(): Promise<User> {
+  if (!currentUserRequest) {
+    currentUserRequest = loadCurrentUser().finally(() => {
+      currentUserRequest = undefined;
+    });
+  }
+  return currentUserRequest;
+}
+
+async function loadCurrentUser(): Promise<User> {
   const token = await SecureStore.getItemAsync(tokenKey);
   if (!token) {
     throw new Error('Not signed in.');
@@ -80,7 +94,7 @@ export async function getCurrentUser(): Promise<User> {
     }
   }
   if (!response.ok) {
-    await signOut();
+    if (response.status === 401) await signOut();
     throw new Error('Unable to load the signed-in user.');
   }
   const body = (await response.json()) as User & { refresh_token?: string };
