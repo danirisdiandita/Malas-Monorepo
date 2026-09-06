@@ -1,22 +1,30 @@
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { Ionicons } from '@react-native-vector-icons/ionicons';
-import { Redirect } from 'expo-router';
+import { router } from 'expo-router';
 import { ActivityIndicator } from 'react-native';
+import { useEffect, useRef } from 'react';
 import { useCurrentUser } from '@/hooks/use-auth';
 
 export const unstable_settings = { initialRouteName: 'tab1' };
 
 export default function TabsLayout() {
   const { data: user, isPending, isError } = useCurrentUser();
+  const redirected = useRef(false);
 
-  if (isPending) return <ActivityIndicator accessibilityLabel="Checking sign-in" />;
-  if (isError || !user) return <Redirect href="/sign-in" />;
+  useEffect(() => {
+    if (!isPending && isError && !user && !redirected.current) {
+      redirected.current = true;
+      router.replace('/sign-in');
+    }
+  }, [isPending, isError, user]);
+
+  if (isPending || isError || !user) return <ActivityIndicator accessibilityLabel="Checking sign-in" />;
 
   return (
     <NativeTabs
       backgroundColor="#FCFBF8"
       iconColor={{ default: '#738078', selected: '#4E8B5B' }}
-      labelStyle={{ default: { fontSize: 10, color: '#738078' }, selected: { fontSize: 10, color: '#4E8B5B', fontWeight: '700' } }}
+      labelStyle={{ default: { fontSize: 11, color: '#738078' }, selected: { fontSize: 11, color: '#4E8B5B', fontWeight: '700' } }}
       labelVisibilityMode="labeled"
     >
       <NativeTabs.Trigger name="tab1">

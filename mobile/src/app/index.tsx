@@ -229,8 +229,8 @@ const styles = StyleSheet.create({
   },
   description: {
     color: colors.muted,
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 16,
+    lineHeight: 23,
     textAlign: "center",
     marginTop: 14,
     maxWidth: 330,
@@ -287,7 +287,7 @@ const styles = StyleSheet.create({
   },
   panelEyebrow: {
     color: colors.leaf,
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: "900",
     letterSpacing: 1.2,
     marginBottom: 2,
@@ -301,7 +301,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     gap: 8,
   },
-  listText: { color: colors.ink, fontSize: 13, fontWeight: "700", flex: 1 },
+  listText: { color: colors.ink, fontSize: 16, fontWeight: "700", flex: 1 },
   check: {
     width: 17,
     height: 17,
@@ -309,7 +309,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: colors.leaf,
   },
-  quantity: { color: colors.muted, fontSize: 10 },
+  quantity: { color: colors.muted, fontSize: 14 },
   weekPanel: {
     width: "100%",
     backgroundColor: colors.sage,
@@ -318,7 +318,7 @@ const styles = StyleSheet.create({
     gap: 16,
     marginTop: 26,
   },
-  weekRow: { color: colors.ink, fontSize: 14, fontWeight: "700" },
+  weekRow: { color: colors.ink, fontSize: 16, fontWeight: "700" },
   syncPanel: {
     width: 220,
     height: 180,
@@ -331,7 +331,7 @@ const styles = StyleSheet.create({
   },
   syncText: {
     color: colors.leaf,
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: "900",
     letterSpacing: 1,
   },
@@ -353,10 +353,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     elevation: 3,
   },
-  primaryLabel: { color: "#fff", fontSize: 15, fontWeight: "800" },
+  primaryLabel: { color: "#fff", fontSize: 16, fontWeight: "800" },
   secondaryLabel: {
     color: colors.leaf,
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: "800",
     marginTop: 13,
   },

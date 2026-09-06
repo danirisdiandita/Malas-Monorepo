@@ -25,9 +25,9 @@ export function YuzuCard({ children, style }: PropsWithChildren<{ style?: ViewSt
 }
 
 export const yuzuText: Record<string, TextStyle> = {
-  eyebrow: { color: yuzuColors.leaf, fontSize: 10, fontWeight: '900', letterSpacing: 1.1 },
+  eyebrow: { color: yuzuColors.leaf, fontSize: 11, fontWeight: '900', letterSpacing: 1.1 },
   title: { color: yuzuColors.ink, fontSize: 26, fontWeight: '800' },
-  body: { color: yuzuColors.muted, fontSize: 14, lineHeight: 20 },
+  body: { color: yuzuColors.muted, fontSize: 16, lineHeight: 23 },
 };
 
-const styles = StyleSheet.create({ screen: { flex: 1, backgroundColor: yuzuColors.cream }, safeArea: { flex: 1 }, content: { padding: 20, gap: 14, paddingBottom: 30 }, header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }, headerTitle: { color: yuzuColors.ink, fontSize: 21, fontWeight: '800' }, back: { color: yuzuColors.ink, fontSize: 28 }, backSpace: { width: 18 }, button: { minHeight: 50, borderRadius: 15, backgroundColor: yuzuColors.ink, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16 }, buttonText: { color: '#fff', fontSize: 14, fontWeight: '800' }, secondaryButton: { backgroundColor: yuzuColors.sage }, secondaryButtonText: { color: yuzuColors.leaf }, card: { borderRadius: 16, backgroundColor: '#fff', borderWidth: 1, borderColor: yuzuColors.line, padding: 14 } });
+const styles = StyleSheet.create({ screen: { flex: 1, backgroundColor: yuzuColors.cream }, safeArea: { flex: 1 }, content: { padding: 20, gap: 14, paddingBottom: 30 }, header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }, headerTitle: { color: yuzuColors.ink, fontSize: 22, fontWeight: '800' }, back: { color: yuzuColors.ink, fontSize: 28 }, backSpace: { width: 18 }, button: { minHeight: 50, borderRadius: 15, backgroundColor: yuzuColors.ink, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16 }, buttonText: { color: '#fff', fontSize: 16, fontWeight: '800' }, secondaryButton: { backgroundColor: yuzuColors.sage }, secondaryButtonText: { color: yuzuColors.leaf }, card: { borderRadius: 16, backgroundColor: '#fff', borderWidth: 1, borderColor: yuzuColors.line, padding: 14 } });
