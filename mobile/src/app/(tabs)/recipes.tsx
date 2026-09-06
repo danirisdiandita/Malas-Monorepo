@@ -6,6 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { useCurrentUser } from "@/hooks/use-auth";
 
 const colors = {
   ink: "#14231A",
@@ -16,7 +17,20 @@ const colors = {
   yellow: "#F8C957",
 };
 
+function getTimeGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return "GOOD MORNING";
+  if (hour < 18) return "GOOD AFTERNOON";
+  if (hour < 22) return "GOOD EVENING";
+  return "GOOD NIGHT";
+}
+
 export default function Tab1Screen() {
+  const { data: user } = useCurrentUser();
+  const displayName = user?.name?.trim() || "there";
+  const initial = displayName.charAt(0).toUpperCase();
+  const greeting = getTimeGreeting();
+
   return (
     <ThemedView style={styles.screen}>
       <SafeAreaView style={styles.safeArea}>
@@ -26,16 +40,13 @@ export default function Tab1Screen() {
         >
           <View style={styles.header}>
             <View>
-              <ThemedText style={styles.greeting}>
-                GOOD MORNING, MAYA
-              </ThemedText>
-              <ThemedText style={styles.title}>Your recipes</ThemedText>
+              <ThemedText style={styles.greeting}>{greeting}</ThemedText>
+              <ThemedText style={styles.profileName}>{displayName}</ThemedText>
             </View>
             <View style={styles.headerActions}>
               <View style={styles.avatar}>
-                <ThemedText style={styles.avatarText}>M</ThemedText>
+                <ThemedText style={styles.avatarText}>{initial}</ThemedText>
               </View>
-              <Ionicons name="settings-outline" size={18} color={colors.ink} />
             </View>
           </View>
           <View style={styles.search}>
@@ -61,12 +72,14 @@ export default function Tab1Screen() {
                 style={styles.upgradeButton}
                 onPress={() => router.push("/paywall")}
               >
-                <ThemedText style={styles.upgradeLabel}>Upgrade to Pro</ThemedText>
+                <ThemedText style={styles.upgradeLabel}>
+                  Upgrade to Pro
+                </ThemedText>
               </Pressable>
             </View>
           </View>
           <View style={styles.sectionHeader}>
-            <ThemedText style={styles.sectionTitle}>Recently saved</ThemedText>
+            <ThemedText style={styles.sectionTitle}>Your Recipes</ThemedText>
             <ThemedText style={styles.seeAll}>See all</ThemedText>
           </View>
           <View style={styles.cards}>
@@ -118,9 +131,17 @@ const styles = StyleSheet.create({
   },
   greeting: {
     color: colors.leaf,
-    fontSize: 11,
+    fontSize: 18,
+    lineHeight: 23,
     fontWeight: "900",
-    letterSpacing: 1.2,
+    letterSpacing: 1.1,
+    marginBottom: 0,
+  },
+  profileName: {
+    color: colors.ink,
+    fontSize: 15,
+    fontWeight: "700",
+    marginTop: 1,
   },
   title: { color: colors.ink, fontSize: 28, fontWeight: "800", marginTop: 3 },
   headerActions: { flexDirection: "row", alignItems: "center", gap: 10 },

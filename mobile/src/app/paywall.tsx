@@ -1,11 +1,10 @@
 import { Ionicons } from "@react-native-vector-icons/ionicons";
 import { router } from "expo-router";
-import { StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
 import {
   YuzuButton,
-  YuzuHeader,
   YuzuScreen,
   yuzuColors,
   yuzuText,
@@ -21,7 +20,7 @@ const benefits = [
 export default function PaywallScreen() {
   return (
     <YuzuScreen>
-      <YuzuHeader title="" onBack={() => router.back()} />
+      <View style={styles.header}><View /><Pressable accessibilityLabel="Close paywall" hitSlop={8} style={styles.closeButton} onPress={() => router.back()}><Ionicons name="close" size={22} color={yuzuColors.ink} /></Pressable></View>
       <View style={styles.hero}>
         <ThemedText style={styles.eyebrow}>YUZU PRO</ThemedText>
         <ThemedText style={styles.title}>
@@ -69,6 +68,8 @@ function Plan({ title, price }: { title: string; price: string }) {
 }
 
 const styles = StyleSheet.create({
+  header: { minHeight: 44, alignItems: "flex-end", justifyContent: "center" },
+  closeButton: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", backgroundColor: yuzuColors.sage },
   hero: {
     alignItems: "center",
     backgroundColor: yuzuColors.ink,

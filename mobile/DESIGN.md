@@ -64,6 +64,14 @@ Avoid text below 12px except for non-essential metadata. Support long text, Dyna
 - Give pressed, disabled, loading, and error states clear visual feedback.
 - Use one icon family consistently: Ionicons in the app implementation, matching the simple line icons in Pencil.
 
+### Close buttons
+
+- Use a 44×44px circular touch target.
+- Place a 22px Ionicons `close` icon in the center.
+- Use a Sage background and Ink icon color.
+- Place it on the right side of sheets, paywalls, and dismissible overlays.
+- Provide an accessibility label describing what will be closed.
+
 ## Cards and fields
 
 - Use white cards on Paper with a 1px Line border.
