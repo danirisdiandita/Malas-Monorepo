@@ -15,10 +15,25 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}) {
         credentials: 'include', // Important for cookies
     });
 
-    // Handle expired or invalid auth cookies.
+    // Rotate the refresh cookie once, then retry the original request.
     if (response.status === 401) {
-        logout();
+        const refreshed = await fetch(`${new URL(url).origin}/auth/refresh`, {
+            method: 'POST',
+            headers: { 'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') },
+            credentials: 'include',
+        });
+        if (refreshed.ok) {
+            response = await fetch(url, {
+                ...options,
+                headers: { ...headers, 'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') },
+                credentials: 'include',
+            });
+        } else {
+            logout();
+        }
     }
+
+    if (response.status === 401) logout();
 
     return response;
 }

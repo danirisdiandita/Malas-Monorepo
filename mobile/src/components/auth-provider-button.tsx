@@ -35,6 +35,6 @@ const styles = StyleSheet.create({
   appleButton: { backgroundColor: '#14231A', borderColor: '#14231A' },
   pressed: { opacity: 0.7 },
   disabled: { opacity: 0.5 },
-  label: { color: '#14231A', fontSize: 14, fontWeight: '800' },
+  label: { color: '#14231A', fontSize: 16, fontWeight: '800' },
   appleLabel: { color: '#FFFFFF' },
 });

@@ -1,14 +1,22 @@
 import { router } from 'expo-router';
+import { useEffect } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AuthProviderButton } from '@/components/auth-provider-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { useCurrentUser } from '@/hooks/use-auth';
 
-const colors = { ink: '#14231A', leaf: '#4E8B5B', sage: '#DDE8D6', muted: '#738078' };
+const colors = { ink: '#14231A', leaf: '#2F6B3E', sage: '#DDE8D6', muted: '#738078' };
 
 export default function SignInScreen() {
+  const { data: user } = useCurrentUser();
+
+  useEffect(() => {
+    if (user) router.replace('/tab1');
+  }, [user]);
+
   return (
     <ThemedView style={styles.screen}><SafeAreaView style={styles.safeArea}>
       <Pressable onPress={() => router.replace('/')} hitSlop={12}><ThemedText style={styles.back}>‹ Back to onboarding</ThemedText></Pressable>
@@ -24,5 +32,5 @@ export default function SignInScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#FCFBF8' }, safeArea: { flex: 1, paddingHorizontal: 20, paddingTop: 12, paddingBottom: 18 }, back: { color: colors.muted, fontSize: 15 }, content: { flex: 1, alignItems: 'center', paddingTop: 36 }, brand: { color: colors.leaf, fontSize: 17, fontWeight: '900', letterSpacing: 3, marginBottom: 18 }, title: { color: colors.ink, fontSize: 33, lineHeight: 35, fontWeight: '800', textAlign: 'center', letterSpacing: -0.7 }, description: { color: colors.muted, fontSize: 14, lineHeight: 20, textAlign: 'center', maxWidth: 330, marginTop: 14 }, syncCard: { width: 220, height: 160, borderRadius: 26, backgroundColor: colors.sage, alignItems: 'center', justifyContent: 'center', marginTop: 18, marginBottom: 18 }, syncIcon: { color: colors.leaf, fontSize: 64, lineHeight: 70, fontWeight: '700' }, syncCaption: { color: colors.leaf, fontSize: 9, fontWeight: '800', letterSpacing: 1 }, authArea: { width: '100%', paddingTop: 12 }, continueLabel: { color: colors.muted, fontSize: 12, fontWeight: '700', marginBottom: 10, textAlign: 'center' }, providers: { width: '100%', gap: 10 }, footer: { alignItems: 'center', gap: 12, paddingTop: 12 }, terms: { color: colors.muted, fontSize: 10, textAlign: 'center' }, skip: { color: colors.leaf, fontSize: 12, fontWeight: '800' },
+  screen: { flex: 1, backgroundColor: '#FCFBF8' }, safeArea: { flex: 1, paddingHorizontal: 20, paddingTop: 12, paddingBottom: 18 }, back: { color: colors.muted, fontSize: 16 }, content: { flex: 1, alignItems: 'center', paddingTop: 36 }, brand: { color: colors.leaf, fontSize: 19, fontWeight: '900', letterSpacing: 3, marginBottom: 18 }, title: { color: colors.ink, fontSize: 36, lineHeight: 39, fontWeight: '800', textAlign: 'center', letterSpacing: -0.7 }, description: { color: colors.muted, fontSize: 16, lineHeight: 23, textAlign: 'center', maxWidth: 330, marginTop: 14 }, syncCard: { width: 220, height: 160, borderRadius: 26, backgroundColor: colors.sage, alignItems: 'center', justifyContent: 'center', marginTop: 18, marginBottom: 18 }, syncIcon: { color: colors.leaf, fontSize: 64, lineHeight: 70, fontWeight: '700' }, syncCaption: { color: colors.leaf, fontSize: 11, fontWeight: '800', letterSpacing: 1 }, authArea: { width: '100%', paddingTop: 12 }, continueLabel: { color: colors.muted, fontSize: 14, fontWeight: '700', marginBottom: 10, textAlign: 'center' }, providers: { width: '100%', gap: 10 }, footer: { alignItems: 'center', gap: 12, paddingTop: 12 }, terms: { color: colors.muted, fontSize: 11, textAlign: 'center' }, skip: { color: colors.leaf, fontSize: 14, fontWeight: '800' },
 });

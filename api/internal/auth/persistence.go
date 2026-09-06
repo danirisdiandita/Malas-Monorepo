@@ -2,7 +2,9 @@ package auth
 
 import (
 	"context"
+	"crypto/rand"
 	"crypto/sha256"
+	"encoding/base64"
 	"fmt"
 	"net/http"
 	"strings"
@@ -10,10 +12,62 @@ import (
 
 	"github.com/danirisdiandita/malas-monorepo/api/ent"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/account"
+	"github.com/danirisdiandita/malas-monorepo/api/ent/refreshtoken"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/session"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/user"
 	"github.com/go-pkgz/auth/v2/token"
 )
+
+const RefreshTokenDuration = 30 * 24 * time.Hour
+
+func CreateRefreshToken(ctx context.Context, client *ent.Client, userID int) (string, error) {
+	raw := make([]byte, 32)
+	if _, err := rand.Read(raw); err != nil {
+		return "", err
+	}
+	value := base64.RawURLEncoding.EncodeToString(raw)
+	_, err := client.RefreshToken.Create().
+		SetToken(hashToken(value)).
+		SetExpiresAt(time.Now().Add(RefreshTokenDuration)).
+		SetOwnerID(userID).
+		Save(ctx)
+	return value, err
+}
+
+func RotateRefreshToken(ctx context.Context, client *ent.Client, value string) (string, *ent.User, error) {
+	stored, err := client.RefreshToken.Query().Where(refreshtoken.Token(hashToken(value))).WithOwner().Only(ctx)
+	if err != nil || stored.ExpiresAt.Before(time.Now()) {
+		return "", nil, fmt.Errorf("refresh token is invalid")
+	}
+	if err := client.RefreshToken.DeleteOneID(stored.ID).Exec(ctx); err != nil {
+		return "", nil, err
+	}
+	rotated, err := CreateRefreshToken(ctx, client, stored.Edges.Owner.ID)
+	return rotated, stored.Edges.Owner, err
+}
+
+func RevokeRefreshToken(ctx context.Context, client *ent.Client, value string) error {
+	if value == "" {
+		return nil
+	}
+	_, err := client.RefreshToken.Delete().Where(refreshtoken.Token(hashToken(value))).Exec(ctx)
+	return err
+}
+
+func RefreshTokenFromRequest(r *http.Request) string {
+	if value := r.Header.Get("X-Refresh-Token"); value != "" {
+		return value
+	}
+	cookie, _ := r.Cookie("REFRESH_TOKEN")
+	if cookie != nil {
+		return cookie.Value
+	}
+	return ""
+}
+
+func hashToken(value string) string {
+	return fmt.Sprintf("%x", sha256.Sum256([]byte(value)))
+}
 
 func PersistUser(ctx context.Context, client *ent.Client, providerUser token.User) (*ent.User, error) {
 	providerName, _, _ := strings.Cut(providerUser.ID, "_")
@@ -102,7 +156,7 @@ func PersistSession(ctx context.Context, client *ent.Client, userID int, r *http
 	if err != nil {
 		return fmt.Errorf("auth token is missing")
 	}
-	hash := fmt.Sprintf("%x", sha256.Sum256([]byte(token)))
+	hash := hashToken(token)
 	existing, err := client.Session.Query().Where(session.TokenHash(hash)).Only(ctx)
 	if err == nil {
 		_, err = existing.Update().SetLastSeenAt(time.Now()).ClearRevokedAt().Save(ctx)
@@ -126,7 +180,7 @@ func RevokeSession(ctx context.Context, client *ent.Client, r *http.Request) err
 	if err != nil {
 		return nil
 	}
-	hash := fmt.Sprintf("%x", sha256.Sum256([]byte(token)))
+	hash := hashToken(token)
 	now := time.Now()
 	_, err = client.Session.Query().Where(session.TokenHash(hash)).Only(ctx)
 	if ent.IsNotFound(err) {
@@ -146,7 +200,7 @@ func RequireSession(client *ent.Client) func(http.Handler) http.Handler {
 				http.Error(w, "unauthorized", http.StatusUnauthorized)
 				return
 			}
-			hash := fmt.Sprintf("%x", sha256.Sum256([]byte(token)))
+			hash := hashToken(token)
 			_, err = client.Session.Query().Where(
 				session.TokenHash(hash),
 				session.RevokedAtIsNil(),

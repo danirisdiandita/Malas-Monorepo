@@ -47,8 +47,8 @@ func main() {
 		SecureCookies:     secureCookies,
 		SameSiteCookie:    sameSite,
 		XSRFIgnoreMethods: []string{"GET"},
-		TokenDuration:     time.Minute * 5, // token expires in 5 minutes
-		CookieDuration:    time.Hour * 24,  // cookie expires in 1 day and will enforce re-login
+		TokenDuration:     15 * time.Minute,
+		CookieDuration:    30 * 24 * time.Hour,
 		Issuer:            "my-test-app",
 		URL:               cfg.AuthURL,
 		AvatarStore:       avatar.NewLocalFS("/tmp"),
@@ -58,6 +58,11 @@ func main() {
 	}
 
 	service := auth.NewService(options)
+	accessTokens := token.NewService(token.Opts{
+		SecretReader:  token.SecretFunc(func(_ string) (string, error) { return cfg.JWTSecret, nil }),
+		SecureCookies: secureCookies, SameSite: sameSite, Issuer: "my-test-app",
+		TokenDuration: 15 * time.Minute, CookieDuration: 30 * 24 * time.Hour,
+	})
 	service.AddCustomProvider("google", auth.Client{Cid: cfg.GoogleClientID, Csecret: cfg.GoogleClientSecret}, provider.CustomHandlerOpt{
 		Endpoint: google.Endpoint,
 		InfoURL:  "https://www.googleapis.com/oauth2/v3/userinfo",
@@ -91,9 +96,9 @@ func main() {
 	r.Use(mid.Logger)
 	r.Use(mid.Recoverer)
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:5173"},
+		AllowedOrigins:   []string{"http://localhost:5173", "http://localhost:8081"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "X-XSRF-TOKEN"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "X-XSRF-TOKEN", "X-JWT", "X-Refresh-Token"},
 		ExposedHeaders:   []string{"Link"},
 		AllowCredentials: true,
 		MaxAge:           300,
@@ -103,7 +108,7 @@ func main() {
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Malas API is running!"))
 	})
-	r.Mount("/auth", handlers.HandleAuthUser(client, m.Auth, authRoutes))
+	r.Mount("/auth", handlers.HandleAuthUser(client, m.Auth, authRoutes, accessTokens, secureCookies, sameSite))
 	r.Mount("/avatar", avatarRoutes)
 
 	// Protected Routes

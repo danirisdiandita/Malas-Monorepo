@@ -13,7 +13,12 @@ export default function TabsLayout() {
   if (isError || !user) return <Redirect href="/sign-in" />;
 
   return (
-    <NativeTabs>
+    <NativeTabs
+      backgroundColor="#FCFBF8"
+      iconColor={{ default: '#738078', selected: '#4E8B5B' }}
+      labelStyle={{ default: { fontSize: 10, color: '#738078' }, selected: { fontSize: 10, color: '#4E8B5B', fontWeight: '700' } }}
+      labelVisibilityMode="labeled"
+    >
       <NativeTabs.Trigger name="tab1">
         <NativeTabs.Trigger.Icon src={<NativeTabs.Trigger.VectorIcon family={Ionicons} name="home-outline" />} />
         <NativeTabs.Trigger.Label>Recipes</NativeTabs.Trigger.Label>

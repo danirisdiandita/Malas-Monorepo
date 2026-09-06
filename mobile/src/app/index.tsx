@@ -10,14 +10,22 @@ import { useCurrentUser } from "@/hooks/use-auth";
 
 const colors = {
   ink: "#14231A",
-  leaf: "#4E8B5B",
+  leaf: "#2F6B3E",
   sage: "#DDE8D6",
   sun: "#F8C957",
   tomato: "#E87955",
   muted: "#738078",
   line: "#D9E1D7",
 };
-const steps = [
+type OnboardingStep = {
+  eyebrow: string;
+  title: string[];
+  description: string;
+  button: string;
+  secondary?: string;
+};
+
+const steps: OnboardingStep[] = [
   {
     eyebrow: "RECIPES EVERYWHERE",
     title: ["Found a great recipe?", "Don’t lose it again."],

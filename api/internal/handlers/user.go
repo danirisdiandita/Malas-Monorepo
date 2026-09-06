@@ -5,11 +5,55 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/danirisdiandita/malas-monorepo/api/ent"
+	"github.com/danirisdiandita/malas-monorepo/api/ent/account"
+	entuser "github.com/danirisdiandita/malas-monorepo/api/ent/user"
 	appauth "github.com/danirisdiandita/malas-monorepo/api/internal/auth"
 	"github.com/go-pkgz/auth/v2/token"
 )
+
+type authResponse struct {
+	*ent.User
+	AccessToken  string `json:"access_token,omitempty"`
+	RefreshToken string `json:"refresh_token,omitempty"`
+}
+
+func HandleRefresh(client *ent.Client, jwtService *token.Service, secureCookies bool, sameSite http.SameSite) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			w.Header().Set("Allow", http.MethodPost)
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		value := appauth.RefreshTokenFromRequest(r)
+		rotated, user, err := appauth.RotateRefreshToken(r.Context(), client, value)
+		if err != nil {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+		linked, err := client.Account.Query().Where(account.HasUserWith(entuser.IDEQ(user.ID))).First(r.Context())
+		if err != nil {
+			http.Error(w, "user account is missing", http.StatusInternalServerError)
+			return
+		}
+		claims := token.Claims{User: &token.User{ID: linked.ProviderAccountID, Name: user.Name, Email: user.Email, Picture: user.Picture}, AuthProvider: &token.AuthProvider{Name: linked.Provider}}
+		// The cookie is useful for the dashboard; mobile reads the same token from JSON.
+		if _, err := jwtService.Set(w, claims); err != nil {
+			http.Error(w, "failed to issue access token", http.StatusInternalServerError)
+			return
+		}
+		http.SetCookie(w, &http.Cookie{Name: "REFRESH_TOKEN", Value: rotated, HttpOnly: true, Secure: secureCookies, SameSite: sameSite, Path: "/", MaxAge: int(appauth.RefreshTokenDuration / time.Second)})
+		access := jwtCookie(w.Header().Values("Set-Cookie"))
+		w.Header().Set("Content-Type", "application/json")
+		response := authResponse{User: user}
+		if r.Header.Get("X-Refresh-Token") != "" {
+			response.AccessToken, response.RefreshToken = access, rotated
+		}
+		_ = json.NewEncoder(w).Encode(response)
+	}
+}
 
 func HandleMe(client *ent.Client) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -32,14 +76,31 @@ func HandleMe(client *ent.Client) http.HandlerFunc {
 	}
 }
 
-func HandleAuthUser(client *ent.Client, authenticate func(http.Handler) http.Handler, next http.Handler) http.Handler {
+func HandleAuthUser(client *ent.Client, authenticate func(http.Handler) http.Handler, next http.Handler, settings ...interface{}) http.Handler {
+	jwtService := token.NewService(token.Opts{})
+	secureCookies, sameSite := false, http.SameSiteLaxMode
+	if len(settings) > 0 {
+		jwtService, _ = settings[0].(*token.Service)
+	}
+	if len(settings) > 1 {
+		secureCookies, _ = settings[1].(bool)
+	}
+	if len(settings) > 2 {
+		sameSite, _ = settings[2].(http.SameSite)
+	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "/refresh") {
+			HandleRefresh(client, jwtService, secureCookies, sameSite).ServeHTTP(w, r)
+			return
+		}
 		if strings.HasSuffix(r.URL.Path, "/callback") {
 			w = oauthCallbackWriter{ResponseWriter: w, forceGet: r.Method == http.MethodPost}
 		}
 		if !strings.HasSuffix(r.URL.Path, "/user") {
 			if strings.HasSuffix(r.URL.Path, "/logout") {
 				_ = appauth.RevokeSession(r.Context(), client, r)
+				_ = appauth.RevokeRefreshToken(r.Context(), client, appauth.RefreshTokenFromRequest(r))
+				http.SetCookie(w, &http.Cookie{Name: "REFRESH_TOKEN", MaxAge: -1, Path: "/"})
 			}
 			next.ServeHTTP(w, r)
 			return
@@ -59,8 +120,21 @@ func HandleAuthUser(client *ent.Client, authenticate func(http.Handler) http.Han
 				http.Error(w, "failed to persist session", http.StatusInternalServerError)
 				return
 			}
+			refresh := ""
+			mobile := r.Header.Get("X-JWT") != ""
+			if appauth.RefreshTokenFromRequest(r) == "" {
+				refresh, err = appauth.CreateRefreshToken(r.Context(), client, user.ID)
+				if err != nil {
+					http.Error(w, "failed to create refresh token", http.StatusInternalServerError)
+					return
+				}
+				http.SetCookie(w, &http.Cookie{Name: "REFRESH_TOKEN", Value: refresh, HttpOnly: true, Secure: secureCookies, SameSite: sameSite, Path: "/", MaxAge: int(appauth.RefreshTokenDuration / time.Second)})
+			}
 			w.Header().Set("Content-Type", "application/json")
-			_ = json.NewEncoder(w).Encode(user)
+			if !mobile {
+				refresh = ""
+			}
+			_ = json.NewEncoder(w).Encode(authResponse{User: user, RefreshToken: refresh})
 		})).ServeHTTP(w, r)
 	})
 }

@@ -146,3 +146,13 @@ http://localhost:8080/auth/apple/login
 After successful login, Apple redirects back to the frontend and the API stores the session in a cookie.
 
 Never commit `api/.env` or the Apple `.p8` private key.
+
+## Spec-Driven Plan
+
+The `./plan` folder is the spec-driven to-do list for the repository. Every item must be written in Markdown.
+
+- `./plan/idea`: planned work and ideas that have not started.
+- `./plan/ongoing`: work currently in progress.
+- `./plan/done`: completed work.
+
+Move each Markdown item to the folder that matches its current status.

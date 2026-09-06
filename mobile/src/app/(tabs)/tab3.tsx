@@ -1,5 +1,21 @@
-import { TabPlaceholder } from '@/components/tab-placeholder';
+import { Ionicons } from '@react-native-vector-icons/ionicons';
+import BottomSheet, { BottomSheetView, type BottomSheetMethods } from '@expo/ui/community/bottom-sheet';
+import { router } from 'expo-router';
+import { useRef } from 'react';
+import { Pressable, SafeAreaView, ScrollView, StyleSheet, View } from 'react-native';
 
-export default function Tab3Screen() {
-  return <TabPlaceholder title="Tab 3" />;
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
+
+const colors = { ink: '#14231A', leaf: '#2F6B3E', sage: '#DDE8D6', muted: '#738078', line: '#D9E1D7', tomato: '#E87955', sun: '#F8C957' };
+const options = [['search-outline', 'Search by ingredients'], ['logo-tiktok', 'From social'], ['image-outline', 'Photo · screenshot or saved photo'], ['camera-outline', 'Photo of a dish'], ['sparkles-outline', 'Ask AI for a recipe'], ['document-text-outline', 'Paste a recipe · from text'], ['chatbubble-ellipses-outline', 'Chat with AI']];
+
+export default function AddTabScreen() {
+  const sheetRef = useRef<BottomSheetMethods>(null);
+  const openAddRecipe = () => sheetRef.current?.present();
+  const chooseOption = () => { sheetRef.current?.close(); router.push('/add-recipe'); };
+
+  return <ThemedView style={styles.screen}><SafeAreaView style={styles.safeArea}><ScrollView contentContainerStyle={styles.content}><View style={styles.header}><ThemedText style={styles.eyebrow}>CREATE SOMETHING</ThemedText><ThemedText style={styles.title}>Add a recipe</ThemedText></View><Pressable style={styles.addCard} onPress={openAddRecipe}><View style={styles.addCircle}><Ionicons name="add" size={28} color="#fff" /></View><ThemedText style={styles.addTitle}>Save a new recipe</ThemedText><ThemedText style={styles.addBody}>Import from a link, photo, or your own notes.</ThemedText></Pressable></ScrollView></SafeAreaView><BottomSheet ref={sheetRef} index={-1} snapPoints={['70%']} enablePanDownToClose backgroundStyle={styles.sheet}><BottomSheetView style={styles.sheetContent}><ThemedText style={styles.sheetTitle}>How would you like to add it?</ThemedText><ThemedText style={styles.sheetBody}>Choose a quick way to start your next recipe.</ThemedText>{options.map(([icon, label]) => <Pressable key={label} style={styles.option} onPress={chooseOption}><View style={styles.optionIcon}><Ionicons name={icon as never} size={18} color={colors.leaf} /></View><ThemedText style={styles.optionLabel}>{label}</ThemedText><Ionicons name="chevron-forward" size={16} color={colors.muted} /></Pressable>)}<Pressable style={styles.manual} onPress={chooseOption}><Ionicons name="create-outline" size={17} color={colors.leaf} /><ThemedText style={styles.manualLabel}>Add manually</ThemedText></Pressable></BottomSheetView></BottomSheet></ThemedView>;
 }
+
+const styles = StyleSheet.create({ screen: { flex: 1, backgroundColor: '#FCFBF8' }, safeArea: { flex: 1 }, content: { padding: 20, gap: 18 }, header: { gap: 4 }, eyebrow: { color: colors.leaf, fontSize: 10, fontWeight: '900', letterSpacing: 1.1 }, title: { color: colors.ink, fontSize: 28, fontWeight: '800' }, addCard: { minHeight: 190, borderRadius: 22, backgroundColor: colors.sage, alignItems: 'center', justifyContent: 'center', padding: 22 }, addCircle: { width: 58, height: 58, borderRadius: 29, backgroundColor: colors.tomato, alignItems: 'center', justifyContent: 'center', marginBottom: 13 }, addTitle: { color: colors.ink, fontSize: 19, fontWeight: '800' }, addBody: { color: colors.muted, fontSize: 14, textAlign: 'center', marginTop: 6 }, sheet: { backgroundColor: '#FCFBF8', borderTopLeftRadius: 24, borderTopRightRadius: 24 }, sheetContent: { padding: 20, gap: 10 }, sheetTitle: { color: colors.ink, fontSize: 22, fontWeight: '800' }, sheetBody: { color: colors.muted, fontSize: 14, marginBottom: 5 }, option: { minHeight: 47, borderRadius: 13, backgroundColor: '#fff', borderWidth: 1, borderColor: colors.line, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 10 }, optionIcon: { width: 28, height: 28, borderRadius: 9, backgroundColor: colors.sage, alignItems: 'center', justifyContent: 'center' }, optionLabel: { color: colors.ink, fontSize: 13, fontWeight: '700', flex: 1 }, manual: { minHeight: 47, borderRadius: 13, backgroundColor: colors.sage, flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center', marginTop: 2 }, manualLabel: { color: colors.leaf, fontSize: 13, fontWeight: '800' } });
