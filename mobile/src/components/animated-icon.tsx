@@ -33,7 +33,7 @@ export function AnimatedSplashOverlay() {
     },
   });
 
-  const image = <Image style={styles.image} source={require('@/assets/images/expo-logo.png')} />;
+  const image = <Image style={styles.image} source={require('@/assets/images/yuzu-logo-transparent.png')} />;
 
   return animate ? (
     <Animated.View
@@ -103,8 +103,8 @@ export function AnimatedIcon() {
       </Animated.View>
 
       <Animated.View entering={keyframe.duration(DURATION)} style={styles.background} />
-      <Animated.View style={styles.imageContainer} entering={logoKeyframe.duration(DURATION)}>
-        <Image style={styles.image} source={require('@/assets/images/expo-logo.png')} />
+    <Animated.View style={styles.imageContainer} entering={logoKeyframe.duration(DURATION)}>
+        <Image style={styles.image} source={require('@/assets/images/yuzu-logo-transparent.png')} />
       </Animated.View>
     </View>
   );
@@ -128,19 +128,19 @@ const styles = StyleSheet.create({
     zIndex: 100,
   },
   image: {
-    width: 76,
-    height: 71,
+    width: 180,
+    height: 180,
   },
   background: {
     borderRadius: 40,
-    experimental_backgroundImage: `linear-gradient(180deg, #3C9FFE, #0274DF)`,
+    backgroundColor: '#174B3F',
     width: 128,
     height: 128,
     position: 'absolute',
   },
   splashOverlay: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: '#208AEF',
+    backgroundColor: '#174B3F',
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 1000,
