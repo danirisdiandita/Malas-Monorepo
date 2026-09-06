@@ -8,6 +8,7 @@ The main table/entity is named `recipes`.
 | --- | --- | --- | --- |
 | `id` | identifier | yes | Recipe identifier. |
 | `user_id` | identifier | yes | Foreign key to `users.id`; the recipe owner. |
+| `folder_id` | identifier or null | no | Optional foreign key to `folders.id`; `null` means the recipe is not organized into a folder. |
 | `name` | string | yes | Recipe name. |
 | `servings` | integer | yes | Number of servings. Must be greater than zero. |
 | `process_minutes` | integer | yes | Total recipe process time in minutes. |
@@ -116,3 +117,18 @@ and modify their own recipes and groceries.
 
 The grocery list should display `is_purchased` as a checkbox. Purchased items
 can remain in the list as completed items, for example with a strikethrough.
+
+## `folders` table
+
+Folders organize a user's recipes. A recipe can belong to zero or one folder.
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `id` | identifier | yes | Folder identifier. |
+| `user_id` | identifier | yes | Foreign key to `users.id`; the folder owner. |
+| `name` | string | yes | Folder name. |
+
+```text
+users 1 ──── many folders
+folders 1 ──── many recipes
+```
