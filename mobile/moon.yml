@@ -3,7 +3,7 @@ language: "javascript"
 
 tasks:
   dev:
-    command: "./node_modules/.bin/expo start --android"
+    command: "./node_modules/.bin/expo run:android"
     options:
       persistent: true
 
