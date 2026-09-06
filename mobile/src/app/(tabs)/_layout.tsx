@@ -18,7 +18,8 @@ export default function TabsLayout() {
     }
   }, [isPending, isError, user]);
 
-  if (isPending || isError || !user) return <ActivityIndicator accessibilityLabel="Checking sign-in" />;
+  if (isPending) return <ActivityIndicator accessibilityLabel="Checking sign-in" />;
+  if (isError || !user) return null;
 
   return (
     <NativeTabs

@@ -12,6 +12,7 @@ import (
 	entuser "github.com/danirisdiandita/malas-monorepo/api/ent/user"
 	appauth "github.com/danirisdiandita/malas-monorepo/api/internal/auth"
 	"github.com/go-pkgz/auth/v2/token"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 type authResponse struct {
@@ -38,7 +39,11 @@ func HandleRefresh(client *ent.Client, jwtService *token.Service, secureCookies 
 			http.Error(w, "user account is missing", http.StatusInternalServerError)
 			return
 		}
-		claims := token.Claims{User: &token.User{ID: linked.ProviderAccountID, Name: user.Name, Email: user.Email, Picture: user.Picture}, AuthProvider: &token.AuthProvider{Name: linked.Provider}}
+		claims := token.Claims{
+			RegisteredClaims: jwt.RegisteredClaims{Audience: []string{"my-test-app"}},
+			User:             &token.User{ID: linked.ProviderAccountID, Name: user.Name, Email: user.Email, Picture: user.Picture},
+			AuthProvider:     &token.AuthProvider{Name: linked.Provider},
+		}
 		// The cookie is useful for the dashboard; mobile reads the same token from JSON.
 		if _, err := jwtService.Set(w, claims); err != nil {
 			http.Error(w, "failed to issue access token", http.StatusInternalServerError)

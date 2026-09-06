@@ -90,6 +90,8 @@ async function loadCurrentUser(): Promise<User> {
             headers: { 'X-JWT': session.access_token, 'X-Refresh-Token': session.refresh_token },
           });
         }
+      } else {
+        await signOut();
       }
     }
   }
