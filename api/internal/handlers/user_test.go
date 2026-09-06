@@ -59,3 +59,18 @@ func TestAppleCallbackRedirect(t *testing.T) {
 		t.Fatalf("redirect failed: %d %s", resp.StatusCode, resp.Request.URL)
 	}
 }
+
+func TestOAuthCallbackWriterPassesTokenToMobile(t *testing.T) {
+	w := httptest.NewRecorder()
+	w.Header().Set("Set-Cookie", "JWT=signed-token; Path=/; HttpOnly")
+	w.Header().Set("Location", "mobile://auth/callback")
+
+	oauthCallbackWriter{ResponseWriter: w}.WriteHeader(http.StatusFound)
+
+	if got := w.Header().Get("Location"); got != "mobile://auth/callback?token=signed-token" {
+		t.Fatalf("unexpected mobile redirect: %s", got)
+	}
+	if w.Code != http.StatusFound {
+		t.Fatalf("unexpected status: %d", w.Code)
+	}
+}

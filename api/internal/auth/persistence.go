@@ -98,11 +98,11 @@ func updateUser(ctx context.Context, tx *ent.Tx, local *ent.User, providerUser t
 }
 
 func PersistSession(ctx context.Context, client *ent.Client, userID int, r *http.Request) error {
-	raw, err := r.Cookie("JWT")
-	if err != nil || raw.Value == "" {
-		return fmt.Errorf("auth session cookie is missing")
+	token, err := requestToken(r)
+	if err != nil {
+		return fmt.Errorf("auth token is missing")
 	}
-	hash := fmt.Sprintf("%x", sha256.Sum256([]byte(raw.Value)))
+	hash := fmt.Sprintf("%x", sha256.Sum256([]byte(token)))
 	existing, err := client.Session.Query().Where(session.TokenHash(hash)).Only(ctx)
 	if err == nil {
 		_, err = existing.Update().SetLastSeenAt(time.Now()).ClearRevokedAt().Save(ctx)
@@ -122,11 +122,11 @@ func PersistSession(ctx context.Context, client *ent.Client, userID int, r *http
 }
 
 func RevokeSession(ctx context.Context, client *ent.Client, r *http.Request) error {
-	raw, err := r.Cookie("JWT")
-	if err != nil || raw.Value == "" {
+	token, err := requestToken(r)
+	if err != nil {
 		return nil
 	}
-	hash := fmt.Sprintf("%x", sha256.Sum256([]byte(raw.Value)))
+	hash := fmt.Sprintf("%x", sha256.Sum256([]byte(token)))
 	now := time.Now()
 	_, err = client.Session.Query().Where(session.TokenHash(hash)).Only(ctx)
 	if ent.IsNotFound(err) {
@@ -141,12 +141,12 @@ func RevokeSession(ctx context.Context, client *ent.Client, r *http.Request) err
 func RequireSession(client *ent.Client) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			raw, err := r.Cookie("JWT")
-			if err != nil || raw.Value == "" {
+			token, err := requestToken(r)
+			if err != nil {
 				http.Error(w, "unauthorized", http.StatusUnauthorized)
 				return
 			}
-			hash := fmt.Sprintf("%x", sha256.Sum256([]byte(raw.Value)))
+			hash := fmt.Sprintf("%x", sha256.Sum256([]byte(token)))
 			_, err = client.Session.Query().Where(
 				session.TokenHash(hash),
 				session.RevokedAtIsNil(),
@@ -159,4 +159,15 @@ func RequireSession(client *ent.Client) func(http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 		})
 	}
+}
+
+func requestToken(r *http.Request) (string, error) {
+	if token := r.Header.Get("X-JWT"); token != "" {
+		return token, nil
+	}
+	cookie, err := r.Cookie("JWT")
+	if err != nil || cookie.Value == "" {
+		return "", fmt.Errorf("auth token is missing")
+	}
+	return cookie.Value, nil
 }
