@@ -1,1 +1,2 @@
-signal: interrupt
+2026/09/06 08:31:28 listen tcp :8080: bind: address already in use
+exit status 1

@@ -1,0 +1,9 @@
+$schema: "https://moonrepo.dev/schemas/project.json"
+language: "javascript"
+
+tasks:
+  dev:
+    command: "./node_modules/.bin/expo run:android"
+
+  android:
+    command: "./node_modules/.bin/expo run:android"
