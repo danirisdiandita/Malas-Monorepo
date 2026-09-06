@@ -49,12 +49,6 @@ export default function Tab1Screen() {
               </View>
             </View>
           </View>
-          <View style={styles.search}>
-            <Ionicons name="search-outline" size={17} color={colors.muted} />
-            <ThemedText style={styles.searchText}>
-              Search saved recipes
-            </ThemedText>
-          </View>
           <View style={styles.banner}>
             <View style={styles.bannerTop}>
               <ThemedText style={styles.bannerEyebrow}>YUZU PRO</ThemedText>
@@ -77,6 +71,12 @@ export default function Tab1Screen() {
                 </ThemedText>
               </Pressable>
             </View>
+          </View>
+          <View style={styles.search}>
+            <Ionicons name="search-outline" size={17} color={colors.muted} />
+            <ThemedText style={styles.searchText}>
+              Search saved recipes
+            </ThemedText>
           </View>
           <View style={styles.sectionHeader}>
             <ThemedText style={styles.sectionTitle}>Your Recipes</ThemedText>
