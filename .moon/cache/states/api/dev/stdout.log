@@ -1,5 +1,0 @@
-Server starting on port 8080...
-2026/09/06 09:10:55 "GET http://localhost:8080/auth/user HTTP/1.1" from [::1]:49296 - 200 280B in 8.026831ms
-2026/09/06 09:10:55 "GET http://localhost:8080/auth/user HTTP/1.1" from [::1]:49296 - 200 280B in 2.250036ms
-2026/09/06 09:10:55 "GET http://localhost:8080/me HTTP/1.1" from [::1]:49300 - 200 280B in 4.896941ms
-2026/09/06 09:10:55 "GET http://localhost:8080/auth/user HTTP/1.1" from [::1]:49296 - 200 280B in 2.493762ms

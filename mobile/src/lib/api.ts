@@ -17,11 +17,16 @@ const tokenKey = 'malas.jwt';
 const apiUrl =
   process.env.EXPO_PUBLIC_API_URL ??
   (Platform.OS === 'android' ? 'http://10.0.2.2:8080' : 'http://localhost:8080');
+const authUrl = process.env.EXPO_PUBLIC_AUTH_URL ?? apiUrl;
+
+export async function storeToken(token: string) {
+  await SecureStore.setItemAsync(tokenKey, token);
+}
 
 export async function signIn(provider: AuthProvider): Promise<User> {
   const redirectUri = Linking.createURL('auth/callback');
   const result = await WebBrowser.openAuthSessionAsync(
-    `${apiUrl}/auth/${provider}/login?from=${encodeURIComponent(redirectUri)}`,
+    `${authUrl}/auth/${provider}/login?from=${encodeURIComponent(redirectUri)}`,
     redirectUri,
   );
 
@@ -34,7 +39,7 @@ export async function signIn(provider: AuthProvider): Promise<User> {
     throw new Error('The API did not return an authentication token.');
   }
 
-  await SecureStore.setItemAsync(tokenKey, token);
+  await storeToken(token);
   return getCurrentUser();
 }
 
