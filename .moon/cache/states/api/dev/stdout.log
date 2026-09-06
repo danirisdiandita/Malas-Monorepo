@@ -1,8 +1,12 @@
 Server starting on port 8080...
-2026/09/04 21:06:28 "GET http://localhost:8080/auth/user HTTP/1.1" from [::1]:35642 - 401 13B in 29.53µs
-2026/09/04 21:06:28 "GET http://localhost:8080/auth/user HTTP/1.1" from [::1]:35642 - 401 13B in 13.033µs
-2026/09/04 21:06:28 "GET http://localhost:8080/auth/user HTTP/1.1" from [::1]:35656 - 401 13B in 25.818µs
-2026/09/04 21:24:35 "OPTIONS http://localhost:8080/auth/user HTTP/1.1" from [::1]:34788 - 200 0B in 11.457µs
-2026/09/04 21:24:35 "OPTIONS http://localhost:8080/auth/user HTTP/1.1" from [::1]:34796 - 200 0B in 10.521µs
-2026/09/04 21:24:35 "GET http://localhost:8080/auth/user HTTP/1.1" from [::1]:34802 - 401 13B in 107.485µs
-2026/09/04 21:24:35 "GET http://localhost:8080/auth/user HTTP/1.1" from [::1]:34812 - 401 13B in 28.826µs
+2026/09/06 08:23:10 "GET http://streaming-server.danirisdiandita.com/auth/user HTTP/1.1" from 127.0.0.1:44034 - 401 13B in 171.99µs
+2026/09/06 08:23:10 "GET http://streaming-server.danirisdiandita.com/auth/user HTTP/1.1" from 127.0.0.1:44034 - 401 13B in 67.201µs
+2026/09/06 08:23:11 "GET http://streaming-server.danirisdiandita.com/auth/user HTTP/1.1" from 127.0.0.1:44034 - 401 13B in 96.286µs
+2026/09/06 08:23:12 "GET http://streaming-server.danirisdiandita.com/auth/google/login?from=http%3A%2F%2Flocalhost%3A5173%2Fdashboard HTTP/1.1" from 127.0.0.1:44034 - 302 326B in 303.702µs
+2026/09/06 08:23:12 "GET http://localhost:8080/auth/google/callback?state=e5fb3890e8ff8ded7702ee3516fe7322a874f42b&iss=https%3A%2F%2Faccounts.google.com&code=4%2F0ATsMZqDKWlnXhh8k5gybdh2mWK169X-TOAPMCqs5VIUyyyQLGLT7dGEOA06NOcmvI2w55A&scope=email+profile+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.profile+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email+openid&authuser=0&prompt=none HTTP/1.1" from [::1]:42672 - 403 29B in 402.344µs
+2026/09/06 08:23:12 "GET http://localhost:8080/favicon.ico HTTP/1.1" from [::1]:42672 - 404 19B in 10.409µs
+2026/09/06 08:23:18 "GET http://streaming-server.danirisdiandita.com/auth/user HTTP/1.1" from 127.0.0.1:44034 - 401 13B in 21.303µs
+2026/09/06 08:23:18 "GET http://streaming-server.danirisdiandita.com/auth/user HTTP/1.1" from 127.0.0.1:44034 - 401 13B in 20.772µs
+2026/09/06 08:23:20 "GET http://streaming-server.danirisdiandita.com/auth/user HTTP/1.1" from 127.0.0.1:44034 - 401 13B in 31.487µs
+2026/09/06 08:23:21 "GET http://streaming-server.danirisdiandita.com/auth/google/login?from=http%3A%2F%2Flocalhost%3A5173%2Fdashboard HTTP/1.1" from 127.0.0.1:44034 - 302 326B in 220.518µs
+2026/09/06 08:23:21 "GET http://localhost:8080/auth/google/callback?state=eb6306b328101e33ac2865437750b99c3550ef09&iss=https%3A%2F%2Faccounts.google.com&code=4%2F0ATsMZqDtnUhAT6Jax7x3TstXJ140aTqRxnZqvmflAK21wf_OXYNfdDJS9uKO28wZwke_4Q&scope=email+profile+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.profile+openid&authuser=0&prompt=none HTTP/1.1" from [::1]:42672 - 403 29B in 187.134µs

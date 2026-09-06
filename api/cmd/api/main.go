@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 
 	"time"
 
@@ -25,6 +26,11 @@ import (
 func main() {
 	// Load centralized configuration
 	cfg := config.LoadConfig()
+	secureCookies := strings.HasPrefix(cfg.AuthURL, "https://")
+	sameSite := http.SameSiteLaxMode
+	if secureCookies {
+		sameSite = http.SameSiteNoneMode
+	}
 
 	// Initialize Ent client
 	client, err := db.NewClient(cfg.DatabaseURL)
@@ -38,11 +44,14 @@ func main() {
 		SecretReader: token.SecretFunc(func(_ string) (string, error) {
 			return cfg.JWTSecret, nil
 		}),
-		TokenDuration:  time.Minute * 5, // token expires in 5 minutes
-		CookieDuration: time.Hour * 24,  // cookie expires in 1 day and will enforce re-login
-		Issuer:         "my-test-app",
-		URL:            cfg.AuthURL,
-		AvatarStore:    avatar.NewLocalFS("/tmp"),
+		SecureCookies:     secureCookies,
+		SameSiteCookie:    sameSite,
+		XSRFIgnoreMethods: []string{"GET"},
+		TokenDuration:     time.Minute * 5, // token expires in 5 minutes
+		CookieDuration:    time.Hour * 24,  // cookie expires in 1 day and will enforce re-login
+		Issuer:            "my-test-app",
+		URL:               cfg.AuthURL,
+		AvatarStore:       avatar.NewLocalFS("/tmp"),
 		Validator: token.ValidatorFunc(func(_ string, claims token.Claims) bool {
 			return claims.User != nil && claims.User.ID != ""
 		}),

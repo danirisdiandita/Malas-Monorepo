@@ -33,6 +33,9 @@ func HandleMe(client *ent.Client) http.HandlerFunc {
 
 func HandleAuthUser(client *ent.Client, authenticate func(http.Handler) http.Handler, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost && r.URL.Path == "/auth/apple/callback" {
+			w = appleCallbackWriter{w}
+		}
 		if !strings.HasSuffix(r.URL.Path, "/user") {
 			if strings.HasSuffix(r.URL.Path, "/logout") {
 				_ = appauth.RevokeSession(r.Context(), client, r)
@@ -59,4 +62,14 @@ func HandleAuthUser(client *ent.Client, authenticate func(http.Handler) http.Han
 			_ = json.NewEncoder(w).Encode(user)
 		})).ServeHTTP(w, r)
 	})
+}
+
+type appleCallbackWriter struct{ http.ResponseWriter }
+
+func (w appleCallbackWriter) WriteHeader(status int) {
+	// go-pkgz/auth v2.1.1 uses 307, which forwards Apple's POST to the frontend.
+	if status == http.StatusTemporaryRedirect {
+		status = http.StatusSeeOther
+	}
+	w.ResponseWriter.WriteHeader(status)
 }
