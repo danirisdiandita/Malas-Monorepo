@@ -31,6 +31,7 @@ Read the exact versioned Expo docs at https://docs.expo.dev/versions/v57.0.0/ be
 - Always keep reusable components under `src/components`.
 - Follow `mobile/DESIGN.md` for visual and interaction decisions when that file exists.
 - Use platform-specific files such as `.native.tsx` or `.web.tsx` only when the behavior genuinely differs.
+- Do not use React Native's deprecated `SafeAreaView`; use `SafeAreaView` from `react-native-safe-area-context` instead.
 
 ## Verification
 

@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { Pressable, StyleSheet } from 'react-native';
+import { Alert, Pressable, StyleSheet } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { ThemedText } from '@/components/themed-text';
@@ -11,9 +11,15 @@ export default function ProfileScreen() {
   const queryClient = useQueryClient();
 
   const handleSignOut = async () => {
-    await signOut();
-    queryClient.clear();
-    router.replace('/');
+    try {
+      await signOut();
+      await queryClient.cancelQueries();
+      queryClient.clear();
+      queryClient.setQueryData(['auth', 'user'], null);
+      router.replace('/sign-in');
+    } catch {
+      Alert.alert('Sign out failed', 'Please try again.');
+    }
   };
 
   return (

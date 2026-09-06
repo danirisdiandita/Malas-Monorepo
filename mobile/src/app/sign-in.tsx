@@ -5,39 +5,24 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AuthProviderButton } from '@/components/auth-provider-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+
+const colors = { ink: '#14231A', leaf: '#4E8B5B', sage: '#DDE8D6', muted: '#738078' };
 
 export default function SignInScreen() {
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <Pressable onPress={() => router.back()}>
-          <ThemedText themeColor="textSecondary">‹ Back</ThemedText>
-        </Pressable>
-        <View style={styles.content}>
-          <ThemedText type="subtitle" style={styles.title}>Welcome back</ThemedText>
-          <ThemedText themeColor="textSecondary" style={styles.description}>
-            Sign in to continue to your workspace.
-          </ThemedText>
-          <View style={styles.providers}>
-            <AuthProviderButton provider="google" />
-            <AuthProviderButton provider="apple" />
-          </View>
-          <ThemedText themeColor="textSecondary" type="small" style={styles.terms}>
-            By continuing, you agree to the Terms of Service and Privacy Policy.
-          </ThemedText>
-        </View>
-      </SafeAreaView>
-    </ThemedView>
+    <ThemedView style={styles.screen}><SafeAreaView style={styles.safeArea}>
+      <Pressable onPress={() => router.replace('/')} hitSlop={12}><ThemedText style={styles.back}>‹ Back to onboarding</ThemedText></Pressable>
+      <View style={styles.content}>
+        <ThemedText style={styles.brand}>YUZU</ThemedText><ThemedText style={styles.title}>Keep your kitchen in sync.</ThemedText>
+        <ThemedText style={styles.description}>Sign in to keep every saved recipe, grocery list, and meal plan safe on every device.</ThemedText>
+        <View style={styles.syncCard}><ThemedText style={styles.syncIcon}>ↄ</ThemedText><ThemedText style={styles.syncCaption}>RECIPES · LISTS · PLANS</ThemedText></View>
+      </View>
+      <View style={styles.authArea}><ThemedText style={styles.continueLabel}>Continue with</ThemedText><View style={styles.providers}><AuthProviderButton provider="google" /><AuthProviderButton provider="apple" /></View></View>
+      <View style={styles.footer}><ThemedText style={styles.terms}>By continuing, you agree to our Terms and Privacy Policy.</ThemedText><Pressable onPress={() => router.replace('/tab1')}><ThemedText style={styles.skip}>Not now</ThemedText></Pressable></View>
+    </SafeAreaView></ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  safeArea: { flex: 1, padding: Spacing.four },
-  content: { flex: 1, justifyContent: 'center', gap: Spacing.two },
-  title: { textAlign: 'center' },
-  description: { textAlign: 'center', marginBottom: Spacing.three },
-  providers: { gap: Spacing.two },
-  terms: { textAlign: 'center', marginTop: Spacing.three },
+  screen: { flex: 1, backgroundColor: '#FCFBF8' }, safeArea: { flex: 1, paddingHorizontal: 20, paddingTop: 12, paddingBottom: 18 }, back: { color: colors.muted, fontSize: 15 }, content: { flex: 1, alignItems: 'center', paddingTop: 36 }, brand: { color: colors.leaf, fontSize: 17, fontWeight: '900', letterSpacing: 3, marginBottom: 18 }, title: { color: colors.ink, fontSize: 33, lineHeight: 35, fontWeight: '800', textAlign: 'center', letterSpacing: -0.7 }, description: { color: colors.muted, fontSize: 14, lineHeight: 20, textAlign: 'center', maxWidth: 330, marginTop: 14 }, syncCard: { width: 220, height: 160, borderRadius: 26, backgroundColor: colors.sage, alignItems: 'center', justifyContent: 'center', marginTop: 18, marginBottom: 18 }, syncIcon: { color: colors.leaf, fontSize: 64, lineHeight: 70, fontWeight: '700' }, syncCaption: { color: colors.leaf, fontSize: 9, fontWeight: '800', letterSpacing: 1 }, authArea: { width: '100%', paddingTop: 12 }, continueLabel: { color: colors.muted, fontSize: 12, fontWeight: '700', marginBottom: 10, textAlign: 'center' }, providers: { width: '100%', gap: 10 }, footer: { alignItems: 'center', gap: 12, paddingTop: 12 }, terms: { color: colors.muted, fontSize: 10, textAlign: 'center' }, skip: { color: colors.leaf, fontSize: 12, fontWeight: '800' },
 });

@@ -1,5 +1,6 @@
 import { Alert, Pressable, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 
 import { ThemedText } from '@/components/themed-text';
 import { useSignIn } from '@/hooks/use-auth';
@@ -20,19 +21,20 @@ export function AuthProviderButton({ provider }: AuthProviderButtonProps) {
   return (
     <Pressable
       disabled={signIn.isPending}
-      style={({ pressed }) => [styles.button, pressed && styles.pressed, signIn.isPending && styles.disabled]}
+      style={({ pressed }) => [styles.button, provider === 'apple' && styles.appleButton, pressed && styles.pressed, signIn.isPending && styles.disabled]}
       onPress={handlePress}
     >
-      <ThemedText style={styles.icon}>{provider === 'google' ? 'G' : ''}</ThemedText>
-      <ThemedText style={styles.label}>Continue with {provider === 'google' ? 'Google' : 'Apple'}</ThemedText>
+      <Ionicons name={provider === 'google' ? 'logo-google' : 'logo-apple'} size={20} color={provider === 'google' ? '#4285F4' : '#FFFFFF'} />
+      <ThemedText style={[styles.label, provider === 'apple' && styles.appleLabel]}>Continue with {provider === 'google' ? 'Google' : 'Apple'}</ThemedText>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  button: { minHeight: 56, borderRadius: 16, borderWidth: StyleSheet.hairlineWidth, borderColor: '#8E8E93', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12 },
+  button: { minHeight: 54, borderRadius: 16, borderWidth: StyleSheet.hairlineWidth, borderColor: '#D9E1D7', backgroundColor: '#FFFFFF', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12 },
+  appleButton: { backgroundColor: '#14231A', borderColor: '#14231A' },
   pressed: { opacity: 0.7 },
   disabled: { opacity: 0.5 },
-  icon: { fontSize: 20, fontWeight: '700' },
-  label: { fontWeight: '600' },
+  label: { color: '#14231A', fontSize: 14, fontWeight: '800' },
+  appleLabel: { color: '#FFFFFF' },
 });
