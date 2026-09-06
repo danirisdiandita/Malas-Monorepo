@@ -1,5 +1,5 @@
 import { Redirect } from 'expo-router';
 
 export default function ExploreRedirect() {
-  return <Redirect href="/tab1" />;
+  return <Redirect href="/recipes" />;
 }

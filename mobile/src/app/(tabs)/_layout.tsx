@@ -5,7 +5,7 @@ import { ActivityIndicator } from 'react-native';
 import { useEffect, useRef } from 'react';
 import { useCurrentUser } from '@/hooks/use-auth';
 
-export const unstable_settings = { initialRouteName: 'tab1' };
+export const unstable_settings = { initialRouteName: 'recipes' };
 
 export default function TabsLayout() {
   const { data: user, isPending, isError } = useCurrentUser();
@@ -27,19 +27,19 @@ export default function TabsLayout() {
       labelStyle={{ default: { fontSize: 11, color: '#738078' }, selected: { fontSize: 11, color: '#4E8B5B', fontWeight: '700' } }}
       labelVisibilityMode="labeled"
     >
-      <NativeTabs.Trigger name="tab1">
+      <NativeTabs.Trigger name="recipes">
         <NativeTabs.Trigger.Icon src={<NativeTabs.Trigger.VectorIcon family={Ionicons} name="home-outline" />} />
         <NativeTabs.Trigger.Label>Recipes</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="tab2">
+      <NativeTabs.Trigger name="groceries">
         <NativeTabs.Trigger.Icon src={<NativeTabs.Trigger.VectorIcon family={Ionicons} name="bag-handle-outline" />} />
         <NativeTabs.Trigger.Label>Groceries</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="tab3">
+      <NativeTabs.Trigger name="add">
         <NativeTabs.Trigger.Icon src={<NativeTabs.Trigger.VectorIcon family={Ionicons} name="add-circle-outline" />} />
         <NativeTabs.Trigger.Label>Add</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="tab4">
+      <NativeTabs.Trigger name="planner">
         <NativeTabs.Trigger.Icon src={<NativeTabs.Trigger.VectorIcon family={Ionicons} name="calendar-outline" />} />
         <NativeTabs.Trigger.Label>Planner</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>

@@ -14,7 +14,7 @@ export default function SignInScreen() {
   const { data: user } = useCurrentUser();
 
   useEffect(() => {
-    if (user) router.replace('/tab1');
+    if (user) router.replace('/recipes');
   }, [user]);
 
   return (
@@ -26,7 +26,7 @@ export default function SignInScreen() {
         <View style={styles.syncCard}><ThemedText style={styles.syncIcon}>ↄ</ThemedText><ThemedText style={styles.syncCaption}>RECIPES · LISTS · PLANS</ThemedText></View>
       </View>
       <View style={styles.authArea}><ThemedText style={styles.continueLabel}>Continue with</ThemedText><View style={styles.providers}><AuthProviderButton provider="google" /><AuthProviderButton provider="apple" /></View></View>
-      <View style={styles.footer}><ThemedText style={styles.terms}>By continuing, you agree to our Terms and Privacy Policy.</ThemedText><Pressable onPress={() => router.replace('/tab1')}><ThemedText style={styles.skip}>Not now</ThemedText></Pressable></View>
+      <View style={styles.footer}><ThemedText style={styles.terms}>By continuing, you agree to our Terms and Privacy Policy.</ThemedText><Pressable onPress={() => router.replace('/recipes')}><ThemedText style={styles.skip}>Not now</ThemedText></Pressable></View>
     </SafeAreaView></ThemedView>
   );
 }

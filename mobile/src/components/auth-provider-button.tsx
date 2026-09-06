@@ -13,7 +13,7 @@ export function AuthProviderButton({ provider }: AuthProviderButtonProps) {
 
   const handlePress = () => {
     signIn.mutate(provider, {
-      onSuccess: () => router.replace('/tab1'),
+      onSuccess: () => router.replace('/recipes'),
       onError: (error) => Alert.alert('Sign in failed', error.message),
     });
   };

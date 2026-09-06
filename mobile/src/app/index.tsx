@@ -82,7 +82,7 @@ export default function OnboardingScreen() {
   const [step, setStep] = useState(0);
   const current = steps[step];
   useEffect(() => {
-    if (user) router.replace("/tab1");
+    if (user) router.replace("/recipes");
   }, [user]);
 
   const next = () =>
