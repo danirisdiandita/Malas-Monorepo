@@ -1,0 +1,13 @@
+{
+  "video_urls": [
+    {
+      "url": "https://www.tiktok.com/@elysia.studytalk/photo/7643480136053968150"
+    },
+    {
+      "url": "https://www.tiktok.com/@mrbeast/video/7476529277253635374"
+    }
+  ],
+  "desired_resolution": "720p",
+  "include_watermark": true,
+  "saveToKeyValueStore": true
+}

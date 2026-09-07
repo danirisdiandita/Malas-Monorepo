@@ -19,6 +19,7 @@ The main table/entity is named `recipes`.
 | `notes` | string or null | no | Personal notes or extra recipe information. |
 | `image_s3_key` | string or null | no | S3 object key for the recipe image. Store the key, not a permanent URL. |
 | `url` | string or null | no | Original recipe or source URL. |
+| `source` | string or null | no | Source platform such as `tiktok`, `instagram`, `youtube`, `website`, or `manual`. |
 
 ## Ingredient structure
 
