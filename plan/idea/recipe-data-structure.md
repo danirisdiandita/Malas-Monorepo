@@ -84,23 +84,20 @@ pantry matching.
 
 ## `groceries` table
 
-The `groceries` table stores ingredients for shopping. A grocery item may be
-standalone or optionally linked to a recipe through `recipe_id`.
+The `groceries` table stores ingredients for shopping.
 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
 | `id` | identifier | yes | Grocery item identifier. |
 | `user_id` | identifier | yes | Foreign key to `users.id`; the grocery item owner. |
-| `ingredient_name` | string | yes | Name of the ingredient. |
-| `quantity` | number or null | no | Amount to buy. |
-| `unit` | string | yes | Normalized unit such as `cup`, `tbsp`, `unit`, `clove`, or `lb`. |
-| `is_purchased` | boolean | yes | Checklist state. Defaults to `false` and becomes `true` after purchase. |
-| `recipe_id` | identifier or null | no | Optional foreign key to `recipes.id`. `null` means the item is standalone. |
+| `name` | string | yes | Name of the grocery item. |
+| `unit` | string | yes | Unit such as `kg`, `g`, `liter`, `pack`, or `unit`. |
+| `tag` | string or null | no | Category: `Produce`, `Pantry & dairy`, or `null`. |
 
 ### Relationship
 
 ```text
-recipes 1 ──── many groceries
+users 1 ──── many groceries
 ```
 
 Both tables belong to a user:
@@ -110,14 +107,8 @@ users 1 ──── many recipes
 users 1 ──── many groceries
 ```
 
-Deleting a recipe should not delete standalone grocery items. Recipe-linked
-items may be deleted or detached when the recipe is removed.
-
 Every query must filter by the authenticated `user_id` so users can only read
 and modify their own recipes and groceries.
-
-The grocery list should display `is_purchased` as a checkbox. Purchased items
-can remain in the list as completed items, for example with a strikethrough.
 
 ## `folders` table
 
