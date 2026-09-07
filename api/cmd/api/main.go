@@ -110,6 +110,7 @@ func main() {
 	})
 	r.Mount("/auth", handlers.HandleAuthUser(client, m.Auth, authRoutes, accessTokens, secureCookies, sameSite))
 	r.Mount("/avatar", avatarRoutes)
+	r.Post("/webhooks/debug", handlers.HandleDebugWebhook(cfg.WebhookDebugDir))
 
 	// Protected Routes
 	r.Group(func(r chi.Router) {

@@ -4,28 +4,28 @@ Implement and test each source one content type at a time.
 
 ## 1. Facebook
 
-- [ ] Facebook video
-- [ ] Facebook photos / album
+- [x] Facebook video
+- [x] Facebook photos / album
 
 ## 2. TikTok
 
-- [ ] TikTok video
-- [ ] TikTok photos / carousel
+- [x] TikTok video
+- [x] TikTok photos / carousel
 
 ## 3. Instagram
 
-- [ ] Instagram photos / carousel
-- [ ] Instagram Reels
+- [x] Instagram photos / carousel
+- [x] Instagram Reels
 
 ## 4. YouTube
 
-- [ ] YouTube video
-- [ ] YouTube Shorts
+- [x] YouTube video
+- [x] YouTube Shorts
 
 ## 5. Pinterest
 
-- [ ] Pinterest image Pin
-- [ ] Pinterest video Pin
+- [x] Pinterest image Pin
+- [x] Pinterest video Pin
 
 ## 6. Website
 
