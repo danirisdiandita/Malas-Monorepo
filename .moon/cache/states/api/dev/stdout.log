@@ -1,0 +1,5 @@
+Server starting on port 8080...
+2026/09/07 06:17:10 "GET http://10.0.2.2:8080/auth/user HTTP/1.1" from 127.0.0.1:51424 - 401 13B in 481.408µs
+2026/09/07 06:17:10 "POST http://10.0.2.2:8080/auth/refresh HTTP/1.1" from 127.0.0.1:51424 - 200 941B in 16.122204ms
+2026/09/07 06:17:10 "GET http://10.0.2.2:8080/auth/user HTTP/1.1" from 127.0.0.1:51424 - 200 308B in 4.783807ms
+2026/09/07 06:17:11 "GET http://10.0.2.2:8080/auth/user HTTP/1.1" from 127.0.0.1:51424 - 200 308B in 2.037632ms
