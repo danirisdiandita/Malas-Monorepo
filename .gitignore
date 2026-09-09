@@ -2,3 +2,4 @@
 /plan/prototype/.env
 /codex.sh
 .moon/cache/
+/api/debug/webhooks
