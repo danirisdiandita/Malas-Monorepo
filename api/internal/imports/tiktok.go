@@ -37,7 +37,17 @@ type savedRun struct {
 	ContentType   TikTokContentType `json:"content_type"`
 	AwemeID       string            `json:"aweme_id"`
 	CreatedAt     time.Time         `json:"created_at"`
+	ApifyRequest  json.RawMessage   `json:"apify_request"`
 	ApifyResponse json.RawMessage   `json:"apify_response"`
+}
+
+type apifyRun struct {
+	ID      string `json:"id"`
+	BuildID string `json:"buildId"`
+	Data    struct {
+		ID      string `json:"id"`
+		BuildID string `json:"buildId"`
+	} `json:"data"`
 }
 
 func HandleImport(token, debugDir, authURL, webhookSecret string) http.HandlerFunc {
@@ -98,7 +108,7 @@ func HandleImport(token, debugDir, authURL, webhookSecret string) http.HandlerFu
 		webhookSpec, _ := json.Marshal([]map[string]any{{
 			"eventTypes":      []string{"ACTOR.RUN.SUCCEEDED", "ACTOR.RUN.FAILED"},
 			"requestUrl":      webhook.String(),
-			"payloadTemplate": fmt.Sprintf(`{"source":"tiktok","aweme_id":"%s","resource":{{resource}}}`, awemeID),
+			"payloadTemplate": fmt.Sprintf(`{"source":"tiktok","aweme_id":"%s","content_type":"%s","resource":{{resource}}}`, awemeID, contentType),
 		}})
 		encodedWebhooks := base64.StdEncoding.EncodeToString(webhookSpec)
 		apiRequest, err := http.NewRequestWithContext(r.Context(), http.MethodPost, apifyURL+"?token="+url.QueryEscape(token)+"&webhooks="+url.QueryEscape(encodedWebhooks), bytes.NewReader(payload))
@@ -122,20 +132,40 @@ func HandleImport(token, debugDir, authURL, webhookSecret string) http.HandlerFu
 			http.Error(w, "Apify rejected the run", http.StatusBadGateway)
 			return
 		}
-		if err := os.MkdirAll(debugDir, 0o750); err != nil {
+		var run apifyRun
+		_ = json.Unmarshal(apifyBody, &run)
+		if run.ID == "" {
+			run.ID = run.Data.ID
+		}
+		if run.ID == "" {
+			run.ID = "unknown-run"
+		}
+		if run.BuildID == "" {
+			run.BuildID = run.Data.BuildID
+		}
+		if run.BuildID == "" {
+			run.BuildID = "unknown-build"
+		}
+		folder := filepath.Join(debugDir, "tiktok_"+safeName(run.ID))
+		if err := os.MkdirAll(filepath.Join(folder, "assets"), 0o750); err != nil {
 			http.Error(w, "failed to create Apify debug directory", http.StatusInternalServerError)
 			return
 		}
-		output := savedRun{requested.String(), redirected.String(), contentType, awemeID, time.Now().UTC(), apifyBody}
-		filename := filepath.Join(debugDir, fmt.Sprintf("%s_%s.json", awemeID, output.CreatedAt.Format("2006-01-02_15_04_05")))
+		output := savedRun{requested.String(), redirected.String(), contentType, awemeID, time.Now().UTC(), payload, apifyBody}
+		prettyPayload, _ := json.MarshalIndent(tikTokActorInput(awemeID), "", "  ")
+		if err := os.WriteFile(filepath.Join(folder, "post_payload.json"), prettyPayload, 0o600); err != nil {
+			http.Error(w, "failed to save Apify payload", http.StatusInternalServerError)
+			return
+		}
 		encoded, _ := json.MarshalIndent(output, "", "  ")
+		filename := filepath.Join(folder, "run.json")
 		if err := os.WriteFile(filename, encoded, 0o600); err != nil {
 			http.Error(w, "failed to save Apify response", http.StatusInternalServerError)
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusAccepted)
-		_ = json.NewEncoder(w).Encode(map[string]string{"aweme_id": awemeID, "content_type": string(contentType), "redirected_url": redirected.String(), "saved_file": filename})
+		_ = json.NewEncoder(w).Encode(map[string]string{"aweme_id": awemeID, "content_type": string(contentType), "redirected_url": redirected.String(), "run_id": run.ID, "build_id": run.BuildID, "saved_file": filename})
 	}
 }
 

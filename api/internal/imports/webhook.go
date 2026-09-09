@@ -20,11 +20,14 @@ const (
 )
 
 type apifyWebhook struct {
-	Source   string `json:"source"`
-	AwemeID  string `json:"aweme_id"`
-	Event    string `json:"eventType"`
-	Resource struct {
+	Source      string `json:"source"`
+	AwemeID     string `json:"aweme_id"`
+	ContentType string `json:"content_type"`
+	Event       string `json:"eventType"`
+	Resource    struct {
+		ID                string `json:"id"`
 		Status            string `json:"status"`
+		BuildID           string `json:"buildId"`
 		DefaultDatasetID  string `json:"defaultDatasetId"`
 		DefaultKeyValueID string `json:"defaultKeyValueStoreId"`
 	} `json:"resource"`
@@ -84,11 +87,15 @@ func HandleImportWebhook(token, debugDir, secret string) http.HandlerFunc {
 		if webhook.Source == "" {
 			webhook.Source = "unknown"
 		}
-		identifier := webhook.AwemeID
-		if identifier == "" {
-			identifier = webhook.Resource.DefaultDatasetID
+		buildID := webhook.Resource.BuildID
+		if buildID == "" {
+			buildID = "unknown-build"
 		}
-		folder := filepath.Join(debugDir, safeName(webhook.Source)+"_"+safeName(identifier)+"_"+time.Now().UTC().Format("2006-01-02_15_04_05.000000000"))
+		runID := webhook.Resource.ID
+		if runID == "" {
+			runID = "unknown-run"
+		}
+		folder := filepath.Join(debugDir, safeName(webhook.Source)+"_"+safeName(runID))
 		if err := os.MkdirAll(filepath.Join(folder, "assets"), 0o750); err != nil {
 			http.Error(w, "failed to create import output directory", http.StatusInternalServerError)
 			return
@@ -102,7 +109,7 @@ func HandleImportWebhook(token, debugDir, secret string) http.HandlerFunc {
 			http.Error(w, "failed to save webhook", http.StatusInternalServerError)
 			return
 		}
-		assets := collectAssetURLs(items)
+		assets := collectImagePostAssetURLs(items)
 		for index := range assets {
 			assets[index].File, assets[index].Error = downloadAsset(r.Context(), client, assets[index].URL, filepath.Join(folder, "assets"), index)
 		}
@@ -111,9 +118,98 @@ func HandleImportWebhook(token, debugDir, secret string) http.HandlerFunc {
 			http.Error(w, "failed to save asset manifest", http.StatusInternalServerError)
 			return
 		}
+		final := buildFinalJSON(items, webhook.ContentType, assets)
+		encodedFinal, _ := json.MarshalIndent(final, "", "  ")
+		if err := os.WriteFile(filepath.Join(folder, "final.json"), encodedFinal, 0o600); err != nil {
+			http.Error(w, "failed to save final recipe", http.StatusInternalServerError)
+			return
+		}
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]any{"directory": folder, "dataset_file": filepath.Join(folder, "dataset.json"), "asset_count": len(assets)})
+		_ = json.NewEncoder(w).Encode(map[string]any{"directory": folder, "run_id": runID, "build_id": buildID, "dataset_file": filepath.Join(folder, "dataset.json"), "asset_count": len(assets)})
 	}
+}
+
+func collectImagePostAssetURLs(value any) []asset {
+	seen := map[string]bool{}
+	assets := make([]asset, 0)
+	var walk func(any)
+	walk = func(current any) {
+		switch typed := current.(type) {
+		case map[string]any:
+			if info, ok := typed["image_post_info"].(map[string]any); ok {
+				if images, ok := info["images"].([]any); ok {
+					for _, image := range images {
+						imageObject, _ := image.(map[string]any)
+						imageURL := firstWebP(imageObject["thumbnail"])
+						if imageURL == "" {
+							imageURL = firstWebP(imageObject["display_image"])
+						}
+						if imageURL != "" && !seen[imageURL] && len(assets) < maxAssetCount {
+							seen[imageURL] = true
+							assets = append(assets, asset{URL: imageURL})
+						}
+					}
+				}
+			}
+			for _, child := range typed {
+				walk(child)
+			}
+		case []any:
+			for _, child := range typed {
+				walk(child)
+			}
+		}
+	}
+	walk(value)
+	return assets
+}
+
+func firstWebP(value any) string {
+	object, ok := value.(map[string]any)
+	if !ok {
+		return ""
+	}
+	if urls, ok := object["url_list"].([]any); ok {
+		for _, raw := range urls {
+			if value, ok := raw.(string); ok && strings.HasSuffix(strings.ToLower(strings.Split(value, "?")[0]), ".webp") {
+				return value
+			}
+		}
+	}
+	return ""
+}
+
+func buildFinalJSON(items []any, contentType string, assets []asset) map[string]any {
+	if contentType == "" {
+		contentType = "tiktok:photo"
+	}
+	result := map[string]any{
+		"content_type":    contentType,
+		"title":           "",
+		"description":     "",
+		"image_post_info": []string{},
+	}
+	if len(items) > 0 {
+		if detail, ok := items[0].(map[string]any)["aweme_detail"].(map[string]any); ok {
+			result["title"] = stringValue(detail, "desc")
+			if original, ok := detail["original_client_text"].(map[string]any); ok {
+				result["description"] = stringValue(original, "markup_text")
+			}
+		}
+	}
+	images := make([]string, 0, len(assets))
+	for _, image := range assets {
+		if image.File != "" && image.Error == "" {
+			images = append(images, image.File)
+		}
+	}
+	result["image_post_info"] = images
+	return result
+}
+
+func stringValue(object map[string]any, key string) string {
+	value, _ := object[key].(string)
+	return value
 }
 
 func safeName(value string) string {
