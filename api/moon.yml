@@ -3,7 +3,7 @@ language: "go"
 
 tasks:
   dev:
-    command: "go run ./cmd/api"
+    command: "go tool air -c .air.toml"
     options:
       persistent: true
 

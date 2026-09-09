@@ -38,8 +38,8 @@ the existing package until splitting them improves ownership or testability.
 3. Put business rules in the service; keep it independent of `net/http`.
 4. Put database queries in the repository only when they are reused or make
    the service easier to test. Direct Ent queries are fine for one simple use.
-5. Wire the handler and dependencies in `cmd/api/main.go`; keep no business
-   logic there.
+5. Wire dependencies in `cmd/api/main.go`; keep route registration and HTTP
+   middleware in `internal/server/router.go`, with no business logic in either.
 6. Add focused handler/service tests beside the code. Use an integration test
    only when behavior depends on PostgreSQL or Ent query semantics.
 7. If the database changes, update `ent/schema`, run `moon run api:generate`,
@@ -68,3 +68,9 @@ the existing package until splitting them improves ownership or testability.
 filename. Set `WEBHOOK_DEBUG_SECRET` and send it as `X-Webhook-Secret`.
 This endpoint is for debugging only and should move to durable storage or be
 removed before production.
+
+TikTok imports use `POST /imports/tiktok`; their completion callback uses the
+source-agnostic `POST /webhooks/import`. Configure `APIFY_API_TOKEN`, public
+`AUTH_URL`, and `IMPORT_WEBHOOK_SECRET`. The import webhook accepts any Apify dataset and
+saves `webhook.json`, `dataset.json`, downloaded media under `assets/`, and
+`assets.json` under `APIFY_DEBUG_DIR`.

@@ -17,12 +17,7 @@ import (
 	appauth "github.com/danirisdiandita/malas-monorepo/api/internal/auth"
 	"github.com/danirisdiandita/malas-monorepo/api/internal/config"
 	"github.com/danirisdiandita/malas-monorepo/api/internal/db"
-	"github.com/danirisdiandita/malas-monorepo/api/internal/handlers"
-	tiktok "github.com/danirisdiandita/malas-monorepo/api/internal/imports"
-	"github.com/danirisdiandita/malas-monorepo/api/internal/recipes"
-	"github.com/go-chi/chi/v5"
-	mid "github.com/go-chi/chi/v5/middleware"
-	"github.com/go-chi/cors"
+	appserver "github.com/danirisdiandita/malas-monorepo/api/internal/server"
 	"github.com/go-pkgz/auth/v2"
 	"github.com/go-pkgz/auth/v2/avatar"
 	"github.com/go-pkgz/auth/v2/provider"
@@ -100,36 +95,16 @@ func main() {
 	m := service.Middleware()
 	authRoutes, avatarRoutes := service.Handlers()
 
-	r := chi.NewRouter()
-
-	// Middleware
-	r.Use(mid.Logger)
-	r.Use(mid.Recoverer)
-	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:5173", "http://localhost:8081"},
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "X-XSRF-TOKEN", "X-JWT", "X-Refresh-Token"},
-		ExposedHeaders:   []string{"Link"},
-		AllowCredentials: true,
-		MaxAge:           300,
-	}))
-
-	// Public Routes
-	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Malas API is running!"))
-	})
-	r.Mount("/auth", handlers.HandleAuthUser(client, m.Auth, authRoutes, accessTokens, secureCookies, sameSite))
-	r.Mount("/avatar", avatarRoutes)
-	r.Get("/recipes", recipes.HandleList)
-	r.Get("/recipes/{id}", recipes.HandleGet)
-	r.Post("/webhooks/debug", handlers.HandleDebugWebhook(cfg.WebhookDebugDir, cfg.WebhookDebugSecret))
-	r.Post("/imports/tiktok", tiktok.Handle(cfg.ApifyAPIToken, cfg.ApifyDebugDir))
-
-	// Protected Routes
-	r.Group(func(r chi.Router) {
-		r.Use(m.Auth)
-		r.Use(appauth.RequireSession(client))
-		r.Get("/me", handlers.HandleMe(client))
+	r := appserver.NewRouter(appserver.Dependencies{
+		Config:         cfg,
+		DB:             client,
+		Authenticate:   m.Auth,
+		RequireSession: appauth.RequireSession(client),
+		AuthRoutes:     authRoutes,
+		AvatarRoutes:   avatarRoutes,
+		AccessTokens:   accessTokens,
+		SecureCookies:  secureCookies,
+		SameSite:       sameSite,
 	})
 
 	server := &http.Server{
