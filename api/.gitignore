@@ -19,3 +19,4 @@ Cover.out
 .env
 api-bin
 /*.p8
+/debug

@@ -1,3 +1,4 @@
 /.moon/cache
 /plan/prototype/.env
 /codex.sh
+.moon/cache/
