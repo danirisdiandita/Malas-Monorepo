@@ -1,11 +1,16 @@
 package main
 
 import (
+	"context"
 	"crypto/sha1"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 
 	"time"
 
@@ -13,6 +18,7 @@ import (
 	"github.com/danirisdiandita/malas-monorepo/api/internal/config"
 	"github.com/danirisdiandita/malas-monorepo/api/internal/db"
 	"github.com/danirisdiandita/malas-monorepo/api/internal/handlers"
+	"github.com/danirisdiandita/malas-monorepo/api/internal/recipes"
 	"github.com/go-chi/chi/v5"
 	mid "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
@@ -26,6 +32,9 @@ import (
 func main() {
 	// Load centralized configuration
 	cfg := config.LoadConfig()
+	if cfg.DatabaseURL == "" || cfg.JWTSecret == "" {
+		log.Fatal("DATABASE_URL and JWT_SECRET must be set")
+	}
 	secureCookies := strings.HasPrefix(cfg.AuthURL, "https://")
 	sameSite := http.SameSiteLaxMode
 	if secureCookies {
@@ -110,7 +119,9 @@ func main() {
 	})
 	r.Mount("/auth", handlers.HandleAuthUser(client, m.Auth, authRoutes, accessTokens, secureCookies, sameSite))
 	r.Mount("/avatar", avatarRoutes)
-	r.Post("/webhooks/debug", handlers.HandleDebugWebhook(cfg.WebhookDebugDir))
+	r.Get("/recipes", recipes.HandleList)
+	r.Get("/recipes/{id}", recipes.HandleGet)
+	r.Post("/webhooks/debug", handlers.HandleDebugWebhook(cfg.WebhookDebugDir, cfg.WebhookDebugSecret))
 
 	// Protected Routes
 	r.Group(func(r chi.Router) {
@@ -119,8 +130,33 @@ func main() {
 		r.Get("/me", handlers.HandleMe(client))
 	})
 
-	fmt.Printf("Server starting on port %s...\n", cfg.Port)
-	if err := http.ListenAndServe(":"+cfg.Port, r); err != nil {
-		log.Fatal(err)
+	server := &http.Server{
+		Addr:              ":" + cfg.Port,
+		Handler:           r,
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       60 * time.Second,
+	}
+
+	serverErr := make(chan error, 1)
+	go func() {
+		fmt.Printf("Server starting on port %s...\n", cfg.Port)
+		serverErr <- server.ListenAndServe()
+	}()
+
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	select {
+	case err := <-serverErr:
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Fatal(err)
+		}
+	case <-ctx.Done():
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		if err := server.Shutdown(shutdownCtx); err != nil {
+			log.Printf("graceful shutdown failed: %v", err)
+		}
 	}
 }

@@ -5,6 +5,7 @@ Send a JSON payload to the API webhook:
 ```bash
 curl -X POST http://localhost:8080/webhooks/debug \
   -H 'Content-Type: application/json' \
+  -H 'X-Webhook-Secret: your-debug-secret' \
   -d '{
     "event": "recipe.imported",
     "source": "tiktok",
@@ -29,3 +30,5 @@ The raw payload is saved as:
 ```
 
 Set `WEBHOOK_DEBUG_DIR` to change the output directory.
+
+Set `WEBHOOK_DEBUG_SECRET` to the same value used by the request header.

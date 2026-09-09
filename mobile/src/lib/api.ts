@@ -15,6 +15,18 @@ export interface User {
   picture?: string;
 }
 
+export interface Recipe {
+  id: string;
+  name: string;
+  process_minutes: number;
+  servings: number;
+  difficulty: string;
+  source: string;
+  tags: string[];
+  ingredients: string[];
+  instructions: string[];
+}
+
 const tokenKey = 'malas.jwt';
 const refreshTokenKey = 'malas.refresh';
 const apiUrl =
@@ -60,6 +72,28 @@ export function getCurrentUser(): Promise<User> {
     });
   }
   return currentUserRequest;
+}
+
+export async function getRecipes(): Promise<Recipe[]> {
+  const response = await fetch(`${apiUrl}/recipes`);
+  if (!response.ok) throw new Error('Unable to load recipes.');
+  const body: unknown = await response.json();
+  if (!Array.isArray(body) || !body.every(isRecipe)) throw new Error('Invalid recipes response.');
+  return body;
+}
+
+export async function getRecipe(id: string): Promise<Recipe> {
+  const response = await fetch(`${apiUrl}/recipes/${encodeURIComponent(id)}`);
+  if (!response.ok) throw new Error('Unable to load recipe.');
+  const body: unknown = await response.json();
+  if (!isRecipe(body)) throw new Error('Invalid recipe response.');
+  return body;
+}
+
+function isRecipe(value: unknown): value is Recipe {
+  if (!value || typeof value !== 'object') return false;
+  const recipe = value as Record<string, unknown>;
+  return typeof recipe.id === 'string' && typeof recipe.name === 'string' && typeof recipe.process_minutes === 'number' && typeof recipe.servings === 'number' && typeof recipe.difficulty === 'string' && typeof recipe.source === 'string' && Array.isArray(recipe.tags) && recipe.tags.every((tag) => typeof tag === 'string') && Array.isArray(recipe.ingredients) && recipe.ingredients.every((ingredient) => typeof ingredient === 'string') && Array.isArray(recipe.instructions) && recipe.instructions.every((instruction) => typeof instruction === 'string');
 }
 
 async function loadCurrentUser(): Promise<User> {

@@ -1,7 +1,7 @@
 package db
 
 import (
-	"log"
+	"fmt"
 
 	"github.com/danirisdiandita/malas-monorepo/api/ent"
 	_ "github.com/lib/pq"
@@ -9,7 +9,7 @@ import (
 
 func NewClient(dbURL string) (*ent.Client, error) {
 	if dbURL == "" {
-		log.Fatal("DATABASE_URL environment variable is required")
+		return nil, fmt.Errorf("DATABASE_URL environment variable is required")
 	}
 
 	client, err := ent.Open("postgres", dbURL)

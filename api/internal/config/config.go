@@ -19,6 +19,7 @@ type Config struct {
 	AuthURL             string
 	JWTSecret           string
 	WebhookDebugDir     string
+	WebhookDebugSecret  string
 }
 
 func LoadConfig() *Config {
@@ -36,8 +37,9 @@ func LoadConfig() *Config {
 		AppleKeyID:          getEnv("APPLE_KEY_ID", ""),
 		ApplePrivateKeyPath: getEnv("APPLE_PRIVATE_KEY_PATH", ""),
 		AuthURL:             getEnv("AUTH_URL", "http://localhost:8080"),
-		JWTSecret:           getEnv("JWT_SECRET", "super-secret-key-change-this"),
+		JWTSecret:           getEnv("JWT_SECRET", ""),
 		WebhookDebugDir:     getEnv("WEBHOOK_DEBUG_DIR", "./debug/webhooks"),
+		WebhookDebugSecret:  getEnv("WEBHOOK_DEBUG_SECRET", ""),
 	}
 }
 

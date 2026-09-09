@@ -3,6 +3,7 @@ package handlers
 import (
 	"bytes"
 	"crypto/rand"
+	"crypto/subtle"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -13,12 +14,15 @@ import (
 
 const maxDebugWebhookBody = 10 << 20
 
-func HandleDebugWebhook(directory string) http.HandlerFunc {
+func HandleDebugWebhook(directory, secret string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// ponytail: intentionally unauthenticated for webhook debugging; add a shared secret and rate limit before production exposure.
 		if r.Method != http.MethodPost {
 			w.Header().Set("Allow", http.MethodPost)
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		if secret == "" || subtle.ConstantTimeCompare([]byte(r.Header.Get("X-Webhook-Secret")), []byte(secret)) != 1 {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
 		}
 

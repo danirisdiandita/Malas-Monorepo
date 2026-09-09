@@ -23,6 +23,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useCurrentUser } from "@/hooks/use-auth";
+import { useRecipes } from "@/hooks/use-recipes";
 import { useRecipePreferences } from "@/stores/recipe-preferences";
 
 const colors = {
@@ -56,6 +57,7 @@ export default function Tab1Screen() {
   const [newFolder, setNewFolder] = useState("");
   const { width: windowWidth } = useWindowDimensions();
   const { data: user } = useCurrentUser();
+  const { data: recipes, isPending: recipesPending, isError: recipesError } = useRecipes();
   const displayName = user?.name?.trim() || "there";
   const initial = displayName.charAt(0).toUpperCase();
   const greeting = getTimeGreeting();
@@ -273,20 +275,7 @@ export default function Tab1Screen() {
               />
             </Pressable>
           </View>
-          <View style={[styles.cards, viewMode === "list" && styles.listCards]}>
-            <RecipeCard
-              title="Creamy lemon pasta"
-              color="#F8E5A9"
-              icon="nutrition-outline"
-              list={viewMode === "list"}
-            />
-            <RecipeCard
-              title="Crispy chili eggs"
-              color="#F4D2C5"
-              icon="leaf-outline"
-              list={viewMode === "list"}
-            />
-          </View>
+          {recipesPending ? <ThemedText style={styles.statusText}>Loading recipes...</ThemedText> : recipesError ? <ThemedText style={styles.statusText}>Unable to load recipes.</ThemedText> : recipes?.length ? <View style={[styles.cards, viewMode === "list" && styles.listCards]}>{recipes.map((recipe, index) => <RecipeCard key={recipe.id} title={recipe.name} color={index % 2 === 0 ? "#F8E5A9" : "#F4D2C5"} icon={index % 2 === 0 ? "nutrition-outline" : "leaf-outline"} list={viewMode === "list"} meta={`${recipe.process_minutes} min · ${recipe.difficulty} · ${recipe.servings} servings`} onPress={() => router.push(`/recipe/${recipe.id}`)} />)}</View> : <ThemedText style={styles.statusText}>No recipes yet.</ThemedText>}
         </ScrollView>
       </SafeAreaView>
     </ThemedView>
@@ -298,14 +287,18 @@ function RecipeCard({
   color,
   icon,
   list,
+  meta,
+  onPress,
 }: {
   title: string;
   color: string;
   icon: IoniconsIconName;
   list: boolean;
+  meta: string;
+  onPress: () => void;
 }) {
   return (
-    <View style={[styles.card, list && styles.listCard]}>
+    <Pressable accessibilityRole="button" accessibilityLabel={`Open recipe ${title}`} onPress={onPress} style={[styles.card, list && styles.listCard]}>
       <View
         style={[
           styles.cardImage,
@@ -317,7 +310,7 @@ function RecipeCard({
       </View>
       <View style={styles.cardInfo}>
         <ThemedText style={styles.cardTitle}>{title}</ThemedText>
-        <ThemedText style={styles.cardMeta}>20 min · Easy</ThemedText>
+        <ThemedText style={styles.cardMeta}>{meta}</ThemedText>
       </View>
       {list && (
         <Ionicons
@@ -327,7 +320,7 @@ function RecipeCard({
           style={styles.cardMore}
         />
       )}
-    </View>
+    </Pressable>
   );
 }
 
@@ -560,6 +553,7 @@ const styles = StyleSheet.create({
   },
   listCardImage: { width: 54, height: 54, borderRadius: 14 },
   cardInfo: { flex: 1 },
+  statusText: { color: colors.muted, fontSize: 15, textAlign: "center", paddingVertical: 24 },
   cardMore: { marginRight: 2 },
   cardTitle: {
     color: colors.ink,

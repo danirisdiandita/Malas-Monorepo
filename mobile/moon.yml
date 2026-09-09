@@ -5,7 +5,7 @@ tasks:
   dev:
     command: "./node_modules/.bin/expo run:android"
     options:
-      persistent: true
+      interactive: true
 
   android:
     command: "./node_modules/.bin/expo run:android"
