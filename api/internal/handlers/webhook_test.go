@@ -23,16 +23,29 @@ func TestDebugWebhookSavesPayload(t *testing.T) {
 	}
 
 	var response struct {
-		ID string `json:"id"`
+		Filename string `json:"filename"`
 	}
 	if err := json.NewDecoder(res.Body).Decode(&response); err != nil {
 		t.Fatal(err)
 	}
-	if response.ID == "" {
-		t.Fatal("missing payload id")
+	if response.Filename == "" {
+		t.Fatal("missing payload filename")
 	}
-	if _, err := os.Stat(filepath.Join(directory, response.ID+".json")); err != nil {
+	if _, err := os.Stat(filepath.Join(directory, response.Filename)); err != nil {
 		t.Fatalf("saved payload missing: %v", err)
+	}
+	saved, err := os.ReadFile(filepath.Join(directory, response.Filename))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var payload struct {
+		Event string `json:"event"`
+	}
+	if err := json.Unmarshal(saved, &payload); err != nil {
+		t.Fatal(err)
+	}
+	if payload.Event != "done" {
+		t.Fatalf("unexpected saved payload: %+v", payload)
 	}
 }
 

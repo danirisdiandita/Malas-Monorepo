@@ -2,14 +2,13 @@ package handlers
 
 import (
 	"bytes"
-	"crypto/rand"
 	"crypto/subtle"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 const maxDebugWebhookBody = 10 << 20
@@ -41,12 +40,8 @@ func HandleDebugWebhook(directory, secret string) http.HandlerFunc {
 			return
 		}
 
-		id, err := randomUUID()
-		if err != nil {
-			http.Error(w, "failed to create payload id", http.StatusInternalServerError)
-			return
-		}
-		path := filepath.Join(directory, id+".json")
+		filename := time.Now().UTC().Format("2006-01-02_15_04_05.000000000") + ".json"
+		path := filepath.Join(directory, filename)
 		if err := os.WriteFile(path, body, 0o600); err != nil {
 			http.Error(w, "failed to save payload", http.StatusInternalServerError)
 			return
@@ -54,16 +49,6 @@ func HandleDebugWebhook(directory, secret string) http.HandlerFunc {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
-		_ = json.NewEncoder(w).Encode(map[string]string{"id": id})
+		_ = json.NewEncoder(w).Encode(map[string]string{"filename": filename})
 	}
-}
-
-func randomUUID() (string, error) {
-	var b [16]byte
-	if _, err := rand.Read(b[:]); err != nil {
-		return "", err
-	}
-	b[6] = (b[6] & 0x0f) | 0x40
-	b[8] = (b[8] & 0x3f) | 0x80
-	return fmt.Sprintf("%08x-%04x-%04x-%04x-%012x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:16]), nil
 }

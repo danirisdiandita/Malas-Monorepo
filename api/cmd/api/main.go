@@ -18,6 +18,7 @@ import (
 	"github.com/danirisdiandita/malas-monorepo/api/internal/config"
 	"github.com/danirisdiandita/malas-monorepo/api/internal/db"
 	"github.com/danirisdiandita/malas-monorepo/api/internal/handlers"
+	tiktok "github.com/danirisdiandita/malas-monorepo/api/internal/imports"
 	"github.com/danirisdiandita/malas-monorepo/api/internal/recipes"
 	"github.com/go-chi/chi/v5"
 	mid "github.com/go-chi/chi/v5/middleware"
@@ -122,6 +123,7 @@ func main() {
 	r.Get("/recipes", recipes.HandleList)
 	r.Get("/recipes/{id}", recipes.HandleGet)
 	r.Post("/webhooks/debug", handlers.HandleDebugWebhook(cfg.WebhookDebugDir, cfg.WebhookDebugSecret))
+	r.Post("/imports/tiktok", tiktok.Handle(cfg.ApifyAPIToken, cfg.ApifyDebugDir))
 
 	// Protected Routes
 	r.Group(func(r chi.Router) {

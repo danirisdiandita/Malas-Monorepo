@@ -20,6 +20,8 @@ type Config struct {
 	JWTSecret           string
 	WebhookDebugDir     string
 	WebhookDebugSecret  string
+	ApifyAPIToken       string
+	ApifyDebugDir       string
 }
 
 func LoadConfig() *Config {
@@ -40,6 +42,8 @@ func LoadConfig() *Config {
 		JWTSecret:           getEnv("JWT_SECRET", ""),
 		WebhookDebugDir:     getEnv("WEBHOOK_DEBUG_DIR", "./debug/webhooks"),
 		WebhookDebugSecret:  getEnv("WEBHOOK_DEBUG_SECRET", ""),
+		ApifyAPIToken:       getEnv("APIFY_API_TOKEN", ""),
+		ApifyDebugDir:       getEnv("APIFY_DEBUG_DIR", "./debug/apify"),
 	}
 }
 
