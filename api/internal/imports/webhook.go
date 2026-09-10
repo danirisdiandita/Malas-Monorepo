@@ -66,6 +66,10 @@ func HandleImportWebhook(token, debugDir, secret string) http.HandlerFunc {
 			http.Error(w, "webhook is missing resource.defaultDatasetId", http.StatusBadRequest)
 			return
 		}
+		if source := strings.TrimSpace(webhook.Source); source == "" || strings.EqualFold(source, "unknown") {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
 		if webhook.Event == "ACTOR.RUN.FAILED" || webhook.Resource.Status == "FAILED" {
 			http.Error(w, "Apify run failed", http.StatusBadGateway)
 			return
@@ -83,9 +87,6 @@ func HandleImportWebhook(token, debugDir, secret string) http.HandlerFunc {
 		}
 		if webhook.AwemeID == "" {
 			webhook.AwemeID = findAwemeID(items)
-		}
-		if webhook.Source == "" {
-			webhook.Source = "unknown"
 		}
 		buildID := webhook.Resource.BuildID
 		if buildID == "" {
