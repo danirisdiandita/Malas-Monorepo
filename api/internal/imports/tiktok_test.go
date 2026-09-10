@@ -53,6 +53,18 @@ func TestCollectImagePostAssetURLsUsesImagesOnly(t *testing.T) {
 	}
 }
 
+func TestCollectVideoAssetURLsPrefersNoWatermark(t *testing.T) {
+	assets := collectVideoAssetURLs(map[string]any{
+		"video": map[string]any{
+			"play_addr":                  map[string]any{"url_list": []any{"https://cdn.example/watermarked.mp4"}},
+			"download_no_watermark_addr": map[string]any{"url_list": []any{"https://cdn.example/video.mp4"}},
+		},
+	})
+	if len(assets) != 1 || assets[0].URL != "https://cdn.example/video.mp4" {
+		t.Fatalf("unexpected video asset: %#v", assets)
+	}
+}
+
 func TestTikTokActorInput(t *testing.T) {
 	input := tikTokActorInput("7673459097236262165")
 	if input["post_awemeId"] != "7673459097236262165" || input["aweme_id"] != nil || input["profile_region"] != "GB" {

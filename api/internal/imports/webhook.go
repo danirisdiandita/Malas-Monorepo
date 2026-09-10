@@ -111,6 +111,9 @@ func HandleImportWebhook(token, debugDir, secret string) http.HandlerFunc {
 			return
 		}
 		assets := collectImagePostAssetURLs(items)
+		if strings.EqualFold(webhook.ContentType, "tiktok:video") {
+			assets = collectVideoAssetURLs(items)
+		}
 		for index := range assets {
 			assets[index].File, assets[index].Error = downloadAsset(r.Context(), client, assets[index].URL, filepath.Join(folder, "assets"), index)
 		}
@@ -165,6 +168,50 @@ func collectImagePostAssetURLs(value any) []asset {
 	return assets
 }
 
+func collectVideoAssetURLs(value any) []asset {
+	var result []asset
+	var walk func(any)
+	walk = func(current any) {
+		if len(result) > 0 {
+			return
+		}
+		switch typed := current.(type) {
+		case map[string]any:
+			if video, ok := typed["video"].(map[string]any); ok {
+				for _, key := range []string{"download_no_watermark_addr", "play_addr", "download_addr"} {
+					if rawURL := firstURL(video[key]); rawURL != "" {
+						result = []asset{{URL: rawURL}}
+						return
+					}
+				}
+			}
+			for _, child := range typed {
+				walk(child)
+			}
+		case []any:
+			for _, child := range typed {
+				walk(child)
+			}
+		}
+	}
+	walk(value)
+	return result
+}
+
+func firstURL(value any) string {
+	object, ok := value.(map[string]any)
+	if !ok {
+		return ""
+	}
+	urls, _ := object["url_list"].([]any)
+	for _, raw := range urls {
+		if value, ok := raw.(string); ok && strings.HasPrefix(value, "https://") {
+			return value
+		}
+	}
+	return ""
+}
+
 func firstWebP(value any) string {
 	object, ok := value.(map[string]any)
 	if !ok {
@@ -190,6 +237,10 @@ func buildFinalJSON(items []any, contentType string, assets []asset) map[string]
 		"description":     "",
 		"image_post_info": []string{},
 	}
+	if strings.EqualFold(contentType, "tiktok:video") {
+		delete(result, "image_post_info")
+		result["video"] = ""
+	}
 	if len(items) > 0 {
 		if detail, ok := items[0].(map[string]any)["aweme_detail"].(map[string]any); ok {
 			result["title"] = stringValue(detail, "desc")
@@ -197,6 +248,12 @@ func buildFinalJSON(items []any, contentType string, assets []asset) map[string]
 				result["description"] = stringValue(original, "markup_text")
 			}
 		}
+	}
+	if strings.EqualFold(contentType, "tiktok:video") {
+		if len(assets) > 0 && assets[0].File != "" && assets[0].Error == "" {
+			result["video"] = assets[0].File
+		}
+		return result
 	}
 	images := make([]string, 0, len(assets))
 	for _, image := range assets {
@@ -321,7 +378,11 @@ func downloadAsset(ctx context.Context, client *http.Client, rawURL, directory s
 		ext = ""
 	}
 	if ext == "" {
-		ext = ".bin"
+		if strings.EqualFold(req.URL.Query().Get("mime_type"), "video_mp4") {
+			ext = ".mp4"
+		} else {
+			ext = ".bin"
+		}
 	}
 	filename := fmt.Sprintf("%03d%s", index+1, ext)
 	data, err := io.ReadAll(io.LimitReader(response.Body, maxAssetBytes+1))
