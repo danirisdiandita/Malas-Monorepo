@@ -5,13 +5,13 @@ import BottomSheet, {
   BottomSheetView,
   type BottomSheetMethods,
 } from "@expo/ui/community/bottom-sheet";
+import { FlashList } from "@shopify/flash-list";
 import { router } from "expo-router";
 import {
   KeyboardAvoidingView,
   Modal,
   Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   TextInput,
   View,
@@ -65,10 +65,16 @@ export default function Tab1Screen() {
   return (
     <ThemedView style={styles.screen}>
       <SafeAreaView style={styles.safeArea}>
-        <ScrollView
+        <FlashList
+          key={viewMode}
+          data={recipes ?? []}
+          numColumns={viewMode === "grid" ? 2 : 1}
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
-        >
+          ItemSeparatorComponent={() => (
+            <View style={{ height: viewMode === "list" ? 10 : 12 }} />
+          )}
+          ListHeaderComponent={<View style={styles.listHeader}>
           <View style={styles.header}>
             <View>
               <ThemedText style={styles.greeting}>{greeting}</ThemedText>
@@ -82,15 +88,11 @@ export default function Tab1Screen() {
           </View>
           <View style={styles.banner}>
             <View style={styles.bannerTop}>
-              <ThemedText style={styles.bannerEyebrow}>YUZU PRO</ThemedText>
+              <ThemedText style={styles.bannerEyebrow}>
+                Unlock Unlimited Recipes
+              </ThemedText>
               <ThemedText style={styles.bannerPrice}>from $8 / week</ThemedText>
             </View>
-            <ThemedText style={styles.bannerTitle}>
-              Upgrade to save unlimited recipes.
-            </ThemedText>
-            <ThemedText style={styles.bannerBody}>
-              Unlimited imports · smart pantry · meal plans
-            </ThemedText>
             <View style={styles.upgradeRow}>
               <Pressable
                 accessibilityRole="button"
@@ -275,8 +277,27 @@ export default function Tab1Screen() {
               />
             </Pressable>
           </View>
-          {recipesPending ? <ThemedText style={styles.statusText}>Loading recipes...</ThemedText> : recipesError ? <ThemedText style={styles.statusText}>Unable to load recipes.</ThemedText> : recipes?.length ? <View style={[styles.cards, viewMode === "list" && styles.listCards]}>{recipes.map((recipe, index) => <RecipeCard key={recipe.id} title={recipe.name} color={index % 2 === 0 ? "#F8E5A9" : "#F4D2C5"} icon={index % 2 === 0 ? "nutrition-outline" : "leaf-outline"} list={viewMode === "list"} meta={`${recipe.process_minutes} min · ${recipe.difficulty} · ${recipe.servings} servings`} onPress={() => router.push(`/recipe/${recipe.id}`)} />)}</View> : <ThemedText style={styles.statusText}>No recipes yet.</ThemedText>}
-        </ScrollView>
+          </View>}
+          renderItem={({ item, index }) => (
+            <RecipeCard
+              title={item.name}
+              color={index % 2 === 0 ? "#F8E5A9" : "#F4D2C5"}
+              icon={index % 2 === 0 ? "nutrition-outline" : "leaf-outline"}
+              list={viewMode === "list"}
+              meta={`${item.process_minutes} min · ${item.difficulty} · ${item.servings} servings`}
+              onPress={() => router.push(`/recipe/${item.id}`)}
+            />
+          )}
+          ListEmptyComponent={
+            recipesPending ? (
+              <ThemedText style={styles.statusText}>Loading recipes...</ThemedText>
+            ) : recipesError ? (
+              <ThemedText style={styles.statusText}>Unable to load recipes.</ThemedText>
+            ) : (
+              <ThemedText style={styles.statusText}>No recipes yet.</ThemedText>
+            )
+          }
+        />
       </SafeAreaView>
     </ThemedView>
   );
@@ -298,7 +319,7 @@ function RecipeCard({
   onPress: () => void;
 }) {
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={`Open recipe ${title}`} onPress={onPress} style={[styles.card, list && styles.listCard]}>
+    <Pressable accessibilityRole="button" accessibilityLabel={`Open recipe ${title}`} onPress={onPress} style={[styles.card, list ? styles.listCard : styles.gridCard]}>
       <View
         style={[
           styles.cardImage,
@@ -480,11 +501,11 @@ const styles = StyleSheet.create({
   },
   addFolderLabel: { color: "#fff", fontSize: 15, fontWeight: "800" },
   banner: {
-    minHeight: 156,
+    minHeight: 78,
     borderRadius: 17,
     backgroundColor: colors.ink,
-    padding: 16,
-    gap: 6,
+    padding: 11,
+    gap: 5,
   },
   bannerTop: { flexDirection: "row", justifyContent: "space-between" },
   bannerEyebrow: {
@@ -494,29 +515,22 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   bannerPrice: { color: "#fff", fontSize: 14 },
-  bannerTitle: {
-    color: "#fff",
-    fontSize: 20,
-    lineHeight: 24,
-    fontWeight: "800",
-  },
-  bannerBody: { color: "#B6C2B9", fontSize: 14 },
   upgradeButton: {
     alignSelf: "flex-start",
     backgroundColor: colors.yellow,
     borderRadius: 9,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginTop: 3,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    marginTop: 1,
   },
-  upgradeLabel: { color: colors.ink, fontSize: 14, fontWeight: "900" },
+  upgradeLabel: { color: colors.ink, fontSize: 12, fontWeight: "900" },
   upgradeRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    marginTop: 3,
+    gap: 8,
+    marginTop: 1,
   },
-  freeRecipes: { color: "#B6C2B9", fontSize: 13, fontWeight: "700" },
+  freeRecipes: { color: "#B6C2B9", fontSize: 11, fontWeight: "700" },
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -531,8 +545,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  cards: { flexDirection: "row", gap: 12 },
-  listCards: { flexDirection: "column", gap: 10 },
+  listHeader: { gap: 16 },
   card: {
     flex: 1,
     minHeight: 190,
@@ -542,6 +555,7 @@ const styles = StyleSheet.create({
     borderColor: colors.line,
     overflow: "hidden",
   },
+  gridCard: { marginHorizontal: 6 },
   cardImage: { height: 112, alignItems: "center", justifyContent: "center" },
   listCard: {
     width: "100%",
