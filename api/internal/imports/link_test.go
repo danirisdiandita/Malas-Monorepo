@@ -27,6 +27,20 @@ func TestParseTikTokContentType(t *testing.T) {
 	}
 }
 
+func TestParseFacebookReelsContentType(t *testing.T) {
+	got, err := ParseLinkContentType("https://www.facebook.com/reel/123456789")
+	if err != nil || got != FacebookReels {
+		t.Fatalf("ParseLinkContentType() = %q, %v", got, err)
+	}
+}
+
+func TestFacebookActorInput(t *testing.T) {
+	input := facebookActorInput("https://www.facebook.com/reel/123456789")
+	if len(input["startUrls"].([]string)) != 1 || input["resultsLimit"] != 1 {
+		t.Fatalf("unexpected Facebook actor input: %#v", input)
+	}
+}
+
 func TestCollectAssetURLs(t *testing.T) {
 	assets := collectAssetURLs(map[string]any{
 		"cover":  "https://p16.tiktokcdn.com/cover.webp",

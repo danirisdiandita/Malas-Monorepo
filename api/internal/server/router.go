@@ -44,14 +44,17 @@ func NewRouter(deps Dependencies) http.Handler {
 	r.Mount("/avatar", deps.AvatarRoutes)
 	r.Get("/recipes", recipes.HandleList)
 	r.Get("/recipes/{id}", recipes.HandleGet)
+	r.Get("/swagger", handlers.HandleSwaggerRedirect)
+	r.Get("/swagger/", handlers.HandleSwaggerUI)
+	r.Get("/swagger/openapi.json", handlers.HandleOpenAPI)
 	r.Post("/webhooks/debug", handlers.HandleDebugWebhook(deps.Config.WebhookDebugDir, deps.Config.WebhookDebugSecret))
-	r.Post("/imports/tiktok", imports.HandleImport(deps.Config.ApifyAPIToken, deps.Config.ApifyDebugDir, deps.Config.AuthURL, deps.Config.ImportWebhookSecret))
-	r.Post("/webhooks/import", imports.HandleImportWebhook(deps.Config.ApifyAPIToken, deps.Config.ApifyDebugDir, deps.Config.ImportWebhookSecret))
+	r.Post("/webhooks/import", imports.HandleImportWebhook(deps.Config.Apify.APIToken, deps.Config.Apify.DebugDir, deps.Config.ImportWebhookSecret))
 
 	r.Group(func(r chi.Router) {
 		r.Use(deps.Authenticate)
 		r.Use(deps.RequireSession)
 		r.Get("/me", handlers.HandleMe(deps.DB))
+		r.Post("/imports/link", imports.HandleImport(deps.Config.Apify.APIToken, deps.Config.Apify.DebugDir, deps.Config.AuthURL, deps.Config.ImportWebhookSecret, deps.Config.Apify.TikTokActorURL, deps.Config.Apify.FacebookReelsActorURL))
 	})
 	return r
 }

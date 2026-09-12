@@ -69,8 +69,9 @@ filename. Set `WEBHOOK_DEBUG_SECRET` and send it as `X-Webhook-Secret`.
 This endpoint is for debugging only and should move to durable storage or be
 removed before production.
 
-TikTok imports use `POST /imports/tiktok`; their completion callback uses the
-source-agnostic `POST /webhooks/import`. Configure `APIFY_API_TOKEN`, public
+Link imports use `POST /imports/link`; their completion callback uses the
+source-agnostic `POST /webhooks/import`. TikTok and Facebook Reels are supported.
+Configure `APIFY_API_TOKEN`, public
 `AUTH_URL`, and `IMPORT_WEBHOOK_SECRET`. The import webhook accepts any Apify dataset and
 saves `webhook.json`, `dataset.json`, downloaded media under `assets/`, and
 `assets.json` under `APIFY_DEBUG_DIR`.

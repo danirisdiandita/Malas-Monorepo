@@ -15,7 +15,7 @@ import {
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { useImportTikTok } from "@/hooks/use-import-tiktok";
+import { useImportLink } from "@/hooks/use-import-link";
 
 const colors = {
   ink: "#14231A",
@@ -40,7 +40,7 @@ export default function AddTabScreen() {
   const sheetRef = useRef<BottomSheetMethods>(null);
   const choosingOption = useRef(false);
   const [recipeLink, setRecipeLink] = useState("");
-  const importTikTok = useImportTikTok();
+  const importLink = useImportLink();
   useFocusEffect(
     useCallback(() => {
       const timer = setTimeout(() => sheetRef.current?.present(), 0);
@@ -55,7 +55,7 @@ export default function AddTabScreen() {
   const processLink = () => {
     const url = recipeLink.trim();
     if (!url) return;
-    importTikTok.mutate(url, {
+    importLink.mutate(url, {
       onSuccess: () => {
         choosingOption.current = true;
         sheetRef.current?.close();
@@ -118,17 +118,17 @@ export default function AddTabScreen() {
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Process recipe link"
-                disabled={!recipeLink.trim() || importTikTok.isPending}
+                disabled={!recipeLink.trim() || importLink.isPending}
                 style={[
                   styles.processButton,
                   !recipeLink.trim() && styles.processButtonDisabled,
                 ]}
                 onPress={processLink}
               >
-                <ThemedText style={styles.processLabel}>{importTikTok.isPending ? "Processing..." : "Process"}</ThemedText>
+                <ThemedText style={styles.processLabel}>{importLink.isPending ? "Processing..." : "Process"}</ThemedText>
               </Pressable>
             </View>
-            {importTikTok.isError && <ThemedText style={styles.error}>{importTikTok.error.message}</ThemedText>}
+            {importLink.isError && <ThemedText style={styles.error}>{importLink.error.message}</ThemedText>}
             <ThemedText style={styles.or}>or</ThemedText>
             {options.map(([icon, label]) => (
               <Pressable

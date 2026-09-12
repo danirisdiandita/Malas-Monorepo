@@ -20,9 +20,15 @@ type Config struct {
 	JWTSecret           string
 	WebhookDebugDir     string
 	WebhookDebugSecret  string
-	ApifyAPIToken       string
-	ApifyDebugDir       string
+	Apify               ApifyConfig
 	ImportWebhookSecret string
+}
+
+type ApifyConfig struct {
+	APIToken              string
+	DebugDir              string
+	TikTokActorURL        string
+	FacebookReelsActorURL string
 }
 
 func LoadConfig() *Config {
@@ -43,8 +49,12 @@ func LoadConfig() *Config {
 		JWTSecret:           getEnv("JWT_SECRET", ""),
 		WebhookDebugDir:     getEnv("WEBHOOK_DEBUG_DIR", "./debug/webhooks"),
 		WebhookDebugSecret:  getEnv("WEBHOOK_DEBUG_SECRET", ""),
-		ApifyAPIToken:       getEnv("APIFY_API_TOKEN", ""),
-		ApifyDebugDir:       getEnv("APIFY_DEBUG_DIR", "./debug/apify"),
+		Apify: ApifyConfig{
+			APIToken:              getEnv("APIFY_API_TOKEN", ""),
+			DebugDir:              getEnv("APIFY_DEBUG_DIR", "./debug/apify"),
+			TikTokActorURL:        getEnv("APIFY_TIKTOK_ACTOR_URL", "https://api.apify.com/v2/acts/scraptik~tiktok-api/runs"),
+			FacebookReelsActorURL: getEnv("APIFY_FACEBOOK_REELS_ACTOR_URL", "https://api.apify.com/v2/actors/dami_studio~facebook-posts-scraper/runs"),
+		},
 		ImportWebhookSecret: getEnv("IMPORT_WEBHOOK_SECRET", getEnv("TIKTOK_WEBHOOK_SECRET", "")),
 	}
 }

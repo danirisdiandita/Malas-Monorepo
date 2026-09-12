@@ -16,13 +16,13 @@ import (
 	"time"
 )
 
-const apifyURL = "https://api.apify.com/v2/acts/scraptik~tiktok-api/runs"
-
-type TikTokContentType string
+type LinkContentType string
+type TikTokContentType = LinkContentType
 
 const (
-	TikTokPhoto TikTokContentType = "tiktok:photo"
-	TikTokVideo TikTokContentType = "tiktok:video"
+	TikTokPhoto   LinkContentType = "tiktok:photo"
+	TikTokVideo   LinkContentType = "tiktok:video"
+	FacebookReels LinkContentType = "facebook:reels"
 )
 
 var awemeIDPattern = regexp.MustCompile(`(?:^|/)((?:\d){10,})(?:/|$)`)
@@ -32,13 +32,13 @@ type request struct {
 }
 
 type savedRun struct {
-	RequestedURL  string            `json:"requested_url"`
-	RedirectedURL string            `json:"redirected_url"`
-	ContentType   TikTokContentType `json:"content_type"`
-	AwemeID       string            `json:"aweme_id"`
-	CreatedAt     time.Time         `json:"created_at"`
-	ApifyRequest  json.RawMessage   `json:"apify_request"`
-	ApifyResponse json.RawMessage   `json:"apify_response"`
+	RequestedURL  string          `json:"requested_url"`
+	RedirectedURL string          `json:"redirected_url"`
+	ContentType   LinkContentType `json:"content_type"`
+	AwemeID       string          `json:"aweme_id"`
+	CreatedAt     time.Time       `json:"created_at"`
+	ApifyRequest  json.RawMessage `json:"apify_request"`
+	ApifyResponse json.RawMessage `json:"apify_response"`
 }
 
 type apifyRun struct {
@@ -50,7 +50,7 @@ type apifyRun struct {
 	} `json:"data"`
 }
 
-func HandleImport(token, debugDir, authURL, webhookSecret string) http.HandlerFunc {
+func HandleImport(token, debugDir, authURL, webhookSecret, tikTokActorURL, facebookReelsActorURL string) http.HandlerFunc {
 	client := &http.Client{Timeout: 30 * time.Second, CheckRedirect: func(_ *http.Request, via []*http.Request) error {
 		if len(via) >= 10 {
 			return http.ErrUseLastResponse
@@ -76,7 +76,7 @@ func HandleImport(token, debugDir, authURL, webhookSecret string) http.HandlerFu
 			http.Error(w, "body must be JSON with a url", http.StatusBadRequest)
 			return
 		}
-		requested, err := validateTikTokURL(input.URL)
+		requested, err := validateLinkURL(input.URL)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -86,17 +86,23 @@ func HandleImport(token, debugDir, authURL, webhookSecret string) http.HandlerFu
 			http.Error(w, "failed to resolve TikTok URL", http.StatusBadGateway)
 			return
 		}
-		awemeID := extractAwemeID(redirected.Path)
-		if awemeID == "" {
-			http.Error(w, "TikTok URL does not contain an Aweme ID", http.StatusBadRequest)
-			return
-		}
-		contentType, err := ParseTikTokContentType(redirected.String())
+		contentType, err := ParseLinkContentType(redirected.String())
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		payload, _ := json.Marshal(tikTokActorInput(awemeID))
+		awemeID := extractAwemeID(redirected.Path)
+		if contentType != FacebookReels && awemeID == "" {
+			http.Error(w, "TikTok URL does not contain an Aweme ID", http.StatusBadRequest)
+			return
+		}
+		source, actorURL := "tiktok", tikTokActorURL
+		var actorInput any = tikTokActorInput(awemeID)
+		if contentType == FacebookReels {
+			source, actorURL = "facebook", facebookReelsActorURL
+			actorInput = facebookActorInput(redirected.String())
+		}
+		payload, _ := json.Marshal(actorInput)
 		webhook, err := url.Parse(strings.TrimRight(authURL, "/") + "/webhooks/import")
 		if err != nil || webhook.Scheme == "" || webhook.Host == "" {
 			http.Error(w, "AUTH_URL must be an absolute URL", http.StatusInternalServerError)
@@ -108,10 +114,10 @@ func HandleImport(token, debugDir, authURL, webhookSecret string) http.HandlerFu
 		webhookSpec, _ := json.Marshal([]map[string]any{{
 			"eventTypes":      []string{"ACTOR.RUN.SUCCEEDED", "ACTOR.RUN.FAILED"},
 			"requestUrl":      webhook.String(),
-			"payloadTemplate": fmt.Sprintf(`{"source":"tiktok","aweme_id":"%s","content_type":"%s","resource":{{resource}}}`, awemeID, contentType),
+			"payloadTemplate": fmt.Sprintf(`{"source":"%s","aweme_id":"%s","content_type":"%s","resource":{{resource}}}`, source, awemeID, contentType),
 		}})
 		encodedWebhooks := base64.StdEncoding.EncodeToString(webhookSpec)
-		apiRequest, err := http.NewRequestWithContext(r.Context(), http.MethodPost, apifyURL+"?token="+url.QueryEscape(token)+"&webhooks="+url.QueryEscape(encodedWebhooks), bytes.NewReader(payload))
+		apiRequest, err := http.NewRequestWithContext(r.Context(), http.MethodPost, actorURL+"?token="+url.QueryEscape(token)+"&webhooks="+url.QueryEscape(encodedWebhooks), bytes.NewReader(payload))
 		if err != nil {
 			http.Error(w, "failed to create Apify request", http.StatusInternalServerError)
 			return
@@ -146,13 +152,13 @@ func HandleImport(token, debugDir, authURL, webhookSecret string) http.HandlerFu
 		if run.BuildID == "" {
 			run.BuildID = "unknown-build"
 		}
-		folder := filepath.Join(debugDir, "tiktok_"+safeName(run.ID))
+		folder := filepath.Join(debugDir, source+"_"+safeName(run.ID))
 		if err := os.MkdirAll(filepath.Join(folder, "assets"), 0o750); err != nil {
 			http.Error(w, "failed to create Apify debug directory", http.StatusInternalServerError)
 			return
 		}
 		output := savedRun{requested.String(), redirected.String(), contentType, awemeID, time.Now().UTC(), payload, apifyBody}
-		prettyPayload, _ := json.MarshalIndent(tikTokActorInput(awemeID), "", "  ")
+		prettyPayload, _ := json.MarshalIndent(actorInput, "", "  ")
 		if err := os.WriteFile(filepath.Join(folder, "post_payload.json"), prettyPayload, 0o600); err != nil {
 			http.Error(w, "failed to save Apify payload", http.StatusInternalServerError)
 			return
@@ -165,13 +171,17 @@ func HandleImport(token, debugDir, authURL, webhookSecret string) http.HandlerFu
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusAccepted)
-		_ = json.NewEncoder(w).Encode(map[string]string{"aweme_id": awemeID, "content_type": string(contentType), "redirected_url": redirected.String(), "run_id": run.ID, "build_id": run.BuildID, "saved_file": filename})
+		_ = json.NewEncoder(w).Encode(map[string]string{"source": source, "aweme_id": awemeID, "content_type": string(contentType), "redirected_url": redirected.String(), "run_id": run.ID, "build_id": run.BuildID, "saved_file": filename})
 	}
 }
 
 // ParseTikTokContentType classifies a normalized TikTok URL for downstream import handling.
 func ParseTikTokContentType(raw string) (TikTokContentType, error) {
-	u, err := validateTikTokURL(raw)
+	return ParseLinkContentType(raw)
+}
+
+func ParseLinkContentType(raw string) (LinkContentType, error) {
+	u, err := validateLinkURL(raw)
 	if err != nil {
 		return "", err
 	}
@@ -183,13 +193,20 @@ func ParseTikTokContentType(raw string) (TikTokContentType, error) {
 			return TikTokVideo, nil
 		}
 	}
-	return "", fmt.Errorf("TikTok URL must contain /photo/ or /video/")
+	if isFacebookHost(u.Hostname()) {
+		for _, segment := range strings.Split(strings.Trim(u.Path, "/"), "/") {
+			if strings.EqualFold(segment, "reel") || strings.EqualFold(segment, "reels") {
+				return FacebookReels, nil
+			}
+		}
+	}
+	return "", fmt.Errorf("URL must be a TikTok photo/video or Facebook Reel")
 }
 
-func validateTikTokURL(raw string) (*url.URL, error) {
+func validateLinkURL(raw string) (*url.URL, error) {
 	u, err := url.Parse(strings.TrimSpace(raw))
-	if err != nil || u.Scheme != "https" || u.Host == "" || !isTikTokHost(u.Hostname()) {
-		return nil, fmt.Errorf("url must be an HTTPS TikTok URL")
+	if err != nil || u.Scheme != "https" || u.Host == "" || (!isTikTokHost(u.Hostname()) && !isFacebookHost(u.Hostname())) {
+		return nil, fmt.Errorf("url must be an HTTPS TikTok or Facebook URL")
 	}
 	return u, nil
 }
@@ -205,8 +222,8 @@ func resolve(ctx context.Context, client *http.Client, input *url.URL) (*url.URL
 	}
 	defer resp.Body.Close()
 	io.Copy(io.Discard, io.LimitReader(resp.Body, 1024))
-	if resp.Request == nil || resp.Request.URL == nil || !isTikTokHost(resp.Request.URL.Hostname()) {
-		return nil, fmt.Errorf("redirected outside TikTok")
+	if resp.Request == nil || resp.Request.URL == nil || (!isTikTokHost(resp.Request.URL.Hostname()) && !isFacebookHost(resp.Request.URL.Hostname())) {
+		return nil, fmt.Errorf("redirected outside TikTok or Facebook")
 	}
 	return resp.Request.URL, nil
 }
@@ -214,6 +231,15 @@ func resolve(ctx context.Context, client *http.Client, input *url.URL) (*url.URL
 func isTikTokHost(host string) bool {
 	host = strings.ToLower(strings.TrimSuffix(host, "."))
 	return host == "tiktok.com" || strings.HasSuffix(host, ".tiktok.com")
+}
+
+func isFacebookHost(host string) bool {
+	host = strings.ToLower(strings.TrimSuffix(host, "."))
+	return host == "facebook.com" || strings.HasSuffix(host, ".facebook.com")
+}
+
+func facebookActorInput(url string) map[string]any {
+	return map[string]any{"startUrls": []string{url}, "resultsLimit": 1}
 }
 
 func extractAwemeID(path string) string {

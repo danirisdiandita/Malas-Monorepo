@@ -27,7 +27,7 @@ export interface Recipe {
   instructions: string[];
 }
 
-export interface TikTokImportResult {
+export interface LinkImportResult {
   aweme_id: string;
   redirected_url: string;
   saved_file: string;
@@ -96,15 +96,17 @@ export async function getRecipe(id: string): Promise<Recipe> {
   return body;
 }
 
-export async function importTikTok(url: string): Promise<TikTokImportResult> {
-  const response = await fetch(`${apiUrl}/imports/tiktok`, {
+export async function importLink(url: string): Promise<LinkImportResult> {
+  const token = await SecureStore.getItemAsync(tokenKey);
+  if (!token) throw new Error('Not signed in.');
+  const response = await fetch(`${apiUrl}/imports/link`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'X-JWT': token },
     body: JSON.stringify({ url }),
   });
-  if (!response.ok) throw new Error((await response.text()) || 'Unable to process TikTok link.');
+  if (!response.ok) throw new Error((await response.text()) || 'Unable to process link.');
   const body: unknown = await response.json();
-  if (!isTikTokImportResult(body)) throw new Error('Invalid TikTok import response.');
+  if (!isLinkImportResult(body)) throw new Error('Invalid link import response.');
   return body;
 }
 
@@ -114,7 +116,7 @@ function isRecipe(value: unknown): value is Recipe {
   return typeof recipe.id === 'string' && typeof recipe.name === 'string' && typeof recipe.process_minutes === 'number' && typeof recipe.servings === 'number' && typeof recipe.difficulty === 'string' && typeof recipe.source === 'string' && Array.isArray(recipe.tags) && recipe.tags.every((tag) => typeof tag === 'string') && Array.isArray(recipe.ingredients) && recipe.ingredients.every((ingredient) => typeof ingredient === 'string') && Array.isArray(recipe.instructions) && recipe.instructions.every((instruction) => typeof instruction === 'string');
 }
 
-function isTikTokImportResult(value: unknown): value is TikTokImportResult {
+function isLinkImportResult(value: unknown): value is LinkImportResult {
   if (!value || typeof value !== 'object') return false;
   const result = value as Record<string, unknown>;
   return typeof result.aweme_id === 'string' && typeof result.redirected_url === 'string' && typeof result.saved_file === 'string';

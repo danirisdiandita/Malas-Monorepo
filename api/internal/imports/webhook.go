@@ -113,6 +113,8 @@ func HandleImportWebhook(token, debugDir, secret string) http.HandlerFunc {
 		assets := collectImagePostAssetURLs(items)
 		if strings.EqualFold(webhook.ContentType, "tiktok:video") {
 			assets = collectVideoAssetURLs(items)
+		} else if strings.EqualFold(webhook.ContentType, "facebook:reels") {
+			assets = collectAssetURLs(items)
 		}
 		for index := range assets {
 			assets[index].File, assets[index].Error = downloadAsset(r.Context(), client, assets[index].URL, filepath.Join(folder, "assets"), index)
@@ -237,7 +239,7 @@ func buildFinalJSON(items []any, contentType string, assets []asset) map[string]
 		"description":     "",
 		"image_post_info": []string{},
 	}
-	if strings.EqualFold(contentType, "tiktok:video") {
+	if strings.EqualFold(contentType, "tiktok:video") || strings.EqualFold(contentType, "facebook:reels") {
 		delete(result, "image_post_info")
 		result["video"] = ""
 	}
@@ -249,7 +251,7 @@ func buildFinalJSON(items []any, contentType string, assets []asset) map[string]
 			}
 		}
 	}
-	if strings.EqualFold(contentType, "tiktok:video") {
+	if strings.EqualFold(contentType, "tiktok:video") || strings.EqualFold(contentType, "facebook:reels") {
 		if len(assets) > 0 && assets[0].File != "" && assets[0].Error == "" {
 			result["video"] = assets[0].File
 		}
