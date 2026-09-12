@@ -93,7 +93,7 @@ export default function SocialImportScreen() {
             </View>
             <Rule
               icon="link-outline"
-              title="paste the recipe link"
+              title="Paste the recipe link"
               body="Copy the post link, return to Yuzu, and paste it into the recipe link field."
             />
           </View>
