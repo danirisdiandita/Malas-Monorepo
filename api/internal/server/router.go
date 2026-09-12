@@ -55,6 +55,7 @@ func NewRouter(deps Dependencies) http.Handler {
 		r.Get("/me", handlers.HandleMe(deps.DB))
 		r.Get("/recipes", recipes.StoredList(deps.DB, deps.Imports.Storage))
 		r.Get("/recipes/{id}", recipes.StoredGet(deps.DB, deps.Imports.Storage))
+		r.Post("/recipes/{id}/rating", recipes.Rate(deps.DB))
 		r.Post("/imports/link", imports.HandleImport(deps.Config.Apify.APIToken, deps.Config.Apify.DebugDir, deps.Config.AuthURL, deps.Config.ImportWebhookSecret, deps.Config.Apify.TikTokActorURL, deps.Config.Apify.FacebookReelsActorURL, deps.Imports))
 		r.Get("/imports/{runID}", deps.Imports.Status)
 		r.Post("/imports/{runID}/retry", deps.Imports.Retry)

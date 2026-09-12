@@ -16,15 +16,32 @@ import (
 )
 
 type Storage struct {
-	Client *s3.Client
-	Bucket string
+	Client    *s3.Client
+	Presigner *s3.PresignClient
+	Bucket    string
 }
 
 func NewStorage(c config.S3Config) (*Storage, error) {
 	if c.Endpoint == "" || c.Bucket == "" || c.AccessKey == "" || c.SecretKey == "" {
 		return nil, fmt.Errorf("S3_ENDPOINT, S3_BUCKET, S3_ACCESS_KEY and S3_SECRET_KEY are required")
 	}
-	endpoint := c.Endpoint
+	client, err := newS3Client(c, c.Endpoint)
+	if err != nil {
+		return nil, err
+	}
+	presignEndpoint := c.PublicEndpoint
+	if presignEndpoint == "" {
+		presignEndpoint = c.Endpoint
+	}
+	presignClient, err := newS3Client(c, presignEndpoint)
+	if err != nil {
+		return nil, err
+	}
+	return &Storage{Client: client, Presigner: s3.NewPresignClient(presignClient), Bucket: c.Bucket}, nil
+}
+
+func newS3Client(c config.S3Config, rawEndpoint string) (*s3.Client, error) {
+	endpoint := rawEndpoint
 	if !strings.Contains(endpoint, "://") {
 		scheme := "https"
 		if !c.UseSSL {
@@ -43,14 +60,13 @@ func NewStorage(c config.S3Config) (*Storage, error) {
 	if region == "" {
 		region = "auto"
 	}
-	client := s3.New(s3.Options{
+	return s3.New(s3.Options{
 		Region: region, BaseEndpoint: aws.String(strings.TrimRight(u.String(), "/")), UsePathStyle: true,
 		Credentials:                credentials.NewStaticCredentialsProvider(c.AccessKey, c.SecretKey, ""),
 		HTTPClient:                 &http.Client{Timeout: 60 * time.Second},
 		RequestChecksumCalculation: aws.RequestChecksumCalculationWhenRequired,
 		ResponseChecksumValidation: aws.ResponseChecksumValidationWhenRequired,
-	})
-	return &Storage{Client: client, Bucket: c.Bucket}, nil
+	}), nil
 }
 
 func (s *Storage) Upload(ctx context.Context, key string, body io.Reader, size int64, mime string) error {
@@ -60,7 +76,7 @@ func (s *Storage) Upload(ctx context.Context, key string, body io.Reader, size i
 }
 
 func (s *Storage) ImageURL(ctx context.Context, key string) (string, error) {
-	signed, err := s3.NewPresignClient(s.Client).PresignGetObject(ctx,
+	signed, err := s.Presigner.PresignGetObject(ctx,
 		&s3.GetObjectInput{Bucket: &s.Bucket, Key: &key},
 		func(o *s3.PresignOptions) { o.Expires = 15 * time.Minute })
 	if err != nil {

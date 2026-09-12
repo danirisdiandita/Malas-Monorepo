@@ -1,6 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { getRecipe } from '@/lib/api';
+import { getRecipe, rateRecipe } from '@/lib/api';
 
 export function useRecipe(id: string) {
   return useQuery({
@@ -8,5 +8,13 @@ export function useRecipe(id: string) {
     queryFn: () => getRecipe(id),
     enabled: id !== '',
     refetchInterval: 10 * 60 * 1000,
+  });
+}
+
+export function useRateRecipe(id: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (rating: number) => rateRecipe(id, rating),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['recipes', id] }),
   });
 }

@@ -10,6 +10,8 @@ import (
 type Recipe struct {
 	ImageURL       string   `json:"image_url,omitempty"`
 	Notes          string   `json:"notes,omitempty"`
+	URL            string   `json:"url,omitempty"`
+	Rating         float64  `json:"rating,omitempty"`
 	ID             string   `json:"id"`
 	Name           string   `json:"name"`
 	ProcessMinutes int      `json:"process_minutes"`

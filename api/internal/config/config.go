@@ -29,8 +29,8 @@ type Config struct {
 }
 
 type S3Config struct {
-	Endpoint, Port, AccessKey, SecretKey, Region, Bucket string
-	UseSSL                                               bool
+	Endpoint, PublicEndpoint, Port, AccessKey, SecretKey, Region, Bucket string
+	UseSSL                                                               bool
 }
 
 type ApifyConfig struct {
@@ -68,7 +68,7 @@ func LoadConfig() *Config {
 		OpenRouterKey:       getEnv("OPENROUTER_API_KEY", ""),
 		OpenRouterModel:     getEnv("OPENROUTER_MODEL", "openai/gpt-5.6-luna"),
 		OpenRouterURL:       getEnv("OPENROUTER_URL", "https://openrouter.ai/api/v1/chat/completions"),
-		S3: S3Config{Endpoint: getEnv("S3_ENDPOINT", ""), Port: getEnv("S3_PORT", ""),
+		S3: S3Config{Endpoint: getEnv("S3_ENDPOINT", ""), PublicEndpoint: getEnv("S3_PUBLIC_ENDPOINT", ""), Port: getEnv("S3_PORT", ""),
 			AccessKey: getEnv("S3_ACCESS_KEY", ""), SecretKey: getEnv("S3_SECRET_KEY", ""),
 			Region: getEnv("S3_REGION", "auto"), Bucket: getEnv("S3_BUCKET", ""),
 			UseSSL: getEnv("S3_USE_SSL", "true") == "true"},

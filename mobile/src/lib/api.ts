@@ -18,6 +18,8 @@ export interface User {
 export interface Recipe {
   image_url?: string;
   notes?: string;
+  url?: string;
+  rating?: number;
   id: string;
   name: string;
   process_minutes: number;
@@ -137,6 +139,15 @@ export async function getRecipe(id: string): Promise<Recipe> {
   const body: unknown = await response.json();
   if (!isRecipe(body)) throw new Error('Invalid recipe response.');
   return body;
+}
+
+export async function rateRecipe(id: string, rating: number): Promise<void> {
+  const response = await authenticatedFetch(`/recipes/${encodeURIComponent(id)}/rating`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ rating }),
+  });
+  if (!response.ok) throw new Error((await response.text()) || 'Unable to save rating.');
 }
 
 export async function importLink(url: string): Promise<LinkImportResult> {

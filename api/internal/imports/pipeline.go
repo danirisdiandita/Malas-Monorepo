@@ -21,6 +21,7 @@ import (
 	"github.com/danirisdiandita/malas-monorepo/api/internal/recipes"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/h2non/bimg"
 	"github.com/lib/pq"
 )
 
@@ -274,17 +275,19 @@ func (p *Pipeline) process(ctx context.Context, row *ent.Recipe) error {
 	if err != nil {
 		return err
 	}
-	first, err := os.Open(paths[0])
+	original, err := os.ReadFile(paths[0])
 	if err != nil {
 		return err
 	}
-	defer first.Close()
-	info, err := first.Stat()
+	compressed, err := compressImage(original)
 	if err != nil {
-		return err
+		return fmt.Errorf("compress cover: %w", err)
+	}
+	if p.Storage == nil {
+		return fmt.Errorf("image storage is not configured")
 	}
 	key := fmt.Sprintf("recipes/%d/%s/cover.webp", row.UserID, row.ID)
-	if err = p.Storage.Upload(ctx, key, first, info.Size(), "image/webp"); err != nil {
+	if err = p.Storage.Upload(ctx, key, bytes.NewReader(compressed), int64(len(compressed)), "image/webp"); err != nil {
 		return fmt.Errorf("upload cover: %w", err)
 	}
 	ingredients, err := json.Marshal(extracted.Ingredients)
@@ -296,4 +299,24 @@ func (p *Pipeline) process(ctx context.Context, row *ent.Recipe) error {
 		SetIngredients(ingredients).SetInstructions(pq.StringArray(extracted.Instructions)).
 		SetTags(pq.StringArray(extracted.Tags)).SetNotes(extracted.Notes).SetImageS3Key(key).
 		SetImportStatus(recipe.ImportStatusDone).ClearImportError().ClearProcessingAt().Exec(ctx)
+}
+
+func compressImage(input []byte) ([]byte, error) {
+	size, err := bimg.Size(input)
+	if err != nil {
+		return nil, err
+	}
+	const maxDimension = 1600
+	width, height := size.Width, size.Height
+	if width > maxDimension || height > maxDimension {
+		scale := float64(maxDimension) / float64(width)
+		if height > width {
+			scale = float64(maxDimension) / float64(height)
+		}
+		width, height = int(float64(width)*scale), int(float64(height)*scale)
+	}
+	return bimg.NewImage(input).Process(bimg.Options{
+		Width: width, Height: height, Quality: 80, Type: bimg.WEBP,
+		StripMetadata: true, Enlarge: false,
+	})
 }
