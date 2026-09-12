@@ -2,6 +2,7 @@ package groceries
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -95,7 +96,9 @@ func AddFromRecipe(db *ent.Client) http.HandlerFunc {
 			http.Error(w, "recipe ingredients are invalid", 500)
 			return
 		}
+		creates := make([]*ent.GroceryCreate, 0, len(ingredients))
 		for _, item := range ingredients {
+			fmt.Println("item list", item.Name)
 			if strings.TrimSpace(item.Name) == "" {
 				continue
 			}
@@ -103,12 +106,15 @@ func AddFromRecipe(db *ent.Client) http.HandlerFunc {
 			if item.Quantity != nil {
 				create.SetQuantity(*item.Quantity)
 			}
-			if _, err := create.Save(r.Context()); err != nil {
+			creates = append(creates, create)
+		}
+		if len(creates) > 0 {
+			if _, err := db.Grocery.CreateBulk(creates...).Save(r.Context()); err != nil {
 				http.Error(w, "unable to add groceries", 500)
 				return
 			}
 		}
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]int{"count": len(ingredients)})
+		_ = json.NewEncoder(w).Encode(map[string]int{"count": len(creates)})
 	}
 }
