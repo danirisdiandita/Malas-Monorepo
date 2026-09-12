@@ -59,6 +59,7 @@ export default function AddTabScreen() {
   const processLink = () => {
     const url = recipeLink.trim();
     if (!url) return;
+    setRecipeLink("");
     importLink.mutate(url, {
       onSuccess: (result) => {
         choosingOption.current = true;

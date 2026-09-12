@@ -125,6 +125,14 @@ export default function RecipeProcessingScreen() {
               </ThemedText>
             </Pressable>
           )}
+          {!done && !failed && !isError && (
+            <View style={styles.loading} accessibilityLiveRegion="polite">
+              <ActivityIndicator size="small" color={colors.leaf} />
+              <ThemedText style={styles.loadingLabel}>
+                Preparing your recipe…
+              </ThemedText>
+            </View>
+          )}
         </ScrollView>
         {done && (
           <View style={styles.footer}>
@@ -278,7 +286,15 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     marginTop: 3,
   },
-  spinner: { marginTop: 28 },
+  loading: {
+    minHeight: 44,
+    marginTop: 22,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+  },
+  loadingLabel: { color: colors.muted, fontSize: 13, fontWeight: "800" },
   button: {
     height: 52,
     marginTop: 28,
