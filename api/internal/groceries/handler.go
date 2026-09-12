@@ -2,7 +2,6 @@ package groceries
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -15,35 +14,51 @@ import (
 )
 
 type Item struct {
-	ID       string   `json:"id"`
-	Name     string   `json:"name"`
-	Unit     string   `json:"unit"`
-	Quantity *float64 `json:"quantity,omitempty"`
-	Tag      string   `json:"tag,omitempty"`
-	RecipeID *string  `json:"recipe_id,omitempty"`
-	Checked  bool     `json:"checked"`
+	ID             string   `json:"id"`
+	Name           string   `json:"name"`
+	Unit           string   `json:"unit"`
+	Quantity       *float64 `json:"quantity,omitempty"`
+	Tag            string   `json:"tag,omitempty"`
+	RecipeID       *string  `json:"recipe_id,omitempty"`
+	RecipeName     string   `json:"recipe_name,omitempty"`
+	RecipeImageURL string   `json:"recipe_image_url,omitempty"`
+	Checked        bool     `json:"checked"`
 }
 
-func List(db *ent.Client) http.HandlerFunc {
+func List(db *ent.Client, storage *recipes.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		owner, err := recipes.OwnerID(db, r)
 		if err != nil {
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
 		}
-		rows, err := db.Grocery.Query().Where(grocery.UserID(owner)).Order(ent.Asc(grocery.FieldTag), ent.Asc(grocery.FieldName)).All(r.Context())
+		rows, err := db.Grocery.Query().Where(grocery.UserID(owner)).WithRecipe().Order(ent.Asc(grocery.FieldTag), ent.Asc(grocery.FieldName)).All(r.Context())
 		if err != nil {
 			http.Error(w, "unable to load groceries", http.StatusInternalServerError)
 			return
 		}
 		items := make([]Item, 0, len(rows))
+		imageURLs := make(map[uuid.UUID]string)
 		for _, row := range rows {
 			var recipeID *string
 			if row.RecipeID != nil {
 				value := row.RecipeID.String()
 				recipeID = &value
 			}
-			items = append(items, Item{ID: row.ID.String(), Name: row.Name, Unit: row.Unit, Quantity: row.Quantity, Tag: row.Tag, RecipeID: recipeID, Checked: row.Checked})
+			recipeName := ""
+			if row.Edges.Recipe != nil {
+				recipeName = row.Edges.Recipe.Name
+			}
+			recipeImageURL := ""
+			if row.Edges.Recipe != nil && row.Edges.Recipe.ImageS3Key != "" && storage != nil {
+				if signed, ok := imageURLs[row.Edges.Recipe.ID]; ok {
+					recipeImageURL = signed
+				} else if signed, err := storage.ImageURL(r.Context(), row.Edges.Recipe.ImageS3Key); err == nil {
+					imageURLs[row.Edges.Recipe.ID] = signed
+					recipeImageURL = signed
+				}
+			}
+			items = append(items, Item{ID: row.ID.String(), Name: row.Name, Unit: row.Unit, Quantity: row.Quantity, Tag: row.Tag, RecipeID: recipeID, RecipeName: recipeName, RecipeImageURL: recipeImageURL, Checked: row.Checked})
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("Cache-Control", "private, no-store")
@@ -98,7 +113,6 @@ func AddFromRecipe(db *ent.Client) http.HandlerFunc {
 		}
 		creates := make([]*ent.GroceryCreate, 0, len(ingredients))
 		for _, item := range ingredients {
-			fmt.Println("item list", item.Name)
 			if strings.TrimSpace(item.Name) == "" {
 				continue
 			}

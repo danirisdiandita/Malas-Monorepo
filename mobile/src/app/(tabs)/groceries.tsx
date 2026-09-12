@@ -9,6 +9,7 @@ import { useClearGroceries, useGroceries } from "@/hooks/use-groceries";
 import { toast } from "sonner-native";
 import type { Grocery } from "@/lib/api";
 import { decimalAsFraction } from "@/lib/fractions";
+import { RecipeImage } from "@/components/recipe-image";
 
 const colors = {
   ink: "#14231A",
@@ -22,6 +23,7 @@ export default function GroceriesScreen() {
   const { data: groceries, isPending, isError } = useGroceries();
   const clearGroceries = useClearGroceries();
   const [checked, setChecked] = useState<Record<string, boolean>>({});
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
   const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
   const items = groceries ?? [];
   const checkedCount = items.filter((item) => checked[item.id] ?? item.checked).length;
@@ -58,11 +60,12 @@ export default function GroceriesScreen() {
           </View>
           {groups.map((group) => (
             <View key={group.title} style={styles.group}>
-              <View style={styles.groupHeader}>
-                <ThemedText style={styles.groupTitle}>{group.title}</ThemedText>
-                <ThemedText style={styles.count}>{group.items.length} items</ThemedText>
-              </View>
-              {group.items.map((item) => {
+              {group.items[0]?.recipe_name ? <Pressable style={styles.recipeCard} onPress={() => setCollapsedGroups((current) => ({ ...current, [group.items[0].recipe_id ?? group.title]: !current[group.items[0].recipe_id ?? group.title] }))} accessibilityRole="button" accessibilityState={{ expanded: !collapsedGroups[group.items[0].recipe_id ?? group.title] }}>
+                <View style={styles.recipeThumb}>{group.items[0].recipe_image_url ? <RecipeImage url={group.items[0].recipe_image_url} /> : <Ionicons name="book-outline" size={22} color={colors.leaf} />}</View>
+                <View style={styles.recipeCardText}><ThemedText style={styles.groupTitle} numberOfLines={2}>{group.title}</ThemedText><ThemedText style={styles.count}>{group.items.length} items</ThemedText></View>
+                <Ionicons name={collapsedGroups[group.items[0].recipe_id ?? group.title] ? "chevron-down" : "chevron-up"} size={20} color={colors.muted} />
+              </Pressable> : <View style={styles.groupHeader}><ThemedText style={styles.groupTitle}>{group.title}</ThemedText><ThemedText style={styles.count}>{group.items.length} items</ThemedText></View>}
+              {!group.items[0]?.recipe_name || !collapsedGroups[group.items[0].recipe_id ?? group.title] ? group.items.map((item) => {
                 const isChecked = checked[item.id] ?? item.checked;
                 return <Pressable key={item.id} style={styles.item} onPress={() => setChecked((current) => ({ ...current, [item.id]: !isChecked }))} accessibilityRole="checkbox" accessibilityState={{ checked: isChecked }}>
                   <View style={[styles.checkbox, isChecked && styles.checked]}>
@@ -77,7 +80,7 @@ export default function GroceriesScreen() {
                   </ThemedText>
                   <ThemedText style={styles.quantity}>{[item.quantity == null ? "" : decimalAsFraction(item.quantity), item.unit].filter(Boolean).join(" ")}</ThemedText>
                 </Pressable>;
-              })}
+              }) : null}
             </View>
           ))}</>}
         </ScrollView>
@@ -125,7 +128,7 @@ function EmptyGroceries() {
 function groupGroceries(items: Grocery[]) {
   const groups = new Map<string, Grocery[]>();
   for (const item of items) {
-    const title = item.tag || "Other";
+    const title = item.recipe_name || "Other groceries";
     groups.set(title, [...(groups.get(title) ?? []), item]);
   }
   return [...groups.entries()].map(([title, groupItems]) => ({ title, items: groupItems }));
@@ -177,6 +180,9 @@ const styles = StyleSheet.create({
   },
   groupTitle: { color: colors.ink, fontSize: 18, fontWeight: "800" },
   count: { color: colors.muted, fontSize: 13 },
+  recipeCard: { minHeight: 72, borderRadius: 16, backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: colors.line, padding: 10, flexDirection: "row", alignItems: "center", gap: 10 },
+  recipeThumb: { width: 52, height: 52, borderRadius: 12, backgroundColor: colors.sage, overflow: "hidden", alignItems: "center", justifyContent: "center" },
+  recipeCardText: { flex: 1, gap: 3 },
   item: { minHeight: 38, flexDirection: "row", alignItems: "center", gap: 9 },
   checkbox: {
     width: 20,

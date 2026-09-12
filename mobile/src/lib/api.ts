@@ -58,6 +58,8 @@ export interface Grocery {
   quantity?: number;
   tag?: string;
   recipe_id?: string;
+  recipe_name?: string;
+  recipe_image_url?: string;
   checked: boolean;
 }
 
@@ -245,7 +247,7 @@ function isRecipe(value: unknown): value is Recipe {
 function isGrocery(value: unknown): value is Grocery {
   if (!value || typeof value !== 'object') return false;
   const grocery = value as Record<string, unknown>;
-  return typeof grocery.id === 'string' && typeof grocery.name === 'string' && typeof grocery.unit === 'string' && typeof grocery.checked === 'boolean' && (grocery.quantity === undefined || typeof grocery.quantity === 'number') && (grocery.tag === undefined || typeof grocery.tag === 'string') && (grocery.recipe_id === undefined || typeof grocery.recipe_id === 'string');
+  return typeof grocery.id === 'string' && typeof grocery.name === 'string' && typeof grocery.unit === 'string' && typeof grocery.checked === 'boolean' && (grocery.quantity === undefined || typeof grocery.quantity === 'number') && (grocery.tag === undefined || typeof grocery.tag === 'string') && (grocery.recipe_id === undefined || typeof grocery.recipe_id === 'string') && (grocery.recipe_name === undefined || typeof grocery.recipe_name === 'string') && (grocery.recipe_image_url === undefined || typeof grocery.recipe_image_url === 'string');
 }
 
 function isLinkImportResult(value: unknown): value is LinkImportResult {
