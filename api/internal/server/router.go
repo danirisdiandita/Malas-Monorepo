@@ -15,6 +15,7 @@ import (
 )
 
 type Dependencies struct {
+	Imports        *imports.Pipeline
 	Config         *config.Config
 	DB             *ent.Client
 	Authenticate   func(http.Handler) http.Handler
@@ -42,19 +43,21 @@ func NewRouter(deps Dependencies) http.Handler {
 	r.Get("/", func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte("Malas API is running!")) })
 	r.Mount("/auth", handlers.HandleAuthUser(deps.DB, deps.Authenticate, deps.AuthRoutes, deps.AccessTokens, deps.SecureCookies, deps.SameSite))
 	r.Mount("/avatar", deps.AvatarRoutes)
-	r.Get("/recipes", recipes.HandleList)
-	r.Get("/recipes/{id}", recipes.HandleGet)
 	r.Get("/swagger", handlers.HandleSwaggerRedirect)
 	r.Get("/swagger/", handlers.HandleSwaggerUI)
 	r.Get("/swagger/openapi.json", handlers.HandleOpenAPI)
 	r.Post("/webhooks/debug", handlers.HandleDebugWebhook(deps.Config.WebhookDebugDir, deps.Config.WebhookDebugSecret))
-	r.Post("/webhooks/import", imports.HandleImportWebhook(deps.Config.Apify.APIToken, deps.Config.Apify.DebugDir, deps.Config.ImportWebhookSecret))
+	r.Post("/webhooks/import", deps.Imports.Receive)
 
 	r.Group(func(r chi.Router) {
 		r.Use(deps.Authenticate)
 		r.Use(deps.RequireSession)
 		r.Get("/me", handlers.HandleMe(deps.DB))
-		r.Post("/imports/link", imports.HandleImport(deps.Config.Apify.APIToken, deps.Config.Apify.DebugDir, deps.Config.AuthURL, deps.Config.ImportWebhookSecret, deps.Config.Apify.TikTokActorURL, deps.Config.Apify.FacebookReelsActorURL))
+		r.Get("/recipes", recipes.StoredList(deps.DB, deps.Imports.Storage))
+		r.Get("/recipes/{id}", recipes.StoredGet(deps.DB, deps.Imports.Storage))
+		r.Post("/imports/link", imports.HandleImport(deps.Config.Apify.APIToken, deps.Config.Apify.DebugDir, deps.Config.AuthURL, deps.Config.ImportWebhookSecret, deps.Config.Apify.TikTokActorURL, deps.Config.Apify.FacebookReelsActorURL, deps.Imports))
+		r.Get("/imports/{runID}", deps.Imports.Status)
+		r.Post("/imports/{runID}/retry", deps.Imports.Retry)
 	})
 	return r
 }

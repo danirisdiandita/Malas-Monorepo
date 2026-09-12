@@ -13,7 +13,10 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/account"
+	"github.com/danirisdiandita/malas-monorepo/api/ent/folder"
+	"github.com/danirisdiandita/malas-monorepo/api/ent/grocery"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/predicate"
+	"github.com/danirisdiandita/malas-monorepo/api/ent/recipe"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/refreshtoken"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/session"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/user"
@@ -29,6 +32,9 @@ type UserQuery struct {
 	withAccounts      *AccountQuery
 	withSessions      *SessionQuery
 	withRefreshTokens *RefreshTokenQuery
+	withFolders       *FolderQuery
+	withRecipes       *RecipeQuery
+	withGroceries     *GroceryQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -124,6 +130,72 @@ func (_q *UserQuery) QueryRefreshTokens() *RefreshTokenQuery {
 			sqlgraph.From(user.Table, user.FieldID, selector),
 			sqlgraph.To(refreshtoken.Table, refreshtoken.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, user.RefreshTokensTable, user.RefreshTokensColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryFolders chains the current query on the "folders" edge.
+func (_q *UserQuery) QueryFolders() *FolderQuery {
+	query := (&FolderClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(folder.Table, folder.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.FoldersTable, user.FoldersColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryRecipes chains the current query on the "recipes" edge.
+func (_q *UserQuery) QueryRecipes() *RecipeQuery {
+	query := (&RecipeClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(recipe.Table, recipe.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.RecipesTable, user.RecipesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryGroceries chains the current query on the "groceries" edge.
+func (_q *UserQuery) QueryGroceries() *GroceryQuery {
+	query := (&GroceryClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(grocery.Table, grocery.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.GroceriesTable, user.GroceriesColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -326,6 +398,9 @@ func (_q *UserQuery) Clone() *UserQuery {
 		withAccounts:      _q.withAccounts.Clone(),
 		withSessions:      _q.withSessions.Clone(),
 		withRefreshTokens: _q.withRefreshTokens.Clone(),
+		withFolders:       _q.withFolders.Clone(),
+		withRecipes:       _q.withRecipes.Clone(),
+		withGroceries:     _q.withGroceries.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -362,6 +437,39 @@ func (_q *UserQuery) WithRefreshTokens(opts ...func(*RefreshTokenQuery)) *UserQu
 		opt(query)
 	}
 	_q.withRefreshTokens = query
+	return _q
+}
+
+// WithFolders tells the query-builder to eager-load the nodes that are connected to
+// the "folders" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithFolders(opts ...func(*FolderQuery)) *UserQuery {
+	query := (&FolderClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withFolders = query
+	return _q
+}
+
+// WithRecipes tells the query-builder to eager-load the nodes that are connected to
+// the "recipes" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithRecipes(opts ...func(*RecipeQuery)) *UserQuery {
+	query := (&RecipeClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withRecipes = query
+	return _q
+}
+
+// WithGroceries tells the query-builder to eager-load the nodes that are connected to
+// the "groceries" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithGroceries(opts ...func(*GroceryQuery)) *UserQuery {
+	query := (&GroceryClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withGroceries = query
 	return _q
 }
 
@@ -443,10 +551,13 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	var (
 		nodes       = []*User{}
 		_spec       = _q.querySpec()
-		loadedTypes = [3]bool{
+		loadedTypes = [6]bool{
 			_q.withAccounts != nil,
 			_q.withSessions != nil,
 			_q.withRefreshTokens != nil,
+			_q.withFolders != nil,
+			_q.withRecipes != nil,
+			_q.withGroceries != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -485,6 +596,27 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 		if err := _q.loadRefreshTokens(ctx, query, nodes,
 			func(n *User) { n.Edges.RefreshTokens = []*RefreshToken{} },
 			func(n *User, e *RefreshToken) { n.Edges.RefreshTokens = append(n.Edges.RefreshTokens, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withFolders; query != nil {
+		if err := _q.loadFolders(ctx, query, nodes,
+			func(n *User) { n.Edges.Folders = []*Folder{} },
+			func(n *User, e *Folder) { n.Edges.Folders = append(n.Edges.Folders, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withRecipes; query != nil {
+		if err := _q.loadRecipes(ctx, query, nodes,
+			func(n *User) { n.Edges.Recipes = []*Recipe{} },
+			func(n *User, e *Recipe) { n.Edges.Recipes = append(n.Edges.Recipes, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withGroceries; query != nil {
+		if err := _q.loadGroceries(ctx, query, nodes,
+			func(n *User) { n.Edges.Groceries = []*Grocery{} },
+			func(n *User, e *Grocery) { n.Edges.Groceries = append(n.Edges.Groceries, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -579,6 +711,96 @@ func (_q *UserQuery) loadRefreshTokens(ctx context.Context, query *RefreshTokenQ
 		node, ok := nodeids[*fk]
 		if !ok {
 			return fmt.Errorf(`unexpected referenced foreign-key "user_refresh_tokens" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadFolders(ctx context.Context, query *FolderQuery, nodes []*User, init func(*User), assign func(*User, *Folder)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(folder.FieldUserID)
+	}
+	query.Where(predicate.Folder(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.FoldersColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.UserID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadRecipes(ctx context.Context, query *RecipeQuery, nodes []*User, init func(*User), assign func(*User, *Recipe)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(recipe.FieldUserID)
+	}
+	query.Where(predicate.Recipe(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.RecipesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.UserID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadGroceries(ctx context.Context, query *GroceryQuery, nodes []*User, init func(*User), assign func(*User, *Grocery)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(grocery.FieldUserID)
+	}
+	query.Where(predicate.Grocery(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.GroceriesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.UserID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_id" returned %v for node %v`, fk, n.ID)
 		}
 		assign(node, n)
 	}

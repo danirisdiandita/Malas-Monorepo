@@ -7,5 +7,6 @@ export function useRecipe(id: string) {
     queryKey: ['recipes', id],
     queryFn: () => getRecipe(id),
     enabled: id !== '',
+    refetchInterval: 10 * 60 * 1000,
   });
 }

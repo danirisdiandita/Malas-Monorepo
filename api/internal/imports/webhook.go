@@ -20,6 +20,7 @@ const (
 )
 
 type apifyWebhook struct {
+	RecipeID    string `json:"recipe_id"`
 	Source      string `json:"source"`
 	AwemeID     string `json:"aweme_id"`
 	ContentType string `json:"content_type"`

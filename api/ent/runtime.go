@@ -5,16 +5,42 @@ package ent
 import (
 	"time"
 
+	"github.com/danirisdiandita/malas-monorepo/api/ent/folder"
+	"github.com/danirisdiandita/malas-monorepo/api/ent/grocery"
+	"github.com/danirisdiandita/malas-monorepo/api/ent/recipe"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/refreshtoken"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/schema"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/session"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/user"
+	"github.com/google/uuid"
 )
 
 // The init function reads all schema descriptors with runtime code
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	folderFields := schema.Folder{}.Fields()
+	_ = folderFields
+	// folderDescID is the schema descriptor for id field.
+	folderDescID := folderFields[0].Descriptor()
+	// folder.DefaultID holds the default value on creation for the id field.
+	folder.DefaultID = folderDescID.Default.(func() uuid.UUID)
+	groceryFields := schema.Grocery{}.Fields()
+	_ = groceryFields
+	// groceryDescID is the schema descriptor for id field.
+	groceryDescID := groceryFields[0].Descriptor()
+	// grocery.DefaultID holds the default value on creation for the id field.
+	grocery.DefaultID = groceryDescID.Default.(func() uuid.UUID)
+	recipeFields := schema.Recipe{}.Fields()
+	_ = recipeFields
+	// recipeDescCreatedAt is the schema descriptor for created_at field.
+	recipeDescCreatedAt := recipeFields[13].Descriptor()
+	// recipe.DefaultCreatedAt holds the default value on creation for the created_at field.
+	recipe.DefaultCreatedAt = recipeDescCreatedAt.Default.(func() time.Time)
+	// recipeDescID is the schema descriptor for id field.
+	recipeDescID := recipeFields[0].Descriptor()
+	// recipe.DefaultID holds the default value on creation for the id field.
+	recipe.DefaultID = recipeDescID.Default.(func() uuid.UUID)
 	refreshtokenFields := schema.RefreshToken{}.Fields()
 	_ = refreshtokenFields
 	// refreshtokenDescCreatedAt is the schema descriptor for created_at field.

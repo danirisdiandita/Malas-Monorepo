@@ -14,6 +14,12 @@ type Tx struct {
 	config
 	// Account is the client for interacting with the Account builders.
 	Account *AccountClient
+	// Folder is the client for interacting with the Folder builders.
+	Folder *FolderClient
+	// Grocery is the client for interacting with the Grocery builders.
+	Grocery *GroceryClient
+	// Recipe is the client for interacting with the Recipe builders.
+	Recipe *RecipeClient
 	// RefreshToken is the client for interacting with the RefreshToken builders.
 	RefreshToken *RefreshTokenClient
 	// Session is the client for interacting with the Session builders.
@@ -152,6 +158,9 @@ func (tx *Tx) Client() *Client {
 
 func (tx *Tx) init() {
 	tx.Account = NewAccountClient(tx.config)
+	tx.Folder = NewFolderClient(tx.config)
+	tx.Grocery = NewGroceryClient(tx.config)
+	tx.Recipe = NewRecipeClient(tx.config)
 	tx.RefreshToken = NewRefreshTokenClient(tx.config)
 	tx.Session = NewSessionClient(tx.config)
 	tx.User = NewUserClient(tx.config)

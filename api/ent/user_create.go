@@ -11,9 +11,13 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/account"
+	"github.com/danirisdiandita/malas-monorepo/api/ent/folder"
+	"github.com/danirisdiandita/malas-monorepo/api/ent/grocery"
+	"github.com/danirisdiandita/malas-monorepo/api/ent/recipe"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/refreshtoken"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/session"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/user"
+	"github.com/google/uuid"
 )
 
 // UserCreate is the builder for creating a User entity.
@@ -134,6 +138,51 @@ func (_c *UserCreate) AddRefreshTokens(v ...*RefreshToken) *UserCreate {
 		ids[i] = v[i].ID
 	}
 	return _c.AddRefreshTokenIDs(ids...)
+}
+
+// AddFolderIDs adds the "folders" edge to the Folder entity by IDs.
+func (_c *UserCreate) AddFolderIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddFolderIDs(ids...)
+	return _c
+}
+
+// AddFolders adds the "folders" edges to the Folder entity.
+func (_c *UserCreate) AddFolders(v ...*Folder) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddFolderIDs(ids...)
+}
+
+// AddRecipeIDs adds the "recipes" edge to the Recipe entity by IDs.
+func (_c *UserCreate) AddRecipeIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddRecipeIDs(ids...)
+	return _c
+}
+
+// AddRecipes adds the "recipes" edges to the Recipe entity.
+func (_c *UserCreate) AddRecipes(v ...*Recipe) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddRecipeIDs(ids...)
+}
+
+// AddGroceryIDs adds the "groceries" edge to the Grocery entity by IDs.
+func (_c *UserCreate) AddGroceryIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddGroceryIDs(ids...)
+	return _c
+}
+
+// AddGroceries adds the "groceries" edges to the Grocery entity.
+func (_c *UserCreate) AddGroceries(v ...*Grocery) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddGroceryIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -293,6 +342,54 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(refreshtoken.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.FoldersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.FoldersTable,
+			Columns: []string{user.FoldersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(folder.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.RecipesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RecipesTable,
+			Columns: []string{user.RecipesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(recipe.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.GroceriesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GroceriesTable,
+			Columns: []string{user.GroceriesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(grocery.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

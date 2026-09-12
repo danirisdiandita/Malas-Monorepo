@@ -4,3 +4,4 @@
 .moon/cache/
 /api/debug/webhooks
 /.env
+__pycache__

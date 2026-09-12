@@ -56,10 +56,14 @@ export default function AddTabScreen() {
     const url = recipeLink.trim();
     if (!url) return;
     importLink.mutate(url, {
-      onSuccess: () => {
+      onSuccess: (result) => {
         choosingOption.current = true;
         sheetRef.current?.close();
-        router.push("/recipe/preview");
+        if (result.recipe_id) {
+          router.push({ pathname: "/recipe/processing", params: { runID: result.run_id, url } });
+        } else {
+          router.push("/recipe/preview");
+        }
       },
     });
   };

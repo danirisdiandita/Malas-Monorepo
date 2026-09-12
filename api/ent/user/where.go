@@ -449,6 +449,75 @@ func HasRefreshTokensWith(preds ...predicate.RefreshToken) predicate.User {
 	})
 }
 
+// HasFolders applies the HasEdge predicate on the "folders" edge.
+func HasFolders() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, FoldersTable, FoldersColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasFoldersWith applies the HasEdge predicate on the "folders" edge with a given conditions (other predicates).
+func HasFoldersWith(preds ...predicate.Folder) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newFoldersStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasRecipes applies the HasEdge predicate on the "recipes" edge.
+func HasRecipes() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, RecipesTable, RecipesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasRecipesWith applies the HasEdge predicate on the "recipes" edge with a given conditions (other predicates).
+func HasRecipesWith(preds ...predicate.Recipe) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newRecipesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasGroceries applies the HasEdge predicate on the "groceries" edge.
+func HasGroceries() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, GroceriesTable, GroceriesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasGroceriesWith applies the HasEdge predicate on the "groceries" edge with a given conditions (other predicates).
+func HasGroceriesWith(preds ...predicate.Grocery) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newGroceriesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.User) predicate.User {
 	return predicate.User(sql.AndPredicates(predicates...))

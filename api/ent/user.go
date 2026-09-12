@@ -43,9 +43,15 @@ type UserEdges struct {
 	Sessions []*Session `json:"sessions,omitempty"`
 	// RefreshTokens holds the value of the refresh_tokens edge.
 	RefreshTokens []*RefreshToken `json:"refresh_tokens,omitempty"`
+	// Folders holds the value of the folders edge.
+	Folders []*Folder `json:"folders,omitempty"`
+	// Recipes holds the value of the recipes edge.
+	Recipes []*Recipe `json:"recipes,omitempty"`
+	// Groceries holds the value of the groceries edge.
+	Groceries []*Grocery `json:"groceries,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [6]bool
 }
 
 // AccountsOrErr returns the Accounts value or an error if the edge
@@ -73,6 +79,33 @@ func (e UserEdges) RefreshTokensOrErr() ([]*RefreshToken, error) {
 		return e.RefreshTokens, nil
 	}
 	return nil, &NotLoadedError{edge: "refresh_tokens"}
+}
+
+// FoldersOrErr returns the Folders value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) FoldersOrErr() ([]*Folder, error) {
+	if e.loadedTypes[3] {
+		return e.Folders, nil
+	}
+	return nil, &NotLoadedError{edge: "folders"}
+}
+
+// RecipesOrErr returns the Recipes value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) RecipesOrErr() ([]*Recipe, error) {
+	if e.loadedTypes[4] {
+		return e.Recipes, nil
+	}
+	return nil, &NotLoadedError{edge: "recipes"}
+}
+
+// GroceriesOrErr returns the Groceries value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) GroceriesOrErr() ([]*Grocery, error) {
+	if e.loadedTypes[5] {
+		return e.Groceries, nil
+	}
+	return nil, &NotLoadedError{edge: "groceries"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -171,6 +204,21 @@ func (_m *User) QuerySessions() *SessionQuery {
 // QueryRefreshTokens queries the "refresh_tokens" edge of the User entity.
 func (_m *User) QueryRefreshTokens() *RefreshTokenQuery {
 	return NewUserClient(_m.config).QueryRefreshTokens(_m)
+}
+
+// QueryFolders queries the "folders" edge of the User entity.
+func (_m *User) QueryFolders() *FolderQuery {
+	return NewUserClient(_m.config).QueryFolders(_m)
+}
+
+// QueryRecipes queries the "recipes" edge of the User entity.
+func (_m *User) QueryRecipes() *RecipeQuery {
+	return NewUserClient(_m.config).QueryRecipes(_m)
+}
+
+// QueryGroceries queries the "groceries" edge of the User entity.
+func (_m *User) QueryGroceries() *GroceryQuery {
+	return NewUserClient(_m.config).QueryGroceries(_m)
 }
 
 // Update returns a builder for updating this User.

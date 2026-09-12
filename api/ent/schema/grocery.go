@@ -15,6 +15,7 @@ type Grocery struct {
 func (Grocery) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("id", uuid.UUID{}).Default(uuid.New),
+		field.Int("user_id"),
 		field.String("name"),
 		field.String("unit"),
 		field.String("tag").Optional(),
@@ -23,7 +24,7 @@ func (Grocery) Fields() []ent.Field {
 
 func (Grocery) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("user", User.Type).Ref("groceries").Unique().Required(),
+		edge.From("user", User.Type).Ref("groceries").Field("user_id").Unique().Required(),
 	}
 }
 

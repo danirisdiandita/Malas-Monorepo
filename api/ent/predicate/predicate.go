@@ -9,6 +9,15 @@ import (
 // Account is the predicate function for account builders.
 type Account func(*sql.Selector)
 
+// Folder is the predicate function for folder builders.
+type Folder func(*sql.Selector)
+
+// Grocery is the predicate function for grocery builders.
+type Grocery func(*sql.Selector)
+
+// Recipe is the predicate function for recipe builders.
+type Recipe func(*sql.Selector)
+
 // RefreshToken is the predicate function for refreshtoken builders.
 type RefreshToken func(*sql.Selector)
 

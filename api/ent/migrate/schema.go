@@ -39,6 +39,123 @@ var (
 			},
 		},
 	}
+	// FoldersColumns holds the columns for the "folders" table.
+	FoldersColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "name", Type: field.TypeString},
+		{Name: "user_id", Type: field.TypeInt},
+	}
+	// FoldersTable holds the schema information for the "folders" table.
+	FoldersTable = &schema.Table{
+		Name:       "folders",
+		Columns:    FoldersColumns,
+		PrimaryKey: []*schema.Column{FoldersColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "folders_users_folders",
+				Columns:    []*schema.Column{FoldersColumns[2]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "folder_user_id",
+				Unique:  false,
+				Columns: []*schema.Column{FoldersColumns[2]},
+			},
+		},
+	}
+	// GroceriesColumns holds the columns for the "groceries" table.
+	GroceriesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "name", Type: field.TypeString},
+		{Name: "unit", Type: field.TypeString},
+		{Name: "tag", Type: field.TypeString, Nullable: true},
+		{Name: "user_id", Type: field.TypeInt},
+	}
+	// GroceriesTable holds the schema information for the "groceries" table.
+	GroceriesTable = &schema.Table{
+		Name:       "groceries",
+		Columns:    GroceriesColumns,
+		PrimaryKey: []*schema.Column{GroceriesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "groceries_users_groceries",
+				Columns:    []*schema.Column{GroceriesColumns[4]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "grocery_user_id",
+				Unique:  false,
+				Columns: []*schema.Column{GroceriesColumns[4]},
+			},
+		},
+	}
+	// RecipesColumns holds the columns for the "recipes" table.
+	RecipesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "name", Type: field.TypeString},
+		{Name: "servings", Type: field.TypeInt},
+		{Name: "process_minutes", Type: field.TypeInt},
+		{Name: "ingredients", Type: field.TypeJSON},
+		{Name: "instructions", Type: field.TypeOther, SchemaType: map[string]string{"postgres": "text[]"}},
+		{Name: "tags", Type: field.TypeOther, Nullable: true, SchemaType: map[string]string{"postgres": "text[]"}},
+		{Name: "import_status", Type: field.TypeEnum, Enums: []string{"looking", "making", "done", "failed"}, Default: "done"},
+		{Name: "import_error", Type: field.TypeString, Nullable: true},
+		{Name: "processing_at", Type: field.TypeTime, Nullable: true},
+		{Name: "import_webhook", Type: field.TypeJSON, Nullable: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "rating", Type: field.TypeFloat64, Nullable: true},
+		{Name: "notes", Type: field.TypeString, Nullable: true},
+		{Name: "image_s3_key", Type: field.TypeString, Nullable: true},
+		{Name: "url", Type: field.TypeString, Nullable: true},
+		{Name: "source", Type: field.TypeString, Nullable: true},
+		{Name: "webhook_id", Type: field.TypeString, Nullable: true},
+		{Name: "raw_source_payload", Type: field.TypeJSON, Nullable: true},
+		{Name: "folder_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "user_id", Type: field.TypeInt},
+	}
+	// RecipesTable holds the schema information for the "recipes" table.
+	RecipesTable = &schema.Table{
+		Name:       "recipes",
+		Columns:    RecipesColumns,
+		PrimaryKey: []*schema.Column{RecipesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "recipes_folders_recipes",
+				Columns:    []*schema.Column{RecipesColumns[19]},
+				RefColumns: []*schema.Column{FoldersColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "recipes_users_recipes",
+				Columns:    []*schema.Column{RecipesColumns[20]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "recipe_user_id",
+				Unique:  false,
+				Columns: []*schema.Column{RecipesColumns[20]},
+			},
+			{
+				Name:    "recipe_folder_id",
+				Unique:  false,
+				Columns: []*schema.Column{RecipesColumns[19]},
+			},
+			{
+				Name:    "recipe_webhook_id",
+				Unique:  false,
+				Columns: []*schema.Column{RecipesColumns[17]},
+			},
+		},
+	}
 	// RefreshTokensColumns holds the columns for the "refresh_tokens" table.
 	RefreshTokensColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -106,6 +223,9 @@ var (
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		AccountsTable,
+		FoldersTable,
+		GroceriesTable,
+		RecipesTable,
 		RefreshTokensTable,
 		SessionsTable,
 		UsersTable,
@@ -114,6 +234,10 @@ var (
 
 func init() {
 	AccountsTable.ForeignKeys[0].RefTable = UsersTable
+	FoldersTable.ForeignKeys[0].RefTable = UsersTable
+	GroceriesTable.ForeignKeys[0].RefTable = UsersTable
+	RecipesTable.ForeignKeys[0].RefTable = FoldersTable
+	RecipesTable.ForeignKeys[1].RefTable = UsersTable
 	RefreshTokensTable.ForeignKeys[0].RefTable = UsersTable
 	SessionsTable.ForeignKeys[0].RefTable = UsersTable
 }

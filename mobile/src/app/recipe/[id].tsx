@@ -8,6 +8,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { yuzuColors } from '@/components/yuzu-screen';
 import { useRecipe } from '@/hooks/use-recipe';
+import { RecipeImage } from '@/components/recipe-image';
 
 export default function RecipeDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -27,6 +28,7 @@ export default function RecipeDetailScreen() {
               <ThemedText style={styles.heroEmoji}>🍋</ThemedText>
               <ThemedText style={styles.placeholderLabel}>Recipe image</ThemedText>
             </View>
+            <RecipeImage url={recipe.image_url} />
             <Pressable style={[styles.circleButton, styles.backButton]} onPress={() => router.back()} accessibilityLabel="Go back">
               <Ionicons name="chevron-back" size={22} color={yuzuColors.ink} />
             </Pressable>
@@ -38,17 +40,11 @@ export default function RecipeDetailScreen() {
           <View style={styles.content}>
             <ThemedText style={styles.source}>{recipe.tags.join(' · ').toUpperCase() || 'RECIPE'}</ThemedText>
             <ThemedText style={styles.title}>{recipe.name}</ThemedText>
-            <ThemedText style={styles.intro}>Bright, silky, and ready in {recipe.process_minutes} minutes.</ThemedText>
+            {!!recipe.notes && <ThemedText style={styles.intro}>{recipe.notes}</ThemedText>}
             <View style={styles.metadata}>
-              <Meta icon="time-outline" label={`${recipe.process_minutes} min`} />
-              <Meta icon="sparkles-outline" label={recipe.difficulty} />
-              <Meta icon="people-outline" label={`${recipe.servings} servings`} />
-            </View>
-            <View style={styles.nutrition}>
-              <ThemedText style={styles.nutritionTitle}>NUTRITION / SERVING</ThemedText>
-              {[['520 kcal', 'Calories'], ['16 g', 'Protein'], ['68 g', 'Carbs'], ['19 g', 'Fat']].map(([value, label]) => (
-                <View key={label} style={styles.nutritionItem}><ThemedText style={styles.nutritionValue}>{value}</ThemedText><ThemedText style={styles.nutritionLabel}>{label}</ThemedText></View>
-              ))}
+              {recipe.process_minutes > 0 && <Meta icon="time-outline" label={`${recipe.process_minutes} min`} />}
+              {!!recipe.difficulty && <Meta icon="sparkles-outline" label={recipe.difficulty} />}
+              {recipe.servings > 0 && <Meta icon="people-outline" label={`${recipe.servings} servings`} />}
             </View>
             <View style={styles.section}>
               <View style={styles.sectionHeader}><ThemedText style={styles.heading}>Ingredients</ThemedText><ThemedText style={styles.count}>{recipe.ingredients.length} items</ThemedText></View>

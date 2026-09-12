@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/google/uuid"
 	"io"
 	"net/http"
 	"net/url"
@@ -50,8 +51,11 @@ type apifyRun struct {
 	} `json:"data"`
 }
 
-func HandleImport(token, debugDir, authURL, webhookSecret, tikTokActorURL, facebookReelsActorURL string) http.HandlerFunc {
-	client := &http.Client{Timeout: 30 * time.Second, CheckRedirect: func(_ *http.Request, via []*http.Request) error {
+func HandleImport(token, debugDir, authURL, webhookSecret, tikTokActorURL, facebookReelsActorURL string, pipeline *Pipeline) http.HandlerFunc {
+	client := &http.Client{Timeout: 25 * time.Second, CheckRedirect: func(req *http.Request, via []*http.Request) error {
+		if _, err := validateLinkURL(req.URL.String()); err != nil {
+			return err
+		}
 		if len(via) >= 10 {
 			return http.ErrUseLastResponse
 		}
@@ -108,13 +112,28 @@ func HandleImport(token, debugDir, authURL, webhookSecret, tikTokActorURL, faceb
 			http.Error(w, "AUTH_URL must be an absolute URL", http.StatusInternalServerError)
 			return
 		}
+		recipeID := ""
+		if contentType == TikTokPhoto {
+			if pipeline == nil || pipeline.Config.OpenRouterKey == "" || pipeline.Storage == nil {
+				http.Error(w, "Recipe extraction requires OPENROUTER_API_KEY and S3 configuration", 503)
+				return
+			}
+			row, err := pipeline.Create(r, source, redirected.String())
+			if err != nil {
+				http.Error(w, "unable to create recipe import", 500)
+				return
+			}
+			recipeID = row.ID.String()
+			// An ambiguous launch failure stays pending so an early webhook can recover it.
+			// The worker expires imports which never receive a callback.
+		}
 		query := webhook.Query()
 		query.Set("secret", webhookSecret)
 		webhook.RawQuery = query.Encode()
 		webhookSpec, _ := json.Marshal([]map[string]any{{
-			"eventTypes":      []string{"ACTOR.RUN.SUCCEEDED", "ACTOR.RUN.FAILED"},
+			"eventTypes":      []string{"ACTOR.RUN.SUCCEEDED", "ACTOR.RUN.FAILED", "ACTOR.RUN.ABORTED", "ACTOR.RUN.TIMED_OUT"},
 			"requestUrl":      webhook.String(),
-			"payloadTemplate": fmt.Sprintf(`{"source":"%s","aweme_id":"%s","content_type":"%s","resource":{{resource}}}`, source, awemeID, contentType),
+			"payloadTemplate": fmt.Sprintf(`{"recipe_id":"%s","source":"%s","aweme_id":"%s","content_type":"%s","resource":{{resource}}}`, recipeID, source, awemeID, contentType),
 		}})
 		encodedWebhooks := base64.StdEncoding.EncodeToString(webhookSpec)
 		apiRequest, err := http.NewRequestWithContext(r.Context(), http.MethodPost, actorURL+"?token="+url.QueryEscape(token)+"&webhooks="+url.QueryEscape(encodedWebhooks), bytes.NewReader(payload))
@@ -144,7 +163,15 @@ func HandleImport(token, debugDir, authURL, webhookSecret, tikTokActorURL, faceb
 			run.ID = run.Data.ID
 		}
 		if run.ID == "" {
-			run.ID = "unknown-run"
+			http.Error(w, "Apify response has no run ID", 502)
+			return
+		}
+		if recipeID != "" {
+			id, _ := uuid.Parse(recipeID)
+			if err := pipeline.DB.Recipe.UpdateOneID(id).SetWebhookID(run.ID).Exec(r.Context()); err != nil {
+				http.Error(w, "unable to save import run", 500)
+				return
+			}
 		}
 		if run.BuildID == "" {
 			run.BuildID = run.Data.BuildID
@@ -171,7 +198,7 @@ func HandleImport(token, debugDir, authURL, webhookSecret, tikTokActorURL, faceb
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusAccepted)
-		_ = json.NewEncoder(w).Encode(map[string]string{"source": source, "aweme_id": awemeID, "content_type": string(contentType), "redirected_url": redirected.String(), "run_id": run.ID, "build_id": run.BuildID, "saved_file": filename})
+		_ = json.NewEncoder(w).Encode(map[string]string{"recipe_id": recipeID, "source": source, "aweme_id": awemeID, "content_type": string(contentType), "redirected_url": redirected.String(), "run_id": run.ID, "build_id": run.BuildID, "saved_file": filename})
 	}
 }
 
@@ -185,12 +212,14 @@ func ParseLinkContentType(raw string) (LinkContentType, error) {
 	if err != nil {
 		return "", err
 	}
-	for _, segment := range strings.Split(strings.Trim(u.Path, "/"), "/") {
-		switch strings.ToLower(segment) {
-		case "photo":
-			return TikTokPhoto, nil
-		case "video":
-			return TikTokVideo, nil
+	if isTikTokHost(u.Hostname()) {
+		for _, segment := range strings.Split(strings.Trim(u.Path, "/"), "/") {
+			switch strings.ToLower(segment) {
+			case "photo":
+				return TikTokPhoto, nil
+			case "video":
+				return TikTokVideo, nil
+			}
 		}
 	}
 	if isFacebookHost(u.Hostname()) {
@@ -205,7 +234,7 @@ func ParseLinkContentType(raw string) (LinkContentType, error) {
 
 func validateLinkURL(raw string) (*url.URL, error) {
 	u, err := url.Parse(strings.TrimSpace(raw))
-	if err != nil || u.Scheme != "https" || u.Host == "" || (!isTikTokHost(u.Hostname()) && !isFacebookHost(u.Hostname())) {
+	if err != nil || u.Scheme != "https" || u.Host == "" || u.User != nil || (u.Port() != "" && u.Port() != "443") || (!isTikTokHost(u.Hostname()) && !isFacebookHost(u.Hostname())) {
 		return nil, fmt.Errorf("url must be an HTTPS TikTok or Facebook URL")
 	}
 	return u, nil

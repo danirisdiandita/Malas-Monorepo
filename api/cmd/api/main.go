@@ -17,6 +17,8 @@ import (
 	appauth "github.com/danirisdiandita/malas-monorepo/api/internal/auth"
 	"github.com/danirisdiandita/malas-monorepo/api/internal/config"
 	"github.com/danirisdiandita/malas-monorepo/api/internal/db"
+	"github.com/danirisdiandita/malas-monorepo/api/internal/imports"
+	"github.com/danirisdiandita/malas-monorepo/api/internal/recipes"
 	appserver "github.com/danirisdiandita/malas-monorepo/api/internal/server"
 	"github.com/go-pkgz/auth/v2"
 	"github.com/go-pkgz/auth/v2/avatar"
@@ -94,8 +96,17 @@ func main() {
 
 	m := service.Middleware()
 	authRoutes, avatarRoutes := service.Handlers()
+	var storage *recipes.Storage
+	if cfg.S3.Endpoint != "" {
+		storage, err = recipes.NewStorage(cfg.S3)
+		if err != nil {
+			log.Fatalf("image storage: %v", err)
+		}
+	}
+	pipeline := &imports.Pipeline{DB: client, Config: cfg, Storage: storage, Client: &http.Client{Timeout: 180 * time.Second}}
 
 	r := appserver.NewRouter(appserver.Dependencies{
+		Imports:        pipeline,
 		Config:         cfg,
 		DB:             client,
 		Authenticate:   m.Auth,
@@ -124,6 +135,9 @@ func main() {
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+	workerDone := make(chan struct{})
+	go func() { defer close(workerDone); pipeline.Run(ctx) }()
+	defer func() { stop(); <-workerDone }()
 	select {
 	case err := <-serverErr:
 		if err != nil && !errors.Is(err, http.ErrServerClosed) {

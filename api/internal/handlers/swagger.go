@@ -24,7 +24,11 @@ const openAPISpec = `{
   "servers": [{"url": "/"}],
   "paths": {
     "/recipes": {
-      "get": {"summary": "List recipes", "responses": {"200": {"description": "Recipe list"}}}
+      "get": {"summary": "List recipes", "security": [{"jwtAuth": []}], "parameters": [
+        {"name": "q", "in": "query", "schema": {"type": "string"}, "description": "Search recipe names"},
+        {"name": "page", "in": "query", "schema": {"type": "integer", "minimum": 1, "default": 1}},
+        {"name": "page_size", "in": "query", "schema": {"type": "integer", "minimum": 1, "maximum": 50, "default": 20}}
+      ], "responses": {"200": {"description": "Recipe page with items and next_page"}, "401": {"description": "Unauthorized"}}}
     },
     "/recipes/{id}": {
       "get": {"summary": "Get a recipe", "parameters": [{"name": "id", "in": "path", "required": true, "schema": {"type": "string"}}], "responses": {"200": {"description": "Recipe"}, "404": {"description": "Not found"}}}

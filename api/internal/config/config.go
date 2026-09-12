@@ -22,6 +22,15 @@ type Config struct {
 	WebhookDebugSecret  string
 	Apify               ApifyConfig
 	ImportWebhookSecret string
+	OpenRouterKey       string
+	OpenRouterModel     string
+	OpenRouterURL       string
+	S3                  S3Config
+}
+
+type S3Config struct {
+	Endpoint, Port, AccessKey, SecretKey, Region, Bucket string
+	UseSSL                                               bool
 }
 
 type ApifyConfig struct {
@@ -56,6 +65,13 @@ func LoadConfig() *Config {
 			FacebookReelsActorURL: getEnv("APIFY_FACEBOOK_REELS_ACTOR_URL", "https://api.apify.com/v2/actors/dami_studio~facebook-posts-scraper/runs"),
 		},
 		ImportWebhookSecret: getEnv("IMPORT_WEBHOOK_SECRET", getEnv("TIKTOK_WEBHOOK_SECRET", "")),
+		OpenRouterKey:       getEnv("OPENROUTER_API_KEY", ""),
+		OpenRouterModel:     getEnv("OPENROUTER_MODEL", "openai/gpt-5.6-luna"),
+		OpenRouterURL:       getEnv("OPENROUTER_URL", "https://openrouter.ai/api/v1/chat/completions"),
+		S3: S3Config{Endpoint: getEnv("S3_ENDPOINT", ""), Port: getEnv("S3_PORT", ""),
+			AccessKey: getEnv("S3_ACCESS_KEY", ""), SecretKey: getEnv("S3_SECRET_KEY", ""),
+			Region: getEnv("S3_REGION", "auto"), Bucket: getEnv("S3_BUCKET", ""),
+			UseSSL: getEnv("S3_USE_SSL", "true") == "true"},
 	}
 }
 

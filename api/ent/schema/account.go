@@ -7,7 +7,7 @@ import (
 	"entgo.io/ent/schema/index"
 )
 
-type Account struct { ent.Schema }
+type Account struct{ ent.Schema }
 
 func (Account) Fields() []ent.Field {
 	return []ent.Field{

@@ -32,6 +32,12 @@ const (
 	EdgeSessions = "sessions"
 	// EdgeRefreshTokens holds the string denoting the refresh_tokens edge name in mutations.
 	EdgeRefreshTokens = "refresh_tokens"
+	// EdgeFolders holds the string denoting the folders edge name in mutations.
+	EdgeFolders = "folders"
+	// EdgeRecipes holds the string denoting the recipes edge name in mutations.
+	EdgeRecipes = "recipes"
+	// EdgeGroceries holds the string denoting the groceries edge name in mutations.
+	EdgeGroceries = "groceries"
 	// Table holds the table name of the user in the database.
 	Table = "users"
 	// AccountsTable is the table that holds the accounts relation/edge.
@@ -55,6 +61,27 @@ const (
 	RefreshTokensInverseTable = "refresh_tokens"
 	// RefreshTokensColumn is the table column denoting the refresh_tokens relation/edge.
 	RefreshTokensColumn = "user_refresh_tokens"
+	// FoldersTable is the table that holds the folders relation/edge.
+	FoldersTable = "folders"
+	// FoldersInverseTable is the table name for the Folder entity.
+	// It exists in this package in order to avoid circular dependency with the "folder" package.
+	FoldersInverseTable = "folders"
+	// FoldersColumn is the table column denoting the folders relation/edge.
+	FoldersColumn = "user_id"
+	// RecipesTable is the table that holds the recipes relation/edge.
+	RecipesTable = "recipes"
+	// RecipesInverseTable is the table name for the Recipe entity.
+	// It exists in this package in order to avoid circular dependency with the "recipe" package.
+	RecipesInverseTable = "recipes"
+	// RecipesColumn is the table column denoting the recipes relation/edge.
+	RecipesColumn = "user_id"
+	// GroceriesTable is the table that holds the groceries relation/edge.
+	GroceriesTable = "groceries"
+	// GroceriesInverseTable is the table name for the Grocery entity.
+	// It exists in this package in order to avoid circular dependency with the "grocery" package.
+	GroceriesInverseTable = "groceries"
+	// GroceriesColumn is the table column denoting the groceries relation/edge.
+	GroceriesColumn = "user_id"
 )
 
 // Columns holds all SQL columns for user fields.
@@ -168,6 +195,48 @@ func ByRefreshTokens(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newRefreshTokensStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByFoldersCount orders the results by folders count.
+func ByFoldersCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newFoldersStep(), opts...)
+	}
+}
+
+// ByFolders orders the results by folders terms.
+func ByFolders(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newFoldersStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByRecipesCount orders the results by recipes count.
+func ByRecipesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newRecipesStep(), opts...)
+	}
+}
+
+// ByRecipes orders the results by recipes terms.
+func ByRecipes(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newRecipesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByGroceriesCount orders the results by groceries count.
+func ByGroceriesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newGroceriesStep(), opts...)
+	}
+}
+
+// ByGroceries orders the results by groceries terms.
+func ByGroceries(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newGroceriesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newAccountsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -187,5 +256,26 @@ func newRefreshTokensStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(RefreshTokensInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, RefreshTokensTable, RefreshTokensColumn),
+	)
+}
+func newFoldersStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(FoldersInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, FoldersTable, FoldersColumn),
+	)
+}
+func newRecipesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(RecipesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, RecipesTable, RecipesColumn),
+	)
+}
+func newGroceriesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(GroceriesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, GroceriesTable, GroceriesColumn),
 	)
 }

@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"sync"
@@ -12,10 +13,15 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/account"
+	"github.com/danirisdiandita/malas-monorepo/api/ent/folder"
+	"github.com/danirisdiandita/malas-monorepo/api/ent/grocery"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/predicate"
+	"github.com/danirisdiandita/malas-monorepo/api/ent/recipe"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/refreshtoken"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/session"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/user"
+	"github.com/google/uuid"
+	"github.com/lib/pq"
 )
 
 const (
@@ -28,6 +34,9 @@ const (
 
 	// Node types.
 	TypeAccount      = "Account"
+	TypeFolder       = "Folder"
+	TypeGrocery      = "Grocery"
+	TypeRecipe       = "Recipe"
 	TypeRefreshToken = "RefreshToken"
 	TypeSession      = "Session"
 	TypeUser         = "User"
@@ -700,6 +709,2949 @@ func (m *AccountMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown Account edge %s", name)
+}
+
+// FolderMutation represents an operation that mutates the Folder nodes in the graph.
+type FolderMutation struct {
+	config
+	op             Op
+	typ            string
+	id             *uuid.UUID
+	name           *string
+	clearedFields  map[string]struct{}
+	user           *int
+	cleareduser    bool
+	recipes        map[uuid.UUID]struct{}
+	removedrecipes map[uuid.UUID]struct{}
+	clearedrecipes bool
+	done           bool
+	oldValue       func(context.Context) (*Folder, error)
+	predicates     []predicate.Folder
+}
+
+var _ ent.Mutation = (*FolderMutation)(nil)
+
+// folderOption allows management of the mutation configuration using functional options.
+type folderOption func(*FolderMutation)
+
+// newFolderMutation creates new mutation for the Folder entity.
+func newFolderMutation(c config, op Op, opts ...folderOption) *FolderMutation {
+	m := &FolderMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeFolder,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withFolderID sets the ID field of the mutation.
+func withFolderID(id uuid.UUID) folderOption {
+	return func(m *FolderMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *Folder
+		)
+		m.oldValue = func(ctx context.Context) (*Folder, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().Folder.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withFolder sets the old Folder of the mutation.
+func withFolder(node *Folder) folderOption {
+	return func(m *FolderMutation) {
+		m.oldValue = func(context.Context) (*Folder, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m FolderMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m FolderMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of Folder entities.
+func (m *FolderMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *FolderMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *FolderMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().Folder.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetUserID sets the "user_id" field.
+func (m *FolderMutation) SetUserID(i int) {
+	m.user = &i
+}
+
+// UserID returns the value of the "user_id" field in the mutation.
+func (m *FolderMutation) UserID() (r int, exists bool) {
+	v := m.user
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUserID returns the old "user_id" field's value of the Folder entity.
+// If the Folder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FolderMutation) OldUserID(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUserID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUserID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUserID: %w", err)
+	}
+	return oldValue.UserID, nil
+}
+
+// ResetUserID resets all changes to the "user_id" field.
+func (m *FolderMutation) ResetUserID() {
+	m.user = nil
+}
+
+// SetName sets the "name" field.
+func (m *FolderMutation) SetName(s string) {
+	m.name = &s
+}
+
+// Name returns the value of the "name" field in the mutation.
+func (m *FolderMutation) Name() (r string, exists bool) {
+	v := m.name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldName returns the old "name" field's value of the Folder entity.
+// If the Folder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FolderMutation) OldName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
+	}
+	return oldValue.Name, nil
+}
+
+// ResetName resets all changes to the "name" field.
+func (m *FolderMutation) ResetName() {
+	m.name = nil
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *FolderMutation) ClearUser() {
+	m.cleareduser = true
+	m.clearedFields[folder.FieldUserID] = struct{}{}
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *FolderMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *FolderMutation) UserIDs() (ids []int) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *FolderMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
+// AddRecipeIDs adds the "recipes" edge to the Recipe entity by ids.
+func (m *FolderMutation) AddRecipeIDs(ids ...uuid.UUID) {
+	if m.recipes == nil {
+		m.recipes = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.recipes[ids[i]] = struct{}{}
+	}
+}
+
+// ClearRecipes clears the "recipes" edge to the Recipe entity.
+func (m *FolderMutation) ClearRecipes() {
+	m.clearedrecipes = true
+}
+
+// RecipesCleared reports if the "recipes" edge to the Recipe entity was cleared.
+func (m *FolderMutation) RecipesCleared() bool {
+	return m.clearedrecipes
+}
+
+// RemoveRecipeIDs removes the "recipes" edge to the Recipe entity by IDs.
+func (m *FolderMutation) RemoveRecipeIDs(ids ...uuid.UUID) {
+	if m.removedrecipes == nil {
+		m.removedrecipes = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.recipes, ids[i])
+		m.removedrecipes[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedRecipes returns the removed IDs of the "recipes" edge to the Recipe entity.
+func (m *FolderMutation) RemovedRecipesIDs() (ids []uuid.UUID) {
+	for id := range m.removedrecipes {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// RecipesIDs returns the "recipes" edge IDs in the mutation.
+func (m *FolderMutation) RecipesIDs() (ids []uuid.UUID) {
+	for id := range m.recipes {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetRecipes resets all changes to the "recipes" edge.
+func (m *FolderMutation) ResetRecipes() {
+	m.recipes = nil
+	m.clearedrecipes = false
+	m.removedrecipes = nil
+}
+
+// Where appends a list predicates to the FolderMutation builder.
+func (m *FolderMutation) Where(ps ...predicate.Folder) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the FolderMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *FolderMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.Folder, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *FolderMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *FolderMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (Folder).
+func (m *FolderMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *FolderMutation) Fields() []string {
+	fields := make([]string, 0, 2)
+	if m.user != nil {
+		fields = append(fields, folder.FieldUserID)
+	}
+	if m.name != nil {
+		fields = append(fields, folder.FieldName)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *FolderMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case folder.FieldUserID:
+		return m.UserID()
+	case folder.FieldName:
+		return m.Name()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *FolderMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case folder.FieldUserID:
+		return m.OldUserID(ctx)
+	case folder.FieldName:
+		return m.OldName(ctx)
+	}
+	return nil, fmt.Errorf("unknown Folder field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *FolderMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case folder.FieldUserID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUserID(v)
+		return nil
+	case folder.FieldName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetName(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Folder field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *FolderMutation) AddedFields() []string {
+	var fields []string
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *FolderMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *FolderMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown Folder numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *FolderMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *FolderMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *FolderMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown Folder nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *FolderMutation) ResetField(name string) error {
+	switch name {
+	case folder.FieldUserID:
+		m.ResetUserID()
+		return nil
+	case folder.FieldName:
+		m.ResetName()
+		return nil
+	}
+	return fmt.Errorf("unknown Folder field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *FolderMutation) AddedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.user != nil {
+		edges = append(edges, folder.EdgeUser)
+	}
+	if m.recipes != nil {
+		edges = append(edges, folder.EdgeRecipes)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *FolderMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case folder.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	case folder.EdgeRecipes:
+		ids := make([]ent.Value, 0, len(m.recipes))
+		for id := range m.recipes {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *FolderMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.removedrecipes != nil {
+		edges = append(edges, folder.EdgeRecipes)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *FolderMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case folder.EdgeRecipes:
+		ids := make([]ent.Value, 0, len(m.removedrecipes))
+		for id := range m.removedrecipes {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *FolderMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.cleareduser {
+		edges = append(edges, folder.EdgeUser)
+	}
+	if m.clearedrecipes {
+		edges = append(edges, folder.EdgeRecipes)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *FolderMutation) EdgeCleared(name string) bool {
+	switch name {
+	case folder.EdgeUser:
+		return m.cleareduser
+	case folder.EdgeRecipes:
+		return m.clearedrecipes
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *FolderMutation) ClearEdge(name string) error {
+	switch name {
+	case folder.EdgeUser:
+		m.ClearUser()
+		return nil
+	}
+	return fmt.Errorf("unknown Folder unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *FolderMutation) ResetEdge(name string) error {
+	switch name {
+	case folder.EdgeUser:
+		m.ResetUser()
+		return nil
+	case folder.EdgeRecipes:
+		m.ResetRecipes()
+		return nil
+	}
+	return fmt.Errorf("unknown Folder edge %s", name)
+}
+
+// GroceryMutation represents an operation that mutates the Grocery nodes in the graph.
+type GroceryMutation struct {
+	config
+	op            Op
+	typ           string
+	id            *uuid.UUID
+	name          *string
+	unit          *string
+	tag           *string
+	clearedFields map[string]struct{}
+	user          *int
+	cleareduser   bool
+	done          bool
+	oldValue      func(context.Context) (*Grocery, error)
+	predicates    []predicate.Grocery
+}
+
+var _ ent.Mutation = (*GroceryMutation)(nil)
+
+// groceryOption allows management of the mutation configuration using functional options.
+type groceryOption func(*GroceryMutation)
+
+// newGroceryMutation creates new mutation for the Grocery entity.
+func newGroceryMutation(c config, op Op, opts ...groceryOption) *GroceryMutation {
+	m := &GroceryMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeGrocery,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withGroceryID sets the ID field of the mutation.
+func withGroceryID(id uuid.UUID) groceryOption {
+	return func(m *GroceryMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *Grocery
+		)
+		m.oldValue = func(ctx context.Context) (*Grocery, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().Grocery.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withGrocery sets the old Grocery of the mutation.
+func withGrocery(node *Grocery) groceryOption {
+	return func(m *GroceryMutation) {
+		m.oldValue = func(context.Context) (*Grocery, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m GroceryMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m GroceryMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of Grocery entities.
+func (m *GroceryMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *GroceryMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *GroceryMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().Grocery.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetUserID sets the "user_id" field.
+func (m *GroceryMutation) SetUserID(i int) {
+	m.user = &i
+}
+
+// UserID returns the value of the "user_id" field in the mutation.
+func (m *GroceryMutation) UserID() (r int, exists bool) {
+	v := m.user
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUserID returns the old "user_id" field's value of the Grocery entity.
+// If the Grocery object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GroceryMutation) OldUserID(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUserID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUserID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUserID: %w", err)
+	}
+	return oldValue.UserID, nil
+}
+
+// ResetUserID resets all changes to the "user_id" field.
+func (m *GroceryMutation) ResetUserID() {
+	m.user = nil
+}
+
+// SetName sets the "name" field.
+func (m *GroceryMutation) SetName(s string) {
+	m.name = &s
+}
+
+// Name returns the value of the "name" field in the mutation.
+func (m *GroceryMutation) Name() (r string, exists bool) {
+	v := m.name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldName returns the old "name" field's value of the Grocery entity.
+// If the Grocery object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GroceryMutation) OldName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
+	}
+	return oldValue.Name, nil
+}
+
+// ResetName resets all changes to the "name" field.
+func (m *GroceryMutation) ResetName() {
+	m.name = nil
+}
+
+// SetUnit sets the "unit" field.
+func (m *GroceryMutation) SetUnit(s string) {
+	m.unit = &s
+}
+
+// Unit returns the value of the "unit" field in the mutation.
+func (m *GroceryMutation) Unit() (r string, exists bool) {
+	v := m.unit
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUnit returns the old "unit" field's value of the Grocery entity.
+// If the Grocery object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GroceryMutation) OldUnit(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUnit is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUnit requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUnit: %w", err)
+	}
+	return oldValue.Unit, nil
+}
+
+// ResetUnit resets all changes to the "unit" field.
+func (m *GroceryMutation) ResetUnit() {
+	m.unit = nil
+}
+
+// SetTag sets the "tag" field.
+func (m *GroceryMutation) SetTag(s string) {
+	m.tag = &s
+}
+
+// Tag returns the value of the "tag" field in the mutation.
+func (m *GroceryMutation) Tag() (r string, exists bool) {
+	v := m.tag
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTag returns the old "tag" field's value of the Grocery entity.
+// If the Grocery object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GroceryMutation) OldTag(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTag is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTag requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTag: %w", err)
+	}
+	return oldValue.Tag, nil
+}
+
+// ClearTag clears the value of the "tag" field.
+func (m *GroceryMutation) ClearTag() {
+	m.tag = nil
+	m.clearedFields[grocery.FieldTag] = struct{}{}
+}
+
+// TagCleared returns if the "tag" field was cleared in this mutation.
+func (m *GroceryMutation) TagCleared() bool {
+	_, ok := m.clearedFields[grocery.FieldTag]
+	return ok
+}
+
+// ResetTag resets all changes to the "tag" field.
+func (m *GroceryMutation) ResetTag() {
+	m.tag = nil
+	delete(m.clearedFields, grocery.FieldTag)
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *GroceryMutation) ClearUser() {
+	m.cleareduser = true
+	m.clearedFields[grocery.FieldUserID] = struct{}{}
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *GroceryMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *GroceryMutation) UserIDs() (ids []int) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *GroceryMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
+// Where appends a list predicates to the GroceryMutation builder.
+func (m *GroceryMutation) Where(ps ...predicate.Grocery) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the GroceryMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *GroceryMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.Grocery, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *GroceryMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *GroceryMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (Grocery).
+func (m *GroceryMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *GroceryMutation) Fields() []string {
+	fields := make([]string, 0, 4)
+	if m.user != nil {
+		fields = append(fields, grocery.FieldUserID)
+	}
+	if m.name != nil {
+		fields = append(fields, grocery.FieldName)
+	}
+	if m.unit != nil {
+		fields = append(fields, grocery.FieldUnit)
+	}
+	if m.tag != nil {
+		fields = append(fields, grocery.FieldTag)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *GroceryMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case grocery.FieldUserID:
+		return m.UserID()
+	case grocery.FieldName:
+		return m.Name()
+	case grocery.FieldUnit:
+		return m.Unit()
+	case grocery.FieldTag:
+		return m.Tag()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *GroceryMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case grocery.FieldUserID:
+		return m.OldUserID(ctx)
+	case grocery.FieldName:
+		return m.OldName(ctx)
+	case grocery.FieldUnit:
+		return m.OldUnit(ctx)
+	case grocery.FieldTag:
+		return m.OldTag(ctx)
+	}
+	return nil, fmt.Errorf("unknown Grocery field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *GroceryMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case grocery.FieldUserID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUserID(v)
+		return nil
+	case grocery.FieldName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetName(v)
+		return nil
+	case grocery.FieldUnit:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUnit(v)
+		return nil
+	case grocery.FieldTag:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTag(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Grocery field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *GroceryMutation) AddedFields() []string {
+	var fields []string
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *GroceryMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *GroceryMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown Grocery numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *GroceryMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(grocery.FieldTag) {
+		fields = append(fields, grocery.FieldTag)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *GroceryMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *GroceryMutation) ClearField(name string) error {
+	switch name {
+	case grocery.FieldTag:
+		m.ClearTag()
+		return nil
+	}
+	return fmt.Errorf("unknown Grocery nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *GroceryMutation) ResetField(name string) error {
+	switch name {
+	case grocery.FieldUserID:
+		m.ResetUserID()
+		return nil
+	case grocery.FieldName:
+		m.ResetName()
+		return nil
+	case grocery.FieldUnit:
+		m.ResetUnit()
+		return nil
+	case grocery.FieldTag:
+		m.ResetTag()
+		return nil
+	}
+	return fmt.Errorf("unknown Grocery field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *GroceryMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.user != nil {
+		edges = append(edges, grocery.EdgeUser)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *GroceryMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case grocery.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *GroceryMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *GroceryMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *GroceryMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.cleareduser {
+		edges = append(edges, grocery.EdgeUser)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *GroceryMutation) EdgeCleared(name string) bool {
+	switch name {
+	case grocery.EdgeUser:
+		return m.cleareduser
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *GroceryMutation) ClearEdge(name string) error {
+	switch name {
+	case grocery.EdgeUser:
+		m.ClearUser()
+		return nil
+	}
+	return fmt.Errorf("unknown Grocery unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *GroceryMutation) ResetEdge(name string) error {
+	switch name {
+	case grocery.EdgeUser:
+		m.ResetUser()
+		return nil
+	}
+	return fmt.Errorf("unknown Grocery edge %s", name)
+}
+
+// RecipeMutation represents an operation that mutates the Recipe nodes in the graph.
+type RecipeMutation struct {
+	config
+	op                       Op
+	typ                      string
+	id                       *uuid.UUID
+	name                     *string
+	servings                 *int
+	addservings              *int
+	process_minutes          *int
+	addprocess_minutes       *int
+	ingredients              *json.RawMessage
+	appendingredients        json.RawMessage
+	instructions             *pq.StringArray
+	tags                     *pq.StringArray
+	import_status            *recipe.ImportStatus
+	import_error             *string
+	processing_at            *time.Time
+	import_webhook           *json.RawMessage
+	appendimport_webhook     json.RawMessage
+	created_at               *time.Time
+	rating                   *float64
+	addrating                *float64
+	notes                    *string
+	image_s3_key             *string
+	url                      *string
+	source                   *string
+	webhook_id               *string
+	raw_source_payload       *json.RawMessage
+	appendraw_source_payload json.RawMessage
+	clearedFields            map[string]struct{}
+	user                     *int
+	cleareduser              bool
+	folder                   *uuid.UUID
+	clearedfolder            bool
+	done                     bool
+	oldValue                 func(context.Context) (*Recipe, error)
+	predicates               []predicate.Recipe
+}
+
+var _ ent.Mutation = (*RecipeMutation)(nil)
+
+// recipeOption allows management of the mutation configuration using functional options.
+type recipeOption func(*RecipeMutation)
+
+// newRecipeMutation creates new mutation for the Recipe entity.
+func newRecipeMutation(c config, op Op, opts ...recipeOption) *RecipeMutation {
+	m := &RecipeMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeRecipe,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withRecipeID sets the ID field of the mutation.
+func withRecipeID(id uuid.UUID) recipeOption {
+	return func(m *RecipeMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *Recipe
+		)
+		m.oldValue = func(ctx context.Context) (*Recipe, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().Recipe.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withRecipe sets the old Recipe of the mutation.
+func withRecipe(node *Recipe) recipeOption {
+	return func(m *RecipeMutation) {
+		m.oldValue = func(context.Context) (*Recipe, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m RecipeMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m RecipeMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of Recipe entities.
+func (m *RecipeMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *RecipeMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *RecipeMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().Recipe.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetUserID sets the "user_id" field.
+func (m *RecipeMutation) SetUserID(i int) {
+	m.user = &i
+}
+
+// UserID returns the value of the "user_id" field in the mutation.
+func (m *RecipeMutation) UserID() (r int, exists bool) {
+	v := m.user
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUserID returns the old "user_id" field's value of the Recipe entity.
+// If the Recipe object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RecipeMutation) OldUserID(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUserID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUserID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUserID: %w", err)
+	}
+	return oldValue.UserID, nil
+}
+
+// ResetUserID resets all changes to the "user_id" field.
+func (m *RecipeMutation) ResetUserID() {
+	m.user = nil
+}
+
+// SetFolderID sets the "folder_id" field.
+func (m *RecipeMutation) SetFolderID(u uuid.UUID) {
+	m.folder = &u
+}
+
+// FolderID returns the value of the "folder_id" field in the mutation.
+func (m *RecipeMutation) FolderID() (r uuid.UUID, exists bool) {
+	v := m.folder
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldFolderID returns the old "folder_id" field's value of the Recipe entity.
+// If the Recipe object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RecipeMutation) OldFolderID(ctx context.Context) (v *uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldFolderID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldFolderID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldFolderID: %w", err)
+	}
+	return oldValue.FolderID, nil
+}
+
+// ClearFolderID clears the value of the "folder_id" field.
+func (m *RecipeMutation) ClearFolderID() {
+	m.folder = nil
+	m.clearedFields[recipe.FieldFolderID] = struct{}{}
+}
+
+// FolderIDCleared returns if the "folder_id" field was cleared in this mutation.
+func (m *RecipeMutation) FolderIDCleared() bool {
+	_, ok := m.clearedFields[recipe.FieldFolderID]
+	return ok
+}
+
+// ResetFolderID resets all changes to the "folder_id" field.
+func (m *RecipeMutation) ResetFolderID() {
+	m.folder = nil
+	delete(m.clearedFields, recipe.FieldFolderID)
+}
+
+// SetName sets the "name" field.
+func (m *RecipeMutation) SetName(s string) {
+	m.name = &s
+}
+
+// Name returns the value of the "name" field in the mutation.
+func (m *RecipeMutation) Name() (r string, exists bool) {
+	v := m.name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldName returns the old "name" field's value of the Recipe entity.
+// If the Recipe object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RecipeMutation) OldName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
+	}
+	return oldValue.Name, nil
+}
+
+// ResetName resets all changes to the "name" field.
+func (m *RecipeMutation) ResetName() {
+	m.name = nil
+}
+
+// SetServings sets the "servings" field.
+func (m *RecipeMutation) SetServings(i int) {
+	m.servings = &i
+	m.addservings = nil
+}
+
+// Servings returns the value of the "servings" field in the mutation.
+func (m *RecipeMutation) Servings() (r int, exists bool) {
+	v := m.servings
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldServings returns the old "servings" field's value of the Recipe entity.
+// If the Recipe object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RecipeMutation) OldServings(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldServings is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldServings requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldServings: %w", err)
+	}
+	return oldValue.Servings, nil
+}
+
+// AddServings adds i to the "servings" field.
+func (m *RecipeMutation) AddServings(i int) {
+	if m.addservings != nil {
+		*m.addservings += i
+	} else {
+		m.addservings = &i
+	}
+}
+
+// AddedServings returns the value that was added to the "servings" field in this mutation.
+func (m *RecipeMutation) AddedServings() (r int, exists bool) {
+	v := m.addservings
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetServings resets all changes to the "servings" field.
+func (m *RecipeMutation) ResetServings() {
+	m.servings = nil
+	m.addservings = nil
+}
+
+// SetProcessMinutes sets the "process_minutes" field.
+func (m *RecipeMutation) SetProcessMinutes(i int) {
+	m.process_minutes = &i
+	m.addprocess_minutes = nil
+}
+
+// ProcessMinutes returns the value of the "process_minutes" field in the mutation.
+func (m *RecipeMutation) ProcessMinutes() (r int, exists bool) {
+	v := m.process_minutes
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldProcessMinutes returns the old "process_minutes" field's value of the Recipe entity.
+// If the Recipe object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RecipeMutation) OldProcessMinutes(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldProcessMinutes is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldProcessMinutes requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldProcessMinutes: %w", err)
+	}
+	return oldValue.ProcessMinutes, nil
+}
+
+// AddProcessMinutes adds i to the "process_minutes" field.
+func (m *RecipeMutation) AddProcessMinutes(i int) {
+	if m.addprocess_minutes != nil {
+		*m.addprocess_minutes += i
+	} else {
+		m.addprocess_minutes = &i
+	}
+}
+
+// AddedProcessMinutes returns the value that was added to the "process_minutes" field in this mutation.
+func (m *RecipeMutation) AddedProcessMinutes() (r int, exists bool) {
+	v := m.addprocess_minutes
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetProcessMinutes resets all changes to the "process_minutes" field.
+func (m *RecipeMutation) ResetProcessMinutes() {
+	m.process_minutes = nil
+	m.addprocess_minutes = nil
+}
+
+// SetIngredients sets the "ingredients" field.
+func (m *RecipeMutation) SetIngredients(jm json.RawMessage) {
+	m.ingredients = &jm
+	m.appendingredients = nil
+}
+
+// Ingredients returns the value of the "ingredients" field in the mutation.
+func (m *RecipeMutation) Ingredients() (r json.RawMessage, exists bool) {
+	v := m.ingredients
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldIngredients returns the old "ingredients" field's value of the Recipe entity.
+// If the Recipe object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RecipeMutation) OldIngredients(ctx context.Context) (v json.RawMessage, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldIngredients is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldIngredients requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldIngredients: %w", err)
+	}
+	return oldValue.Ingredients, nil
+}
+
+// AppendIngredients adds jm to the "ingredients" field.
+func (m *RecipeMutation) AppendIngredients(jm json.RawMessage) {
+	m.appendingredients = append(m.appendingredients, jm...)
+}
+
+// AppendedIngredients returns the list of values that were appended to the "ingredients" field in this mutation.
+func (m *RecipeMutation) AppendedIngredients() (json.RawMessage, bool) {
+	if len(m.appendingredients) == 0 {
+		return nil, false
+	}
+	return m.appendingredients, true
+}
+
+// ResetIngredients resets all changes to the "ingredients" field.
+func (m *RecipeMutation) ResetIngredients() {
+	m.ingredients = nil
+	m.appendingredients = nil
+}
+
+// SetInstructions sets the "instructions" field.
+func (m *RecipeMutation) SetInstructions(pa pq.StringArray) {
+	m.instructions = &pa
+}
+
+// Instructions returns the value of the "instructions" field in the mutation.
+func (m *RecipeMutation) Instructions() (r pq.StringArray, exists bool) {
+	v := m.instructions
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldInstructions returns the old "instructions" field's value of the Recipe entity.
+// If the Recipe object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RecipeMutation) OldInstructions(ctx context.Context) (v pq.StringArray, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldInstructions is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldInstructions requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldInstructions: %w", err)
+	}
+	return oldValue.Instructions, nil
+}
+
+// ResetInstructions resets all changes to the "instructions" field.
+func (m *RecipeMutation) ResetInstructions() {
+	m.instructions = nil
+}
+
+// SetTags sets the "tags" field.
+func (m *RecipeMutation) SetTags(pa pq.StringArray) {
+	m.tags = &pa
+}
+
+// Tags returns the value of the "tags" field in the mutation.
+func (m *RecipeMutation) Tags() (r pq.StringArray, exists bool) {
+	v := m.tags
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTags returns the old "tags" field's value of the Recipe entity.
+// If the Recipe object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RecipeMutation) OldTags(ctx context.Context) (v pq.StringArray, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTags is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTags requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTags: %w", err)
+	}
+	return oldValue.Tags, nil
+}
+
+// ClearTags clears the value of the "tags" field.
+func (m *RecipeMutation) ClearTags() {
+	m.tags = nil
+	m.clearedFields[recipe.FieldTags] = struct{}{}
+}
+
+// TagsCleared returns if the "tags" field was cleared in this mutation.
+func (m *RecipeMutation) TagsCleared() bool {
+	_, ok := m.clearedFields[recipe.FieldTags]
+	return ok
+}
+
+// ResetTags resets all changes to the "tags" field.
+func (m *RecipeMutation) ResetTags() {
+	m.tags = nil
+	delete(m.clearedFields, recipe.FieldTags)
+}
+
+// SetImportStatus sets the "import_status" field.
+func (m *RecipeMutation) SetImportStatus(rs recipe.ImportStatus) {
+	m.import_status = &rs
+}
+
+// ImportStatus returns the value of the "import_status" field in the mutation.
+func (m *RecipeMutation) ImportStatus() (r recipe.ImportStatus, exists bool) {
+	v := m.import_status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldImportStatus returns the old "import_status" field's value of the Recipe entity.
+// If the Recipe object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RecipeMutation) OldImportStatus(ctx context.Context) (v recipe.ImportStatus, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldImportStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldImportStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldImportStatus: %w", err)
+	}
+	return oldValue.ImportStatus, nil
+}
+
+// ResetImportStatus resets all changes to the "import_status" field.
+func (m *RecipeMutation) ResetImportStatus() {
+	m.import_status = nil
+}
+
+// SetImportError sets the "import_error" field.
+func (m *RecipeMutation) SetImportError(s string) {
+	m.import_error = &s
+}
+
+// ImportError returns the value of the "import_error" field in the mutation.
+func (m *RecipeMutation) ImportError() (r string, exists bool) {
+	v := m.import_error
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldImportError returns the old "import_error" field's value of the Recipe entity.
+// If the Recipe object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RecipeMutation) OldImportError(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldImportError is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldImportError requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldImportError: %w", err)
+	}
+	return oldValue.ImportError, nil
+}
+
+// ClearImportError clears the value of the "import_error" field.
+func (m *RecipeMutation) ClearImportError() {
+	m.import_error = nil
+	m.clearedFields[recipe.FieldImportError] = struct{}{}
+}
+
+// ImportErrorCleared returns if the "import_error" field was cleared in this mutation.
+func (m *RecipeMutation) ImportErrorCleared() bool {
+	_, ok := m.clearedFields[recipe.FieldImportError]
+	return ok
+}
+
+// ResetImportError resets all changes to the "import_error" field.
+func (m *RecipeMutation) ResetImportError() {
+	m.import_error = nil
+	delete(m.clearedFields, recipe.FieldImportError)
+}
+
+// SetProcessingAt sets the "processing_at" field.
+func (m *RecipeMutation) SetProcessingAt(t time.Time) {
+	m.processing_at = &t
+}
+
+// ProcessingAt returns the value of the "processing_at" field in the mutation.
+func (m *RecipeMutation) ProcessingAt() (r time.Time, exists bool) {
+	v := m.processing_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldProcessingAt returns the old "processing_at" field's value of the Recipe entity.
+// If the Recipe object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RecipeMutation) OldProcessingAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldProcessingAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldProcessingAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldProcessingAt: %w", err)
+	}
+	return oldValue.ProcessingAt, nil
+}
+
+// ClearProcessingAt clears the value of the "processing_at" field.
+func (m *RecipeMutation) ClearProcessingAt() {
+	m.processing_at = nil
+	m.clearedFields[recipe.FieldProcessingAt] = struct{}{}
+}
+
+// ProcessingAtCleared returns if the "processing_at" field was cleared in this mutation.
+func (m *RecipeMutation) ProcessingAtCleared() bool {
+	_, ok := m.clearedFields[recipe.FieldProcessingAt]
+	return ok
+}
+
+// ResetProcessingAt resets all changes to the "processing_at" field.
+func (m *RecipeMutation) ResetProcessingAt() {
+	m.processing_at = nil
+	delete(m.clearedFields, recipe.FieldProcessingAt)
+}
+
+// SetImportWebhook sets the "import_webhook" field.
+func (m *RecipeMutation) SetImportWebhook(jm json.RawMessage) {
+	m.import_webhook = &jm
+	m.appendimport_webhook = nil
+}
+
+// ImportWebhook returns the value of the "import_webhook" field in the mutation.
+func (m *RecipeMutation) ImportWebhook() (r json.RawMessage, exists bool) {
+	v := m.import_webhook
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldImportWebhook returns the old "import_webhook" field's value of the Recipe entity.
+// If the Recipe object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RecipeMutation) OldImportWebhook(ctx context.Context) (v json.RawMessage, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldImportWebhook is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldImportWebhook requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldImportWebhook: %w", err)
+	}
+	return oldValue.ImportWebhook, nil
+}
+
+// AppendImportWebhook adds jm to the "import_webhook" field.
+func (m *RecipeMutation) AppendImportWebhook(jm json.RawMessage) {
+	m.appendimport_webhook = append(m.appendimport_webhook, jm...)
+}
+
+// AppendedImportWebhook returns the list of values that were appended to the "import_webhook" field in this mutation.
+func (m *RecipeMutation) AppendedImportWebhook() (json.RawMessage, bool) {
+	if len(m.appendimport_webhook) == 0 {
+		return nil, false
+	}
+	return m.appendimport_webhook, true
+}
+
+// ClearImportWebhook clears the value of the "import_webhook" field.
+func (m *RecipeMutation) ClearImportWebhook() {
+	m.import_webhook = nil
+	m.appendimport_webhook = nil
+	m.clearedFields[recipe.FieldImportWebhook] = struct{}{}
+}
+
+// ImportWebhookCleared returns if the "import_webhook" field was cleared in this mutation.
+func (m *RecipeMutation) ImportWebhookCleared() bool {
+	_, ok := m.clearedFields[recipe.FieldImportWebhook]
+	return ok
+}
+
+// ResetImportWebhook resets all changes to the "import_webhook" field.
+func (m *RecipeMutation) ResetImportWebhook() {
+	m.import_webhook = nil
+	m.appendimport_webhook = nil
+	delete(m.clearedFields, recipe.FieldImportWebhook)
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *RecipeMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *RecipeMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the Recipe entity.
+// If the Recipe object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RecipeMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *RecipeMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetRating sets the "rating" field.
+func (m *RecipeMutation) SetRating(f float64) {
+	m.rating = &f
+	m.addrating = nil
+}
+
+// Rating returns the value of the "rating" field in the mutation.
+func (m *RecipeMutation) Rating() (r float64, exists bool) {
+	v := m.rating
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRating returns the old "rating" field's value of the Recipe entity.
+// If the Recipe object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RecipeMutation) OldRating(ctx context.Context) (v *float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRating is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRating requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRating: %w", err)
+	}
+	return oldValue.Rating, nil
+}
+
+// AddRating adds f to the "rating" field.
+func (m *RecipeMutation) AddRating(f float64) {
+	if m.addrating != nil {
+		*m.addrating += f
+	} else {
+		m.addrating = &f
+	}
+}
+
+// AddedRating returns the value that was added to the "rating" field in this mutation.
+func (m *RecipeMutation) AddedRating() (r float64, exists bool) {
+	v := m.addrating
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearRating clears the value of the "rating" field.
+func (m *RecipeMutation) ClearRating() {
+	m.rating = nil
+	m.addrating = nil
+	m.clearedFields[recipe.FieldRating] = struct{}{}
+}
+
+// RatingCleared returns if the "rating" field was cleared in this mutation.
+func (m *RecipeMutation) RatingCleared() bool {
+	_, ok := m.clearedFields[recipe.FieldRating]
+	return ok
+}
+
+// ResetRating resets all changes to the "rating" field.
+func (m *RecipeMutation) ResetRating() {
+	m.rating = nil
+	m.addrating = nil
+	delete(m.clearedFields, recipe.FieldRating)
+}
+
+// SetNotes sets the "notes" field.
+func (m *RecipeMutation) SetNotes(s string) {
+	m.notes = &s
+}
+
+// Notes returns the value of the "notes" field in the mutation.
+func (m *RecipeMutation) Notes() (r string, exists bool) {
+	v := m.notes
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNotes returns the old "notes" field's value of the Recipe entity.
+// If the Recipe object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RecipeMutation) OldNotes(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNotes is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNotes requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNotes: %w", err)
+	}
+	return oldValue.Notes, nil
+}
+
+// ClearNotes clears the value of the "notes" field.
+func (m *RecipeMutation) ClearNotes() {
+	m.notes = nil
+	m.clearedFields[recipe.FieldNotes] = struct{}{}
+}
+
+// NotesCleared returns if the "notes" field was cleared in this mutation.
+func (m *RecipeMutation) NotesCleared() bool {
+	_, ok := m.clearedFields[recipe.FieldNotes]
+	return ok
+}
+
+// ResetNotes resets all changes to the "notes" field.
+func (m *RecipeMutation) ResetNotes() {
+	m.notes = nil
+	delete(m.clearedFields, recipe.FieldNotes)
+}
+
+// SetImageS3Key sets the "image_s3_key" field.
+func (m *RecipeMutation) SetImageS3Key(s string) {
+	m.image_s3_key = &s
+}
+
+// ImageS3Key returns the value of the "image_s3_key" field in the mutation.
+func (m *RecipeMutation) ImageS3Key() (r string, exists bool) {
+	v := m.image_s3_key
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldImageS3Key returns the old "image_s3_key" field's value of the Recipe entity.
+// If the Recipe object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RecipeMutation) OldImageS3Key(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldImageS3Key is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldImageS3Key requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldImageS3Key: %w", err)
+	}
+	return oldValue.ImageS3Key, nil
+}
+
+// ClearImageS3Key clears the value of the "image_s3_key" field.
+func (m *RecipeMutation) ClearImageS3Key() {
+	m.image_s3_key = nil
+	m.clearedFields[recipe.FieldImageS3Key] = struct{}{}
+}
+
+// ImageS3KeyCleared returns if the "image_s3_key" field was cleared in this mutation.
+func (m *RecipeMutation) ImageS3KeyCleared() bool {
+	_, ok := m.clearedFields[recipe.FieldImageS3Key]
+	return ok
+}
+
+// ResetImageS3Key resets all changes to the "image_s3_key" field.
+func (m *RecipeMutation) ResetImageS3Key() {
+	m.image_s3_key = nil
+	delete(m.clearedFields, recipe.FieldImageS3Key)
+}
+
+// SetURL sets the "url" field.
+func (m *RecipeMutation) SetURL(s string) {
+	m.url = &s
+}
+
+// URL returns the value of the "url" field in the mutation.
+func (m *RecipeMutation) URL() (r string, exists bool) {
+	v := m.url
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldURL returns the old "url" field's value of the Recipe entity.
+// If the Recipe object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RecipeMutation) OldURL(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldURL is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldURL requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldURL: %w", err)
+	}
+	return oldValue.URL, nil
+}
+
+// ClearURL clears the value of the "url" field.
+func (m *RecipeMutation) ClearURL() {
+	m.url = nil
+	m.clearedFields[recipe.FieldURL] = struct{}{}
+}
+
+// URLCleared returns if the "url" field was cleared in this mutation.
+func (m *RecipeMutation) URLCleared() bool {
+	_, ok := m.clearedFields[recipe.FieldURL]
+	return ok
+}
+
+// ResetURL resets all changes to the "url" field.
+func (m *RecipeMutation) ResetURL() {
+	m.url = nil
+	delete(m.clearedFields, recipe.FieldURL)
+}
+
+// SetSource sets the "source" field.
+func (m *RecipeMutation) SetSource(s string) {
+	m.source = &s
+}
+
+// Source returns the value of the "source" field in the mutation.
+func (m *RecipeMutation) Source() (r string, exists bool) {
+	v := m.source
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSource returns the old "source" field's value of the Recipe entity.
+// If the Recipe object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RecipeMutation) OldSource(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSource is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSource requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSource: %w", err)
+	}
+	return oldValue.Source, nil
+}
+
+// ClearSource clears the value of the "source" field.
+func (m *RecipeMutation) ClearSource() {
+	m.source = nil
+	m.clearedFields[recipe.FieldSource] = struct{}{}
+}
+
+// SourceCleared returns if the "source" field was cleared in this mutation.
+func (m *RecipeMutation) SourceCleared() bool {
+	_, ok := m.clearedFields[recipe.FieldSource]
+	return ok
+}
+
+// ResetSource resets all changes to the "source" field.
+func (m *RecipeMutation) ResetSource() {
+	m.source = nil
+	delete(m.clearedFields, recipe.FieldSource)
+}
+
+// SetWebhookID sets the "webhook_id" field.
+func (m *RecipeMutation) SetWebhookID(s string) {
+	m.webhook_id = &s
+}
+
+// WebhookID returns the value of the "webhook_id" field in the mutation.
+func (m *RecipeMutation) WebhookID() (r string, exists bool) {
+	v := m.webhook_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldWebhookID returns the old "webhook_id" field's value of the Recipe entity.
+// If the Recipe object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RecipeMutation) OldWebhookID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldWebhookID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldWebhookID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldWebhookID: %w", err)
+	}
+	return oldValue.WebhookID, nil
+}
+
+// ClearWebhookID clears the value of the "webhook_id" field.
+func (m *RecipeMutation) ClearWebhookID() {
+	m.webhook_id = nil
+	m.clearedFields[recipe.FieldWebhookID] = struct{}{}
+}
+
+// WebhookIDCleared returns if the "webhook_id" field was cleared in this mutation.
+func (m *RecipeMutation) WebhookIDCleared() bool {
+	_, ok := m.clearedFields[recipe.FieldWebhookID]
+	return ok
+}
+
+// ResetWebhookID resets all changes to the "webhook_id" field.
+func (m *RecipeMutation) ResetWebhookID() {
+	m.webhook_id = nil
+	delete(m.clearedFields, recipe.FieldWebhookID)
+}
+
+// SetRawSourcePayload sets the "raw_source_payload" field.
+func (m *RecipeMutation) SetRawSourcePayload(jm json.RawMessage) {
+	m.raw_source_payload = &jm
+	m.appendraw_source_payload = nil
+}
+
+// RawSourcePayload returns the value of the "raw_source_payload" field in the mutation.
+func (m *RecipeMutation) RawSourcePayload() (r json.RawMessage, exists bool) {
+	v := m.raw_source_payload
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRawSourcePayload returns the old "raw_source_payload" field's value of the Recipe entity.
+// If the Recipe object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RecipeMutation) OldRawSourcePayload(ctx context.Context) (v json.RawMessage, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRawSourcePayload is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRawSourcePayload requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRawSourcePayload: %w", err)
+	}
+	return oldValue.RawSourcePayload, nil
+}
+
+// AppendRawSourcePayload adds jm to the "raw_source_payload" field.
+func (m *RecipeMutation) AppendRawSourcePayload(jm json.RawMessage) {
+	m.appendraw_source_payload = append(m.appendraw_source_payload, jm...)
+}
+
+// AppendedRawSourcePayload returns the list of values that were appended to the "raw_source_payload" field in this mutation.
+func (m *RecipeMutation) AppendedRawSourcePayload() (json.RawMessage, bool) {
+	if len(m.appendraw_source_payload) == 0 {
+		return nil, false
+	}
+	return m.appendraw_source_payload, true
+}
+
+// ClearRawSourcePayload clears the value of the "raw_source_payload" field.
+func (m *RecipeMutation) ClearRawSourcePayload() {
+	m.raw_source_payload = nil
+	m.appendraw_source_payload = nil
+	m.clearedFields[recipe.FieldRawSourcePayload] = struct{}{}
+}
+
+// RawSourcePayloadCleared returns if the "raw_source_payload" field was cleared in this mutation.
+func (m *RecipeMutation) RawSourcePayloadCleared() bool {
+	_, ok := m.clearedFields[recipe.FieldRawSourcePayload]
+	return ok
+}
+
+// ResetRawSourcePayload resets all changes to the "raw_source_payload" field.
+func (m *RecipeMutation) ResetRawSourcePayload() {
+	m.raw_source_payload = nil
+	m.appendraw_source_payload = nil
+	delete(m.clearedFields, recipe.FieldRawSourcePayload)
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *RecipeMutation) ClearUser() {
+	m.cleareduser = true
+	m.clearedFields[recipe.FieldUserID] = struct{}{}
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *RecipeMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *RecipeMutation) UserIDs() (ids []int) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *RecipeMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
+// ClearFolder clears the "folder" edge to the Folder entity.
+func (m *RecipeMutation) ClearFolder() {
+	m.clearedfolder = true
+	m.clearedFields[recipe.FieldFolderID] = struct{}{}
+}
+
+// FolderCleared reports if the "folder" edge to the Folder entity was cleared.
+func (m *RecipeMutation) FolderCleared() bool {
+	return m.FolderIDCleared() || m.clearedfolder
+}
+
+// FolderIDs returns the "folder" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// FolderID instead. It exists only for internal usage by the builders.
+func (m *RecipeMutation) FolderIDs() (ids []uuid.UUID) {
+	if id := m.folder; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetFolder resets all changes to the "folder" edge.
+func (m *RecipeMutation) ResetFolder() {
+	m.folder = nil
+	m.clearedfolder = false
+}
+
+// Where appends a list predicates to the RecipeMutation builder.
+func (m *RecipeMutation) Where(ps ...predicate.Recipe) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the RecipeMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *RecipeMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.Recipe, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *RecipeMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *RecipeMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (Recipe).
+func (m *RecipeMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *RecipeMutation) Fields() []string {
+	fields := make([]string, 0, 20)
+	if m.user != nil {
+		fields = append(fields, recipe.FieldUserID)
+	}
+	if m.folder != nil {
+		fields = append(fields, recipe.FieldFolderID)
+	}
+	if m.name != nil {
+		fields = append(fields, recipe.FieldName)
+	}
+	if m.servings != nil {
+		fields = append(fields, recipe.FieldServings)
+	}
+	if m.process_minutes != nil {
+		fields = append(fields, recipe.FieldProcessMinutes)
+	}
+	if m.ingredients != nil {
+		fields = append(fields, recipe.FieldIngredients)
+	}
+	if m.instructions != nil {
+		fields = append(fields, recipe.FieldInstructions)
+	}
+	if m.tags != nil {
+		fields = append(fields, recipe.FieldTags)
+	}
+	if m.import_status != nil {
+		fields = append(fields, recipe.FieldImportStatus)
+	}
+	if m.import_error != nil {
+		fields = append(fields, recipe.FieldImportError)
+	}
+	if m.processing_at != nil {
+		fields = append(fields, recipe.FieldProcessingAt)
+	}
+	if m.import_webhook != nil {
+		fields = append(fields, recipe.FieldImportWebhook)
+	}
+	if m.created_at != nil {
+		fields = append(fields, recipe.FieldCreatedAt)
+	}
+	if m.rating != nil {
+		fields = append(fields, recipe.FieldRating)
+	}
+	if m.notes != nil {
+		fields = append(fields, recipe.FieldNotes)
+	}
+	if m.image_s3_key != nil {
+		fields = append(fields, recipe.FieldImageS3Key)
+	}
+	if m.url != nil {
+		fields = append(fields, recipe.FieldURL)
+	}
+	if m.source != nil {
+		fields = append(fields, recipe.FieldSource)
+	}
+	if m.webhook_id != nil {
+		fields = append(fields, recipe.FieldWebhookID)
+	}
+	if m.raw_source_payload != nil {
+		fields = append(fields, recipe.FieldRawSourcePayload)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *RecipeMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case recipe.FieldUserID:
+		return m.UserID()
+	case recipe.FieldFolderID:
+		return m.FolderID()
+	case recipe.FieldName:
+		return m.Name()
+	case recipe.FieldServings:
+		return m.Servings()
+	case recipe.FieldProcessMinutes:
+		return m.ProcessMinutes()
+	case recipe.FieldIngredients:
+		return m.Ingredients()
+	case recipe.FieldInstructions:
+		return m.Instructions()
+	case recipe.FieldTags:
+		return m.Tags()
+	case recipe.FieldImportStatus:
+		return m.ImportStatus()
+	case recipe.FieldImportError:
+		return m.ImportError()
+	case recipe.FieldProcessingAt:
+		return m.ProcessingAt()
+	case recipe.FieldImportWebhook:
+		return m.ImportWebhook()
+	case recipe.FieldCreatedAt:
+		return m.CreatedAt()
+	case recipe.FieldRating:
+		return m.Rating()
+	case recipe.FieldNotes:
+		return m.Notes()
+	case recipe.FieldImageS3Key:
+		return m.ImageS3Key()
+	case recipe.FieldURL:
+		return m.URL()
+	case recipe.FieldSource:
+		return m.Source()
+	case recipe.FieldWebhookID:
+		return m.WebhookID()
+	case recipe.FieldRawSourcePayload:
+		return m.RawSourcePayload()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *RecipeMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case recipe.FieldUserID:
+		return m.OldUserID(ctx)
+	case recipe.FieldFolderID:
+		return m.OldFolderID(ctx)
+	case recipe.FieldName:
+		return m.OldName(ctx)
+	case recipe.FieldServings:
+		return m.OldServings(ctx)
+	case recipe.FieldProcessMinutes:
+		return m.OldProcessMinutes(ctx)
+	case recipe.FieldIngredients:
+		return m.OldIngredients(ctx)
+	case recipe.FieldInstructions:
+		return m.OldInstructions(ctx)
+	case recipe.FieldTags:
+		return m.OldTags(ctx)
+	case recipe.FieldImportStatus:
+		return m.OldImportStatus(ctx)
+	case recipe.FieldImportError:
+		return m.OldImportError(ctx)
+	case recipe.FieldProcessingAt:
+		return m.OldProcessingAt(ctx)
+	case recipe.FieldImportWebhook:
+		return m.OldImportWebhook(ctx)
+	case recipe.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case recipe.FieldRating:
+		return m.OldRating(ctx)
+	case recipe.FieldNotes:
+		return m.OldNotes(ctx)
+	case recipe.FieldImageS3Key:
+		return m.OldImageS3Key(ctx)
+	case recipe.FieldURL:
+		return m.OldURL(ctx)
+	case recipe.FieldSource:
+		return m.OldSource(ctx)
+	case recipe.FieldWebhookID:
+		return m.OldWebhookID(ctx)
+	case recipe.FieldRawSourcePayload:
+		return m.OldRawSourcePayload(ctx)
+	}
+	return nil, fmt.Errorf("unknown Recipe field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *RecipeMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case recipe.FieldUserID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUserID(v)
+		return nil
+	case recipe.FieldFolderID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetFolderID(v)
+		return nil
+	case recipe.FieldName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetName(v)
+		return nil
+	case recipe.FieldServings:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetServings(v)
+		return nil
+	case recipe.FieldProcessMinutes:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetProcessMinutes(v)
+		return nil
+	case recipe.FieldIngredients:
+		v, ok := value.(json.RawMessage)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetIngredients(v)
+		return nil
+	case recipe.FieldInstructions:
+		v, ok := value.(pq.StringArray)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetInstructions(v)
+		return nil
+	case recipe.FieldTags:
+		v, ok := value.(pq.StringArray)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTags(v)
+		return nil
+	case recipe.FieldImportStatus:
+		v, ok := value.(recipe.ImportStatus)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetImportStatus(v)
+		return nil
+	case recipe.FieldImportError:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetImportError(v)
+		return nil
+	case recipe.FieldProcessingAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetProcessingAt(v)
+		return nil
+	case recipe.FieldImportWebhook:
+		v, ok := value.(json.RawMessage)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetImportWebhook(v)
+		return nil
+	case recipe.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case recipe.FieldRating:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRating(v)
+		return nil
+	case recipe.FieldNotes:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNotes(v)
+		return nil
+	case recipe.FieldImageS3Key:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetImageS3Key(v)
+		return nil
+	case recipe.FieldURL:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetURL(v)
+		return nil
+	case recipe.FieldSource:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSource(v)
+		return nil
+	case recipe.FieldWebhookID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetWebhookID(v)
+		return nil
+	case recipe.FieldRawSourcePayload:
+		v, ok := value.(json.RawMessage)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRawSourcePayload(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Recipe field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *RecipeMutation) AddedFields() []string {
+	var fields []string
+	if m.addservings != nil {
+		fields = append(fields, recipe.FieldServings)
+	}
+	if m.addprocess_minutes != nil {
+		fields = append(fields, recipe.FieldProcessMinutes)
+	}
+	if m.addrating != nil {
+		fields = append(fields, recipe.FieldRating)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *RecipeMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case recipe.FieldServings:
+		return m.AddedServings()
+	case recipe.FieldProcessMinutes:
+		return m.AddedProcessMinutes()
+	case recipe.FieldRating:
+		return m.AddedRating()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *RecipeMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case recipe.FieldServings:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddServings(v)
+		return nil
+	case recipe.FieldProcessMinutes:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddProcessMinutes(v)
+		return nil
+	case recipe.FieldRating:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddRating(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Recipe numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *RecipeMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(recipe.FieldFolderID) {
+		fields = append(fields, recipe.FieldFolderID)
+	}
+	if m.FieldCleared(recipe.FieldTags) {
+		fields = append(fields, recipe.FieldTags)
+	}
+	if m.FieldCleared(recipe.FieldImportError) {
+		fields = append(fields, recipe.FieldImportError)
+	}
+	if m.FieldCleared(recipe.FieldProcessingAt) {
+		fields = append(fields, recipe.FieldProcessingAt)
+	}
+	if m.FieldCleared(recipe.FieldImportWebhook) {
+		fields = append(fields, recipe.FieldImportWebhook)
+	}
+	if m.FieldCleared(recipe.FieldRating) {
+		fields = append(fields, recipe.FieldRating)
+	}
+	if m.FieldCleared(recipe.FieldNotes) {
+		fields = append(fields, recipe.FieldNotes)
+	}
+	if m.FieldCleared(recipe.FieldImageS3Key) {
+		fields = append(fields, recipe.FieldImageS3Key)
+	}
+	if m.FieldCleared(recipe.FieldURL) {
+		fields = append(fields, recipe.FieldURL)
+	}
+	if m.FieldCleared(recipe.FieldSource) {
+		fields = append(fields, recipe.FieldSource)
+	}
+	if m.FieldCleared(recipe.FieldWebhookID) {
+		fields = append(fields, recipe.FieldWebhookID)
+	}
+	if m.FieldCleared(recipe.FieldRawSourcePayload) {
+		fields = append(fields, recipe.FieldRawSourcePayload)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *RecipeMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *RecipeMutation) ClearField(name string) error {
+	switch name {
+	case recipe.FieldFolderID:
+		m.ClearFolderID()
+		return nil
+	case recipe.FieldTags:
+		m.ClearTags()
+		return nil
+	case recipe.FieldImportError:
+		m.ClearImportError()
+		return nil
+	case recipe.FieldProcessingAt:
+		m.ClearProcessingAt()
+		return nil
+	case recipe.FieldImportWebhook:
+		m.ClearImportWebhook()
+		return nil
+	case recipe.FieldRating:
+		m.ClearRating()
+		return nil
+	case recipe.FieldNotes:
+		m.ClearNotes()
+		return nil
+	case recipe.FieldImageS3Key:
+		m.ClearImageS3Key()
+		return nil
+	case recipe.FieldURL:
+		m.ClearURL()
+		return nil
+	case recipe.FieldSource:
+		m.ClearSource()
+		return nil
+	case recipe.FieldWebhookID:
+		m.ClearWebhookID()
+		return nil
+	case recipe.FieldRawSourcePayload:
+		m.ClearRawSourcePayload()
+		return nil
+	}
+	return fmt.Errorf("unknown Recipe nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *RecipeMutation) ResetField(name string) error {
+	switch name {
+	case recipe.FieldUserID:
+		m.ResetUserID()
+		return nil
+	case recipe.FieldFolderID:
+		m.ResetFolderID()
+		return nil
+	case recipe.FieldName:
+		m.ResetName()
+		return nil
+	case recipe.FieldServings:
+		m.ResetServings()
+		return nil
+	case recipe.FieldProcessMinutes:
+		m.ResetProcessMinutes()
+		return nil
+	case recipe.FieldIngredients:
+		m.ResetIngredients()
+		return nil
+	case recipe.FieldInstructions:
+		m.ResetInstructions()
+		return nil
+	case recipe.FieldTags:
+		m.ResetTags()
+		return nil
+	case recipe.FieldImportStatus:
+		m.ResetImportStatus()
+		return nil
+	case recipe.FieldImportError:
+		m.ResetImportError()
+		return nil
+	case recipe.FieldProcessingAt:
+		m.ResetProcessingAt()
+		return nil
+	case recipe.FieldImportWebhook:
+		m.ResetImportWebhook()
+		return nil
+	case recipe.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case recipe.FieldRating:
+		m.ResetRating()
+		return nil
+	case recipe.FieldNotes:
+		m.ResetNotes()
+		return nil
+	case recipe.FieldImageS3Key:
+		m.ResetImageS3Key()
+		return nil
+	case recipe.FieldURL:
+		m.ResetURL()
+		return nil
+	case recipe.FieldSource:
+		m.ResetSource()
+		return nil
+	case recipe.FieldWebhookID:
+		m.ResetWebhookID()
+		return nil
+	case recipe.FieldRawSourcePayload:
+		m.ResetRawSourcePayload()
+		return nil
+	}
+	return fmt.Errorf("unknown Recipe field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *RecipeMutation) AddedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.user != nil {
+		edges = append(edges, recipe.EdgeUser)
+	}
+	if m.folder != nil {
+		edges = append(edges, recipe.EdgeFolder)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *RecipeMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case recipe.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	case recipe.EdgeFolder:
+		if id := m.folder; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *RecipeMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 2)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *RecipeMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *RecipeMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.cleareduser {
+		edges = append(edges, recipe.EdgeUser)
+	}
+	if m.clearedfolder {
+		edges = append(edges, recipe.EdgeFolder)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *RecipeMutation) EdgeCleared(name string) bool {
+	switch name {
+	case recipe.EdgeUser:
+		return m.cleareduser
+	case recipe.EdgeFolder:
+		return m.clearedfolder
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *RecipeMutation) ClearEdge(name string) error {
+	switch name {
+	case recipe.EdgeUser:
+		m.ClearUser()
+		return nil
+	case recipe.EdgeFolder:
+		m.ClearFolder()
+		return nil
+	}
+	return fmt.Errorf("unknown Recipe unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *RecipeMutation) ResetEdge(name string) error {
+	switch name {
+	case recipe.EdgeUser:
+		m.ResetUser()
+		return nil
+	case recipe.EdgeFolder:
+		m.ResetFolder()
+		return nil
+	}
+	return fmt.Errorf("unknown Recipe edge %s", name)
 }
 
 // RefreshTokenMutation represents an operation that mutates the RefreshToken nodes in the graph.
@@ -2002,6 +4954,15 @@ type UserMutation struct {
 	refresh_tokens        map[int]struct{}
 	removedrefresh_tokens map[int]struct{}
 	clearedrefresh_tokens bool
+	folders               map[uuid.UUID]struct{}
+	removedfolders        map[uuid.UUID]struct{}
+	clearedfolders        bool
+	recipes               map[uuid.UUID]struct{}
+	removedrecipes        map[uuid.UUID]struct{}
+	clearedrecipes        bool
+	groceries             map[uuid.UUID]struct{}
+	removedgroceries      map[uuid.UUID]struct{}
+	clearedgroceries      bool
 	done                  bool
 	oldValue              func(context.Context) (*User, error)
 	predicates            []predicate.User
@@ -2496,6 +5457,168 @@ func (m *UserMutation) ResetRefreshTokens() {
 	m.removedrefresh_tokens = nil
 }
 
+// AddFolderIDs adds the "folders" edge to the Folder entity by ids.
+func (m *UserMutation) AddFolderIDs(ids ...uuid.UUID) {
+	if m.folders == nil {
+		m.folders = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.folders[ids[i]] = struct{}{}
+	}
+}
+
+// ClearFolders clears the "folders" edge to the Folder entity.
+func (m *UserMutation) ClearFolders() {
+	m.clearedfolders = true
+}
+
+// FoldersCleared reports if the "folders" edge to the Folder entity was cleared.
+func (m *UserMutation) FoldersCleared() bool {
+	return m.clearedfolders
+}
+
+// RemoveFolderIDs removes the "folders" edge to the Folder entity by IDs.
+func (m *UserMutation) RemoveFolderIDs(ids ...uuid.UUID) {
+	if m.removedfolders == nil {
+		m.removedfolders = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.folders, ids[i])
+		m.removedfolders[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedFolders returns the removed IDs of the "folders" edge to the Folder entity.
+func (m *UserMutation) RemovedFoldersIDs() (ids []uuid.UUID) {
+	for id := range m.removedfolders {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// FoldersIDs returns the "folders" edge IDs in the mutation.
+func (m *UserMutation) FoldersIDs() (ids []uuid.UUID) {
+	for id := range m.folders {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetFolders resets all changes to the "folders" edge.
+func (m *UserMutation) ResetFolders() {
+	m.folders = nil
+	m.clearedfolders = false
+	m.removedfolders = nil
+}
+
+// AddRecipeIDs adds the "recipes" edge to the Recipe entity by ids.
+func (m *UserMutation) AddRecipeIDs(ids ...uuid.UUID) {
+	if m.recipes == nil {
+		m.recipes = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.recipes[ids[i]] = struct{}{}
+	}
+}
+
+// ClearRecipes clears the "recipes" edge to the Recipe entity.
+func (m *UserMutation) ClearRecipes() {
+	m.clearedrecipes = true
+}
+
+// RecipesCleared reports if the "recipes" edge to the Recipe entity was cleared.
+func (m *UserMutation) RecipesCleared() bool {
+	return m.clearedrecipes
+}
+
+// RemoveRecipeIDs removes the "recipes" edge to the Recipe entity by IDs.
+func (m *UserMutation) RemoveRecipeIDs(ids ...uuid.UUID) {
+	if m.removedrecipes == nil {
+		m.removedrecipes = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.recipes, ids[i])
+		m.removedrecipes[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedRecipes returns the removed IDs of the "recipes" edge to the Recipe entity.
+func (m *UserMutation) RemovedRecipesIDs() (ids []uuid.UUID) {
+	for id := range m.removedrecipes {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// RecipesIDs returns the "recipes" edge IDs in the mutation.
+func (m *UserMutation) RecipesIDs() (ids []uuid.UUID) {
+	for id := range m.recipes {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetRecipes resets all changes to the "recipes" edge.
+func (m *UserMutation) ResetRecipes() {
+	m.recipes = nil
+	m.clearedrecipes = false
+	m.removedrecipes = nil
+}
+
+// AddGroceryIDs adds the "groceries" edge to the Grocery entity by ids.
+func (m *UserMutation) AddGroceryIDs(ids ...uuid.UUID) {
+	if m.groceries == nil {
+		m.groceries = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.groceries[ids[i]] = struct{}{}
+	}
+}
+
+// ClearGroceries clears the "groceries" edge to the Grocery entity.
+func (m *UserMutation) ClearGroceries() {
+	m.clearedgroceries = true
+}
+
+// GroceriesCleared reports if the "groceries" edge to the Grocery entity was cleared.
+func (m *UserMutation) GroceriesCleared() bool {
+	return m.clearedgroceries
+}
+
+// RemoveGroceryIDs removes the "groceries" edge to the Grocery entity by IDs.
+func (m *UserMutation) RemoveGroceryIDs(ids ...uuid.UUID) {
+	if m.removedgroceries == nil {
+		m.removedgroceries = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.groceries, ids[i])
+		m.removedgroceries[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedGroceries returns the removed IDs of the "groceries" edge to the Grocery entity.
+func (m *UserMutation) RemovedGroceriesIDs() (ids []uuid.UUID) {
+	for id := range m.removedgroceries {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// GroceriesIDs returns the "groceries" edge IDs in the mutation.
+func (m *UserMutation) GroceriesIDs() (ids []uuid.UUID) {
+	for id := range m.groceries {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetGroceries resets all changes to the "groceries" edge.
+func (m *UserMutation) ResetGroceries() {
+	m.groceries = nil
+	m.clearedgroceries = false
+	m.removedgroceries = nil
+}
+
 // Where appends a list predicates to the UserMutation builder.
 func (m *UserMutation) Where(ps ...predicate.User) {
 	m.predicates = append(m.predicates, ps...)
@@ -2723,7 +5846,7 @@ func (m *UserMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *UserMutation) AddedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 6)
 	if m.accounts != nil {
 		edges = append(edges, user.EdgeAccounts)
 	}
@@ -2732,6 +5855,15 @@ func (m *UserMutation) AddedEdges() []string {
 	}
 	if m.refresh_tokens != nil {
 		edges = append(edges, user.EdgeRefreshTokens)
+	}
+	if m.folders != nil {
+		edges = append(edges, user.EdgeFolders)
+	}
+	if m.recipes != nil {
+		edges = append(edges, user.EdgeRecipes)
+	}
+	if m.groceries != nil {
+		edges = append(edges, user.EdgeGroceries)
 	}
 	return edges
 }
@@ -2758,13 +5890,31 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeFolders:
+		ids := make([]ent.Value, 0, len(m.folders))
+		for id := range m.folders {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeRecipes:
+		ids := make([]ent.Value, 0, len(m.recipes))
+		for id := range m.recipes {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeGroceries:
+		ids := make([]ent.Value, 0, len(m.groceries))
+		for id := range m.groceries {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *UserMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 6)
 	if m.removedaccounts != nil {
 		edges = append(edges, user.EdgeAccounts)
 	}
@@ -2773,6 +5923,15 @@ func (m *UserMutation) RemovedEdges() []string {
 	}
 	if m.removedrefresh_tokens != nil {
 		edges = append(edges, user.EdgeRefreshTokens)
+	}
+	if m.removedfolders != nil {
+		edges = append(edges, user.EdgeFolders)
+	}
+	if m.removedrecipes != nil {
+		edges = append(edges, user.EdgeRecipes)
+	}
+	if m.removedgroceries != nil {
+		edges = append(edges, user.EdgeGroceries)
 	}
 	return edges
 }
@@ -2799,13 +5958,31 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeFolders:
+		ids := make([]ent.Value, 0, len(m.removedfolders))
+		for id := range m.removedfolders {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeRecipes:
+		ids := make([]ent.Value, 0, len(m.removedrecipes))
+		for id := range m.removedrecipes {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeGroceries:
+		ids := make([]ent.Value, 0, len(m.removedgroceries))
+		for id := range m.removedgroceries {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *UserMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 6)
 	if m.clearedaccounts {
 		edges = append(edges, user.EdgeAccounts)
 	}
@@ -2814,6 +5991,15 @@ func (m *UserMutation) ClearedEdges() []string {
 	}
 	if m.clearedrefresh_tokens {
 		edges = append(edges, user.EdgeRefreshTokens)
+	}
+	if m.clearedfolders {
+		edges = append(edges, user.EdgeFolders)
+	}
+	if m.clearedrecipes {
+		edges = append(edges, user.EdgeRecipes)
+	}
+	if m.clearedgroceries {
+		edges = append(edges, user.EdgeGroceries)
 	}
 	return edges
 }
@@ -2828,6 +6014,12 @@ func (m *UserMutation) EdgeCleared(name string) bool {
 		return m.clearedsessions
 	case user.EdgeRefreshTokens:
 		return m.clearedrefresh_tokens
+	case user.EdgeFolders:
+		return m.clearedfolders
+	case user.EdgeRecipes:
+		return m.clearedrecipes
+	case user.EdgeGroceries:
+		return m.clearedgroceries
 	}
 	return false
 }
@@ -2852,6 +6044,15 @@ func (m *UserMutation) ResetEdge(name string) error {
 		return nil
 	case user.EdgeRefreshTokens:
 		m.ResetRefreshTokens()
+		return nil
+	case user.EdgeFolders:
+		m.ResetFolders()
+		return nil
+	case user.EdgeRecipes:
+		m.ResetRecipes()
+		return nil
+	case user.EdgeGroceries:
+		m.ResetGroceries()
 		return nil
 	}
 	return fmt.Errorf("unknown User edge %s", name)

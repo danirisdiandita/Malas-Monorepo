@@ -10,12 +10,16 @@ import (
 	"reflect"
 
 	"github.com/danirisdiandita/malas-monorepo/api/ent/migrate"
+	"github.com/google/uuid"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/account"
+	"github.com/danirisdiandita/malas-monorepo/api/ent/folder"
+	"github.com/danirisdiandita/malas-monorepo/api/ent/grocery"
+	"github.com/danirisdiandita/malas-monorepo/api/ent/recipe"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/refreshtoken"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/session"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/user"
@@ -28,6 +32,12 @@ type Client struct {
 	Schema *migrate.Schema
 	// Account is the client for interacting with the Account builders.
 	Account *AccountClient
+	// Folder is the client for interacting with the Folder builders.
+	Folder *FolderClient
+	// Grocery is the client for interacting with the Grocery builders.
+	Grocery *GroceryClient
+	// Recipe is the client for interacting with the Recipe builders.
+	Recipe *RecipeClient
 	// RefreshToken is the client for interacting with the RefreshToken builders.
 	RefreshToken *RefreshTokenClient
 	// Session is the client for interacting with the Session builders.
@@ -46,6 +56,9 @@ func NewClient(opts ...Option) *Client {
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
 	c.Account = NewAccountClient(c.config)
+	c.Folder = NewFolderClient(c.config)
+	c.Grocery = NewGroceryClient(c.config)
+	c.Recipe = NewRecipeClient(c.config)
 	c.RefreshToken = NewRefreshTokenClient(c.config)
 	c.Session = NewSessionClient(c.config)
 	c.User = NewUserClient(c.config)
@@ -142,6 +155,9 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		ctx:          ctx,
 		config:       cfg,
 		Account:      NewAccountClient(cfg),
+		Folder:       NewFolderClient(cfg),
+		Grocery:      NewGroceryClient(cfg),
+		Recipe:       NewRecipeClient(cfg),
 		RefreshToken: NewRefreshTokenClient(cfg),
 		Session:      NewSessionClient(cfg),
 		User:         NewUserClient(cfg),
@@ -165,6 +181,9 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		ctx:          ctx,
 		config:       cfg,
 		Account:      NewAccountClient(cfg),
+		Folder:       NewFolderClient(cfg),
+		Grocery:      NewGroceryClient(cfg),
+		Recipe:       NewRecipeClient(cfg),
 		RefreshToken: NewRefreshTokenClient(cfg),
 		Session:      NewSessionClient(cfg),
 		User:         NewUserClient(cfg),
@@ -196,19 +215,21 @@ func (c *Client) Close() error {
 // Use adds the mutation hooks to all the entity clients.
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
-	c.Account.Use(hooks...)
-	c.RefreshToken.Use(hooks...)
-	c.Session.Use(hooks...)
-	c.User.Use(hooks...)
+	for _, n := range []interface{ Use(...Hook) }{
+		c.Account, c.Folder, c.Grocery, c.Recipe, c.RefreshToken, c.Session, c.User,
+	} {
+		n.Use(hooks...)
+	}
 }
 
 // Intercept adds the query interceptors to all the entity clients.
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
-	c.Account.Intercept(interceptors...)
-	c.RefreshToken.Intercept(interceptors...)
-	c.Session.Intercept(interceptors...)
-	c.User.Intercept(interceptors...)
+	for _, n := range []interface{ Intercept(...Interceptor) }{
+		c.Account, c.Folder, c.Grocery, c.Recipe, c.RefreshToken, c.Session, c.User,
+	} {
+		n.Intercept(interceptors...)
+	}
 }
 
 // Mutate implements the ent.Mutator interface.
@@ -216,6 +237,12 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 	switch m := m.(type) {
 	case *AccountMutation:
 		return c.Account.mutate(ctx, m)
+	case *FolderMutation:
+		return c.Folder.mutate(ctx, m)
+	case *GroceryMutation:
+		return c.Grocery.mutate(ctx, m)
+	case *RecipeMutation:
+		return c.Recipe.mutate(ctx, m)
 	case *RefreshTokenMutation:
 		return c.RefreshToken.mutate(ctx, m)
 	case *SessionMutation:
@@ -373,6 +400,485 @@ func (c *AccountClient) mutate(ctx context.Context, m *AccountMutation) (Value, 
 		return (&AccountDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown Account mutation op: %q", m.Op())
+	}
+}
+
+// FolderClient is a client for the Folder schema.
+type FolderClient struct {
+	config
+}
+
+// NewFolderClient returns a client for the Folder from the given config.
+func NewFolderClient(c config) *FolderClient {
+	return &FolderClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `folder.Hooks(f(g(h())))`.
+func (c *FolderClient) Use(hooks ...Hook) {
+	c.hooks.Folder = append(c.hooks.Folder, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `folder.Intercept(f(g(h())))`.
+func (c *FolderClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Folder = append(c.inters.Folder, interceptors...)
+}
+
+// Create returns a builder for creating a Folder entity.
+func (c *FolderClient) Create() *FolderCreate {
+	mutation := newFolderMutation(c.config, OpCreate)
+	return &FolderCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Folder entities.
+func (c *FolderClient) CreateBulk(builders ...*FolderCreate) *FolderCreateBulk {
+	return &FolderCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *FolderClient) MapCreateBulk(slice any, setFunc func(*FolderCreate, int)) *FolderCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &FolderCreateBulk{err: fmt.Errorf("calling to FolderClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*FolderCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &FolderCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Folder.
+func (c *FolderClient) Update() *FolderUpdate {
+	mutation := newFolderMutation(c.config, OpUpdate)
+	return &FolderUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *FolderClient) UpdateOne(_m *Folder) *FolderUpdateOne {
+	mutation := newFolderMutation(c.config, OpUpdateOne, withFolder(_m))
+	return &FolderUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *FolderClient) UpdateOneID(id uuid.UUID) *FolderUpdateOne {
+	mutation := newFolderMutation(c.config, OpUpdateOne, withFolderID(id))
+	return &FolderUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Folder.
+func (c *FolderClient) Delete() *FolderDelete {
+	mutation := newFolderMutation(c.config, OpDelete)
+	return &FolderDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *FolderClient) DeleteOne(_m *Folder) *FolderDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *FolderClient) DeleteOneID(id uuid.UUID) *FolderDeleteOne {
+	builder := c.Delete().Where(folder.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &FolderDeleteOne{builder}
+}
+
+// Query returns a query builder for Folder.
+func (c *FolderClient) Query() *FolderQuery {
+	return &FolderQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeFolder},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Folder entity by its id.
+func (c *FolderClient) Get(ctx context.Context, id uuid.UUID) (*Folder, error) {
+	return c.Query().Where(folder.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *FolderClient) GetX(ctx context.Context, id uuid.UUID) *Folder {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryUser queries the user edge of a Folder.
+func (c *FolderClient) QueryUser(_m *Folder) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(folder.Table, folder.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, folder.UserTable, folder.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRecipes queries the recipes edge of a Folder.
+func (c *FolderClient) QueryRecipes(_m *Folder) *RecipeQuery {
+	query := (&RecipeClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(folder.Table, folder.FieldID, id),
+			sqlgraph.To(recipe.Table, recipe.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, folder.RecipesTable, folder.RecipesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *FolderClient) Hooks() []Hook {
+	return c.hooks.Folder
+}
+
+// Interceptors returns the client interceptors.
+func (c *FolderClient) Interceptors() []Interceptor {
+	return c.inters.Folder
+}
+
+func (c *FolderClient) mutate(ctx context.Context, m *FolderMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&FolderCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&FolderUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&FolderUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&FolderDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Folder mutation op: %q", m.Op())
+	}
+}
+
+// GroceryClient is a client for the Grocery schema.
+type GroceryClient struct {
+	config
+}
+
+// NewGroceryClient returns a client for the Grocery from the given config.
+func NewGroceryClient(c config) *GroceryClient {
+	return &GroceryClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `grocery.Hooks(f(g(h())))`.
+func (c *GroceryClient) Use(hooks ...Hook) {
+	c.hooks.Grocery = append(c.hooks.Grocery, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `grocery.Intercept(f(g(h())))`.
+func (c *GroceryClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Grocery = append(c.inters.Grocery, interceptors...)
+}
+
+// Create returns a builder for creating a Grocery entity.
+func (c *GroceryClient) Create() *GroceryCreate {
+	mutation := newGroceryMutation(c.config, OpCreate)
+	return &GroceryCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Grocery entities.
+func (c *GroceryClient) CreateBulk(builders ...*GroceryCreate) *GroceryCreateBulk {
+	return &GroceryCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *GroceryClient) MapCreateBulk(slice any, setFunc func(*GroceryCreate, int)) *GroceryCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &GroceryCreateBulk{err: fmt.Errorf("calling to GroceryClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*GroceryCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &GroceryCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Grocery.
+func (c *GroceryClient) Update() *GroceryUpdate {
+	mutation := newGroceryMutation(c.config, OpUpdate)
+	return &GroceryUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *GroceryClient) UpdateOne(_m *Grocery) *GroceryUpdateOne {
+	mutation := newGroceryMutation(c.config, OpUpdateOne, withGrocery(_m))
+	return &GroceryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *GroceryClient) UpdateOneID(id uuid.UUID) *GroceryUpdateOne {
+	mutation := newGroceryMutation(c.config, OpUpdateOne, withGroceryID(id))
+	return &GroceryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Grocery.
+func (c *GroceryClient) Delete() *GroceryDelete {
+	mutation := newGroceryMutation(c.config, OpDelete)
+	return &GroceryDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *GroceryClient) DeleteOne(_m *Grocery) *GroceryDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *GroceryClient) DeleteOneID(id uuid.UUID) *GroceryDeleteOne {
+	builder := c.Delete().Where(grocery.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &GroceryDeleteOne{builder}
+}
+
+// Query returns a query builder for Grocery.
+func (c *GroceryClient) Query() *GroceryQuery {
+	return &GroceryQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeGrocery},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Grocery entity by its id.
+func (c *GroceryClient) Get(ctx context.Context, id uuid.UUID) (*Grocery, error) {
+	return c.Query().Where(grocery.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *GroceryClient) GetX(ctx context.Context, id uuid.UUID) *Grocery {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryUser queries the user edge of a Grocery.
+func (c *GroceryClient) QueryUser(_m *Grocery) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(grocery.Table, grocery.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, grocery.UserTable, grocery.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *GroceryClient) Hooks() []Hook {
+	return c.hooks.Grocery
+}
+
+// Interceptors returns the client interceptors.
+func (c *GroceryClient) Interceptors() []Interceptor {
+	return c.inters.Grocery
+}
+
+func (c *GroceryClient) mutate(ctx context.Context, m *GroceryMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&GroceryCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&GroceryUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&GroceryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&GroceryDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Grocery mutation op: %q", m.Op())
+	}
+}
+
+// RecipeClient is a client for the Recipe schema.
+type RecipeClient struct {
+	config
+}
+
+// NewRecipeClient returns a client for the Recipe from the given config.
+func NewRecipeClient(c config) *RecipeClient {
+	return &RecipeClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `recipe.Hooks(f(g(h())))`.
+func (c *RecipeClient) Use(hooks ...Hook) {
+	c.hooks.Recipe = append(c.hooks.Recipe, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `recipe.Intercept(f(g(h())))`.
+func (c *RecipeClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Recipe = append(c.inters.Recipe, interceptors...)
+}
+
+// Create returns a builder for creating a Recipe entity.
+func (c *RecipeClient) Create() *RecipeCreate {
+	mutation := newRecipeMutation(c.config, OpCreate)
+	return &RecipeCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Recipe entities.
+func (c *RecipeClient) CreateBulk(builders ...*RecipeCreate) *RecipeCreateBulk {
+	return &RecipeCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *RecipeClient) MapCreateBulk(slice any, setFunc func(*RecipeCreate, int)) *RecipeCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &RecipeCreateBulk{err: fmt.Errorf("calling to RecipeClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*RecipeCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &RecipeCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Recipe.
+func (c *RecipeClient) Update() *RecipeUpdate {
+	mutation := newRecipeMutation(c.config, OpUpdate)
+	return &RecipeUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *RecipeClient) UpdateOne(_m *Recipe) *RecipeUpdateOne {
+	mutation := newRecipeMutation(c.config, OpUpdateOne, withRecipe(_m))
+	return &RecipeUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *RecipeClient) UpdateOneID(id uuid.UUID) *RecipeUpdateOne {
+	mutation := newRecipeMutation(c.config, OpUpdateOne, withRecipeID(id))
+	return &RecipeUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Recipe.
+func (c *RecipeClient) Delete() *RecipeDelete {
+	mutation := newRecipeMutation(c.config, OpDelete)
+	return &RecipeDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *RecipeClient) DeleteOne(_m *Recipe) *RecipeDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *RecipeClient) DeleteOneID(id uuid.UUID) *RecipeDeleteOne {
+	builder := c.Delete().Where(recipe.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &RecipeDeleteOne{builder}
+}
+
+// Query returns a query builder for Recipe.
+func (c *RecipeClient) Query() *RecipeQuery {
+	return &RecipeQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeRecipe},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Recipe entity by its id.
+func (c *RecipeClient) Get(ctx context.Context, id uuid.UUID) (*Recipe, error) {
+	return c.Query().Where(recipe.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *RecipeClient) GetX(ctx context.Context, id uuid.UUID) *Recipe {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryUser queries the user edge of a Recipe.
+func (c *RecipeClient) QueryUser(_m *Recipe) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(recipe.Table, recipe.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, recipe.UserTable, recipe.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryFolder queries the folder edge of a Recipe.
+func (c *RecipeClient) QueryFolder(_m *Recipe) *FolderQuery {
+	query := (&FolderClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(recipe.Table, recipe.FieldID, id),
+			sqlgraph.To(folder.Table, folder.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, recipe.FolderTable, recipe.FolderColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *RecipeClient) Hooks() []Hook {
+	return c.hooks.Recipe
+}
+
+// Interceptors returns the client interceptors.
+func (c *RecipeClient) Interceptors() []Interceptor {
+	return c.inters.Recipe
+}
+
+func (c *RecipeClient) mutate(ctx context.Context, m *RecipeMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&RecipeCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&RecipeUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&RecipeUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&RecipeDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Recipe mutation op: %q", m.Op())
 	}
 }
 
@@ -830,6 +1336,54 @@ func (c *UserClient) QueryRefreshTokens(_m *User) *RefreshTokenQuery {
 	return query
 }
 
+// QueryFolders queries the folders edge of a User.
+func (c *UserClient) QueryFolders(_m *User) *FolderQuery {
+	query := (&FolderClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(folder.Table, folder.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.FoldersTable, user.FoldersColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRecipes queries the recipes edge of a User.
+func (c *UserClient) QueryRecipes(_m *User) *RecipeQuery {
+	query := (&RecipeClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(recipe.Table, recipe.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.RecipesTable, user.RecipesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryGroceries queries the groceries edge of a User.
+func (c *UserClient) QueryGroceries(_m *User) *GroceryQuery {
+	query := (&GroceryClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(grocery.Table, grocery.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.GroceriesTable, user.GroceriesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *UserClient) Hooks() []Hook {
 	return c.hooks.User
@@ -858,9 +1412,9 @@ func (c *UserClient) mutate(ctx context.Context, m *UserMutation) (Value, error)
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Account, RefreshToken, Session, User []ent.Hook
+		Account, Folder, Grocery, Recipe, RefreshToken, Session, User []ent.Hook
 	}
 	inters struct {
-		Account, RefreshToken, Session, User []ent.Interceptor
+		Account, Folder, Grocery, Recipe, RefreshToken, Session, User []ent.Interceptor
 	}
 )

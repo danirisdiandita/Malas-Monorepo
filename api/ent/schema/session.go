@@ -8,7 +8,7 @@ import (
 	"entgo.io/ent/schema/field"
 )
 
-type Session struct { ent.Schema }
+type Session struct{ ent.Schema }
 
 func (Session) Fields() []ent.Field {
 	return []ent.Field{

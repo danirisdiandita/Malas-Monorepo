@@ -21,6 +21,7 @@ import { useRef, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ThemedText } from "@/components/themed-text";
+import { RecipeImage } from "@/components/recipe-image";
 import { ThemedView } from "@/components/themed-view";
 import { useCurrentUser } from "@/hooks/use-auth";
 import { useRecipes } from "@/hooks/use-recipes";
@@ -57,7 +58,8 @@ export default function Tab1Screen() {
   const [newFolder, setNewFolder] = useState("");
   const { width: windowWidth } = useWindowDimensions();
   const { data: user } = useCurrentUser();
-  const { data: recipes, isPending: recipesPending, isError: recipesError } = useRecipes();
+  const [search, setSearch] = useState("");
+  const { recipes, isPending: recipesPending, error: recipesError, fetchNextPage, hasNextPage: hasMore, isFetchingNextPage } = useRecipes(search);
   const displayName = user?.name?.trim() || "there";
   const initial = displayName.charAt(0).toUpperCase();
   const greeting = getTimeGreeting();
@@ -67,7 +69,7 @@ export default function Tab1Screen() {
       <SafeAreaView style={styles.safeArea}>
         <FlashList
           key={viewMode}
-          data={recipes ?? []}
+          data={recipes}
           numColumns={viewMode === "grid" ? 2 : 1}
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
@@ -110,9 +112,15 @@ export default function Tab1Screen() {
           </View>
           <View style={styles.search}>
             <Ionicons name="search-outline" size={17} color={colors.muted} />
-            <ThemedText style={styles.searchText}>
-              Search saved recipes
-            </ThemedText>
+            <TextInput
+              accessibilityLabel="Search saved recipes"
+              placeholder="Search saved recipes"
+              placeholderTextColor={colors.muted}
+              value={search}
+              onChangeText={setSearch}
+              style={styles.searchInput}
+              returnKeyType="search"
+            />
           </View>
           <View>
             <Pressable
@@ -280,11 +288,12 @@ export default function Tab1Screen() {
           </View>}
           renderItem={({ item, index }) => (
             <RecipeCard
+              imageURL={item.image_url}
               title={item.name}
               color={index % 2 === 0 ? "#F8E5A9" : "#F4D2C5"}
               icon={index % 2 === 0 ? "nutrition-outline" : "leaf-outline"}
               list={viewMode === "list"}
-              meta={`${item.process_minutes} min · ${item.difficulty} · ${item.servings} servings`}
+              meta={[item.process_minutes > 0 ? `${item.process_minutes} min` : '', item.difficulty, item.servings > 0 ? `${item.servings} servings` : ''].filter(Boolean).join(' · ')}
               onPress={() => router.push(`/recipe/${item.id}`)}
             />
           )}
@@ -293,17 +302,59 @@ export default function Tab1Screen() {
               <ThemedText style={styles.statusText}>Loading recipes...</ThemedText>
             ) : recipesError ? (
               <ThemedText style={styles.statusText}>Unable to load recipes.</ThemedText>
+            ) : search.trim() ? (
+              <ThemedText style={styles.statusText}>No recipes found.</ThemedText>
             ) : (
-              <ThemedText style={styles.statusText}>No recipes yet.</ThemedText>
+              <EmptyRecipes />
             )
           }
+          onEndReached={() => {
+            if (hasMore && !isFetchingNextPage) fetchNextPage();
+          }}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={isFetchingNextPage ? <ThemedText style={styles.statusText}>Loading more...</ThemedText> : null}
         />
       </SafeAreaView>
     </ThemedView>
   );
 }
 
+function EmptyRecipes() {
+  return (
+    <View style={styles.emptyState}>
+      <ThemedText style={styles.emptyEyebrow}>YOUR KITCHEN STARTS HERE</ThemedText>
+      <ThemedText style={styles.emptyTitle}>Save your first recipe</ThemedText>
+      <ThemedText style={styles.emptyDescription}>
+        Keep every recipe you love in one calm, organized place — ready whenever you want to cook.
+      </ThemedText>
+      <Pressable
+        accessibilityRole="button"
+        style={styles.emptyPrimary}
+        onPress={() => router.push("/add-recipe")}
+      >
+        <Ionicons name="add" size={19} color="#FFFFFF" />
+        <ThemedText style={styles.emptyPrimaryLabel}>Add your first recipe</ThemedText>
+      </Pressable>
+      <View style={styles.quickOptions}>
+        {[
+          ["link-outline", "Paste link"],
+          ["camera-outline", "Take photo"],
+          ["sparkles-outline", "Ask AI"],
+        ].map(([icon, label]) => (
+          <View key={label} style={styles.quickOption}>
+            <View style={styles.quickIcon}>
+              <Ionicons name={icon as IoniconsIconName} size={16} color={colors.leaf} />
+            </View>
+            <ThemedText style={styles.quickLabel}>{label}</ThemedText>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
 function RecipeCard({
+  imageURL,
   title,
   color,
   icon,
@@ -311,6 +362,7 @@ function RecipeCard({
   meta,
   onPress,
 }: {
+  imageURL?: string;
   title: string;
   color: string;
   icon: IoniconsIconName;
@@ -328,6 +380,7 @@ function RecipeCard({
         ]}
       >
         <Ionicons name={icon} size={38} color={colors.ink} />
+        <RecipeImage url={imageURL} />
       </View>
       <View style={styles.cardInfo}>
         <ThemedText style={styles.cardTitle}>{title}</ThemedText>
@@ -391,6 +444,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 13,
   },
   searchText: { color: colors.muted, fontSize: 16 },
+  searchInput: { flex: 1, color: colors.ink, fontSize: 16, paddingVertical: 0 },
   folderSelect: {
     minHeight: 48,
     borderRadius: 15,
@@ -568,6 +622,43 @@ const styles = StyleSheet.create({
   listCardImage: { width: 54, height: 54, borderRadius: 14 },
   cardInfo: { flex: 1 },
   statusText: { color: colors.muted, fontSize: 15, textAlign: "center", paddingVertical: 24 },
+  emptyState: {
+    minHeight: 300,
+    borderRadius: 26,
+    borderWidth: 1,
+    borderColor: colors.line,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    padding: 24,
+    gap: 14,
+    shadowColor: colors.ink,
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 2,
+  },
+  emptyEyebrow: { color: "#EA7450", fontSize: 10, fontWeight: "900", letterSpacing: 1.5 },
+  emptyTitle: { color: colors.ink, fontSize: 25, fontWeight: "800", textAlign: "center" },
+  emptyDescription: { color: "#68736B", fontSize: 13, lineHeight: 19, textAlign: "center" },
+  emptyPrimary: {
+    width: "100%",
+    height: 50,
+    borderRadius: 17,
+    backgroundColor: colors.ink,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 9,
+    shadowColor: colors.ink,
+    shadowOpacity: 0.14,
+    shadowRadius: 7,
+    shadowOffset: { width: 0, height: 4 },
+  },
+  emptyPrimaryLabel: { color: "#FFFFFF", fontSize: 14, fontWeight: "800" },
+  quickOptions: { flexDirection: "row", gap: 16, alignItems: "center", marginTop: 2 },
+  quickOption: { alignItems: "center", gap: 5 },
+  quickIcon: { width: 34, height: 34, borderRadius: 12, backgroundColor: "#F5F7F1", alignItems: "center", justifyContent: "center" },
+  quickLabel: { color: "#68736B", fontSize: 10, fontWeight: "800" },
   cardMore: { marginRight: 2 },
   cardTitle: {
     color: colors.ink,
