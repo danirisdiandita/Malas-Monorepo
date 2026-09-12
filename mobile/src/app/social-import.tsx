@@ -74,14 +74,16 @@ export default function SocialImportScreen() {
 
           <View style={styles.rules}>
             <Rule
-              number="1"
               icon="share-social-outline"
               title="Share it straight to Yuzu"
               body="Tap Share on TikTok, Instagram, or another social app, then choose Yuzu."
             />
-            <View style={styles.connector} />
+            <View style={styles.separator}>
+              <View style={styles.connector} />
+              <ThemedText style={styles.or}>Or</ThemedText>
+              <View style={styles.connector} />
+            </View>
             <Rule
-              number="2"
               icon="link-outline"
               title="Or paste the recipe link"
               body="Copy the post link, return to Yuzu, and paste it into the recipe link field."
@@ -103,21 +105,16 @@ export default function SocialImportScreen() {
 }
 
 function Rule({
-  number,
   icon,
   title,
   body,
 }: {
-  number: string;
   icon: "share-social-outline" | "link-outline";
   title: string;
   body: string;
 }) {
   return (
     <View style={styles.rule}>
-      <View style={styles.ruleNumber}>
-        <ThemedText style={styles.ruleNumberLabel}>{number}</ThemedText>
-      </View>
       <View style={styles.ruleIcon}>
         <Ionicons name={icon} size={22} color={colors.leaf} />
       </View>
@@ -203,15 +200,6 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   rule: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
-  ruleNumber: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: colors.sage,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  ruleNumberLabel: { color: colors.leaf, fontSize: 12, fontWeight: "900" },
   ruleIcon: {
     width: 38,
     height: 38,
@@ -223,7 +211,15 @@ const styles = StyleSheet.create({
   ruleCopy: { flex: 1, paddingTop: 1 },
   ruleTitle: { color: colors.ink, fontSize: 16, fontWeight: "800" },
   ruleBody: { color: colors.muted, fontSize: 13, lineHeight: 19, marginTop: 4 },
-  connector: { height: 18, width: 1, backgroundColor: colors.line, marginLeft: 28, marginVertical: 5 },
+  separator: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginVertical: 5,
+    marginLeft: 19,
+  },
+  connector: { height: 1, flex: 1, backgroundColor: colors.line },
+  or: { color: colors.muted, fontSize: 12, fontWeight: "800" },
   primaryButton: {
     height: 52,
     borderRadius: 17,
