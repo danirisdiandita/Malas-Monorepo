@@ -3,3 +3,4 @@
 /codex.sh
 .moon/cache/
 /api/debug/webhooks
+/.env

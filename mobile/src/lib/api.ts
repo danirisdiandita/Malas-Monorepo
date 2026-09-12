@@ -97,17 +97,43 @@ export async function getRecipe(id: string): Promise<Recipe> {
 }
 
 export async function importLink(url: string): Promise<LinkImportResult> {
-  const token = await SecureStore.getItemAsync(tokenKey);
+  let token = await SecureStore.getItemAsync(tokenKey);
   if (!token) throw new Error('Not signed in.');
-  const response = await fetch(`${apiUrl}/imports/link`, {
+  let response = await fetch(`${apiUrl}/imports/link`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-JWT': token },
     body: JSON.stringify({ url }),
   });
+  if (response.status === 401) {
+    token = await refreshAccessToken();
+    if (token) {
+      response = await fetch(`${apiUrl}/imports/link`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-JWT': token },
+        body: JSON.stringify({ url }),
+      });
+    }
+  }
   if (!response.ok) throw new Error((await response.text()) || 'Unable to process link.');
   const body: unknown = await response.json();
   if (!isLinkImportResult(body)) throw new Error('Invalid link import response.');
   return body;
+}
+
+async function refreshAccessToken(): Promise<string | null> {
+  const refresh = await SecureStore.getItemAsync(refreshTokenKey);
+  if (!refresh) return null;
+  const response = await fetch(`${apiUrl}/auth/refresh`, {
+    method: 'POST',
+    headers: { 'X-Refresh-Token': refresh },
+  });
+  if (!response.ok) return null;
+  const session = (await response.json()) as { access_token?: string; refresh_token?: string };
+  if (!session.access_token || !session.refresh_token) return null;
+  await storeToken(session.access_token);
+  await storeRefreshToken(session.refresh_token);
+  await getCurrentUser();
+  return session.access_token;
 }
 
 function isRecipe(value: unknown): value is Recipe {

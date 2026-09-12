@@ -31,5 +31,8 @@ func (User) Edges() []ent.Edge {
 		edge.To("accounts", Account.Type),
 		edge.To("sessions", Session.Type),
 		edge.To("refresh_tokens", RefreshToken.Type),
+		edge.To("folders", Folder.Type),
+		edge.To("recipes", Recipe.Type),
+		edge.To("groceries", Grocery.Type),
 	}
 }
