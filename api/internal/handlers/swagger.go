@@ -10,7 +10,7 @@ func HandleSwaggerUI(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	_, _ = w.Write([]byte(`<!doctype html>
 <html><head><title>Malas API Swagger</title><link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css"></head>
-<body><div id="swagger-ui"></div><script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"></script><script>window.onload=()=>SwaggerUIBundle({url:'/swagger/openapi.json',dom_id:'#swagger-ui'});</script></body></html>`))
+<body><style>.clear-jwt{display:none;margin-right:12px!important;border:1px solid #d9d9d9!important;border-radius:4px!important;background:#fff!important;color:#3b4151!important;font-size:14px!important;padding:6px 12px!important;cursor:pointer}.clear-jwt:hover{background:#f3f3f3!important}</style><button id="clear-jwt" class="clear-jwt" type="button">Clear JWT</button><div id="swagger-ui"></div><script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"></script><script>window.onload=()=>{let ui;const clear=document.getElementById('clear-jwt');const place=()=>{const authorize=document.querySelector('.scheme-container .authorize');if(authorize&&!clear.parentNode.classList.contains('scheme-container')){authorize.parentNode.insertBefore(clear,authorize);clear.style.display='inline-block';}};ui=SwaggerUIBundle({url:'/swagger/openapi.json',dom_id:'#swagger-ui',persistAuthorization:true,onComplete:place});clear.onclick=()=>ui.authActions.logout();};</script></body></html>`))
 }
 
 func HandleOpenAPI(w http.ResponseWriter, _ *http.Request) {
