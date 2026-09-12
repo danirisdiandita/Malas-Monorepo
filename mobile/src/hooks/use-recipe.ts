@@ -22,8 +22,11 @@ export function useRateRecipe(id: string) {
 export function useDeleteRecipe(id: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: () => deleteRecipe(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['recipes'] }),
+    mutationFn: (deleteGroceries: boolean) => deleteRecipe(id, deleteGroceries),
+    onSuccess: (_, deleteGroceries) => {
+      queryClient.invalidateQueries({ queryKey: ['recipes'] });
+      if (deleteGroceries) queryClient.invalidateQueries({ queryKey: ['groceries'] });
+    },
   });
 }
 

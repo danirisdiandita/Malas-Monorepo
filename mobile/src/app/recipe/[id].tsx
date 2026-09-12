@@ -38,6 +38,7 @@ export default function RecipeDetailScreen() {
   const [ratingOpen, setRatingOpen] = useState(false);
   const menuSheetRef = useRef<BottomSheetMethods>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleteGroceries, setDeleteGroceries] = useState(false);
   const [groceryConfirmOpen, setGroceryConfirmOpen] = useState(false);
   const [grocerySuccessOpen, setGrocerySuccessOpen] = useState(false);
   const [groceryCount, setGroceryCount] = useState(0);
@@ -284,6 +285,7 @@ export default function RecipeDetailScreen() {
               style={styles.menuItem}
               onPress={() => {
                 menuSheetRef.current?.close();
+                setDeleteGroceries(false);
                 setDeleteConfirmOpen(true);
               }}
               disabled={deleteRecipe.isPending}
@@ -343,6 +345,22 @@ export default function RecipeDetailScreen() {
               <ThemedText style={styles.confirmBody}>
                 “{recipe.name}” will be permanently removed from your recipes.
               </ThemedText>
+              <Pressable
+                style={styles.deleteGroceriesOption}
+                onPress={() => setDeleteGroceries((checked) => !checked)}
+                disabled={deleteRecipe.isPending}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: deleteGroceries }}
+              >
+                <Ionicons
+                  name={deleteGroceries ? "checkbox" : "square-outline"}
+                  size={22}
+                  color={deleteGroceries ? yuzuColors.tomato : yuzuColors.muted}
+                />
+                <ThemedText style={styles.deleteGroceriesLabel}>
+                  Also remove its ingredients from groceries
+                </ThemedText>
+              </Pressable>
               <View style={styles.confirmActions}>
                 <Pressable
                   style={styles.cancelButton}
@@ -357,7 +375,7 @@ export default function RecipeDetailScreen() {
                     deleteRecipe.isPending && styles.saveRatingDisabled,
                   ]}
                   onPress={() =>
-                    deleteRecipe.mutate(undefined, {
+                    deleteRecipe.mutate(deleteGroceries, {
                       onSuccess: () => router.replace("/recipes"),
                     })
                   }
@@ -858,6 +876,14 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     textAlign: "center",
   },
+  deleteGroceriesOption: {
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 9,
+    paddingVertical: 5,
+  },
+  deleteGroceriesLabel: { flex: 1, color: yuzuColors.ink, fontSize: 13, lineHeight: 18 },
   confirmActions: { width: "100%", flexDirection: "row", gap: 9, marginTop: 8 },
   cancelButton: {
     flex: 1,

@@ -51,6 +51,11 @@ export interface RecipePage {
   next_page: number;
 }
 
+export interface Folder {
+  id: string;
+  name: string;
+}
+
 export interface Grocery {
   id: string;
   name: string;
@@ -131,9 +136,10 @@ export function getCurrentUser(): Promise<User> {
   return currentUserRequest;
 }
 
-export async function getRecipes(page = 1, search = ''): Promise<RecipePage> {
+export async function getRecipes(page = 1, search = '', folderID = ''): Promise<RecipePage> {
   const params = new URLSearchParams({ page: String(page), page_size: '20' });
   if (search.trim()) params.set('q', search.trim());
+  if (folderID.trim()) params.set('folder_id', folderID.trim());
   const response = await authenticatedFetch(`/recipes?${params.toString()}`);
   if (!response.ok) throw new Error('Unable to load recipes.');
   const body: unknown = await response.json();
@@ -143,6 +149,45 @@ export async function getRecipes(page = 1, search = ''): Promise<RecipePage> {
     throw new Error('Invalid recipes response.');
   }
   return pageBody as unknown as RecipePage;
+}
+
+function isFolder(value: unknown): value is Folder {
+  if (!value || typeof value !== 'object') return false;
+  const folder = value as Record<string, unknown>;
+  return typeof folder.id === 'string' && typeof folder.name === 'string';
+}
+
+export async function getFolders(): Promise<Folder[]> {
+  const response = await authenticatedFetch('/folders');
+  if (!response.ok) throw new Error('Unable to load folders.');
+  const body: unknown = await response.json();
+  if (!Array.isArray(body) || !body.every(isFolder)) throw new Error('Invalid folders response.');
+  return body;
+}
+
+export async function createFolder(name: string): Promise<Folder> {
+  const response = await authenticatedFetch('/folders', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }),
+  });
+  if (!response.ok) throw new Error((await response.text()) || 'Unable to create folder.');
+  const body: unknown = await response.json();
+  if (!isFolder(body)) throw new Error('Invalid folder response.');
+  return body;
+}
+
+export async function updateFolder(id: string, name: string): Promise<Folder> {
+  const response = await authenticatedFetch(`/folders/${encodeURIComponent(id)}`, {
+    method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }),
+  });
+  if (!response.ok) throw new Error((await response.text()) || 'Unable to rename folder.');
+  const body: unknown = await response.json();
+  if (!isFolder(body)) throw new Error('Invalid folder response.');
+  return body;
+}
+
+export async function deleteFolder(id: string): Promise<void> {
+  const response = await authenticatedFetch(`/folders/${encodeURIComponent(id)}`, { method: 'DELETE' });
+  if (!response.ok) throw new Error((await response.text()) || 'Unable to delete folder.');
 }
 
 export async function getRecipe(id: string): Promise<Recipe> {
@@ -162,8 +207,11 @@ export async function rateRecipe(id: string, rating: number): Promise<void> {
   if (!response.ok) throw new Error((await response.text()) || 'Unable to save rating.');
 }
 
-export async function deleteRecipe(id: string): Promise<void> {
-  const response = await authenticatedFetch(`/recipes/${encodeURIComponent(id)}`, { method: 'DELETE' });
+export async function deleteRecipe(id: string, deleteGroceries = false): Promise<void> {
+  const response = await authenticatedFetch(`/recipes/${encodeURIComponent(id)}`, {
+    method: 'DELETE', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ delete_groceries: deleteGroceries }),
+  });
   if (!response.ok) throw new Error((await response.text()) || 'Unable to delete recipe.');
 }
 

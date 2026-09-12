@@ -5,6 +5,7 @@ import (
 
 	"github.com/danirisdiandita/malas-monorepo/api/ent"
 	"github.com/danirisdiandita/malas-monorepo/api/internal/config"
+	"github.com/danirisdiandita/malas-monorepo/api/internal/folders"
 	"github.com/danirisdiandita/malas-monorepo/api/internal/groceries"
 	"github.com/danirisdiandita/malas-monorepo/api/internal/handlers"
 	"github.com/danirisdiandita/malas-monorepo/api/internal/imports"
@@ -34,7 +35,7 @@ func NewRouter(deps Dependencies) http.Handler {
 	r.Use(mid.Recoverer)
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"http://localhost:5173", "http://localhost:8081"},
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "X-XSRF-TOKEN", "X-JWT", "X-Refresh-Token"},
 		ExposedHeaders:   []string{"Link"},
 		AllowCredentials: true,
@@ -58,6 +59,10 @@ func NewRouter(deps Dependencies) http.Handler {
 		r.Get("/recipes/{id}", recipes.StoredGet(deps.DB, deps.Imports.Storage))
 		r.Delete("/recipes/{id}", recipes.Delete(deps.DB, deps.Imports.Storage))
 		r.Post("/recipes/{id}/rating", recipes.Rate(deps.DB))
+		r.Get("/folders", folders.List(deps.DB))
+		r.Post("/folders", folders.Create(deps.DB))
+		r.Patch("/folders/{id}", folders.Update(deps.DB))
+		r.Delete("/folders/{id}", folders.Delete(deps.DB))
 		r.Get("/groceries", groceries.List(deps.DB, deps.Imports.Storage))
 		r.Delete("/groceries", groceries.Clear(deps.DB))
 		r.Patch("/groceries/{id}/checked", groceries.UpdateChecked(deps.DB))

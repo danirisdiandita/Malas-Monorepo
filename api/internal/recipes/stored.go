@@ -4,11 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/danirisdiandita/malas-monorepo/api/ent"
+	"github.com/danirisdiandita/malas-monorepo/api/ent/grocery"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/recipe"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -100,6 +102,14 @@ func StoredList(db *ent.Client, storage *Storage) http.HandlerFunc {
 		}
 		q := strings.TrimSpace(r.URL.Query().Get("q"))
 		query := db.Recipe.Query().Where(recipe.UserID(owner), recipe.ImportStatusEQ(recipe.ImportStatusDone))
+		if folderID := strings.TrimSpace(r.URL.Query().Get("folder_id")); folderID != "" {
+			parsed, err := uuid.Parse(folderID)
+			if err != nil {
+				http.Error(w, "invalid folder_id", http.StatusBadRequest)
+				return
+			}
+			query = query.Where(recipe.FolderID(parsed))
+		}
 		if q != "" {
 			query = query.Where(recipe.NameContainsFold(q))
 		}
@@ -181,7 +191,31 @@ func Delete(db *ent.Client, storage *Storage) http.HandlerFunc {
 			http.Error(w, "unable to load recipe", http.StatusInternalServerError)
 			return
 		}
-		if err := db.Recipe.DeleteOne(row).Exec(r.Context()); err != nil {
+		var input struct {
+			DeleteGroceries bool `json:"delete_groceries"`
+		}
+		if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1024)).Decode(&input); err != nil && err != io.EOF {
+			http.Error(w, "invalid delete options", http.StatusBadRequest)
+			return
+		}
+		tx, err := db.Tx(r.Context())
+		if err != nil {
+			http.Error(w, "unable to delete recipe", http.StatusInternalServerError)
+			return
+		}
+		if input.DeleteGroceries {
+			if _, err := tx.Grocery.Delete().Where(grocery.UserID(owner), grocery.RecipeID(id)).Exec(r.Context()); err != nil {
+				_ = tx.Rollback()
+				http.Error(w, "unable to delete recipe groceries", http.StatusInternalServerError)
+				return
+			}
+		}
+		if _, err := tx.Recipe.Delete().Where(recipe.ID(id), recipe.UserID(owner)).Exec(r.Context()); err != nil {
+			_ = tx.Rollback()
+			http.Error(w, "unable to delete recipe", http.StatusInternalServerError)
+			return
+		}
+		if err := tx.Commit(); err != nil {
 			http.Error(w, "unable to delete recipe", http.StatusInternalServerError)
 			return
 		}

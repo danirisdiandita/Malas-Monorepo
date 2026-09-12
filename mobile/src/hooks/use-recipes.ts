@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 
 import { getRecipes } from '@/lib/api';
 
-export function useRecipes(search: string) {
+export function useRecipes(search: string, folderID = '') {
   const [debouncedSearch, setDebouncedSearch] = useState(search);
 
   useEffect(() => {
@@ -12,8 +12,8 @@ export function useRecipes(search: string) {
   }, [search]);
 
   const result = useInfiniteQuery({
-    queryKey: ['recipes', debouncedSearch],
-    queryFn: ({ pageParam }) => getRecipes(pageParam, debouncedSearch),
+    queryKey: ['recipes', debouncedSearch, folderID],
+    queryFn: ({ pageParam }) => getRecipes(pageParam, debouncedSearch, folderID),
     initialPageParam: 1,
     getNextPageParam: (lastPage) => lastPage.next_page || undefined,
     staleTime: 30_000,

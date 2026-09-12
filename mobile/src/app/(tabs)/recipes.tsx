@@ -19,12 +19,20 @@ import {
 } from "react-native";
 import { useRef, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { toast } from "sonner-native";
 
 import { ThemedText } from "@/components/themed-text";
 import { RecipeImage } from "@/components/recipe-image";
 import { ThemedView } from "@/components/themed-view";
 import { useCurrentUser } from "@/hooks/use-auth";
 import { useRecipes } from "@/hooks/use-recipes";
+import {
+  useCreateFolder,
+  useDeleteFolder,
+  useFolders,
+  useUpdateFolder,
+} from "@/hooks/use-folders";
+import type { Folder } from "@/lib/api";
 import { useRecipePreferences } from "@/stores/recipe-preferences";
 
 const colors = {
@@ -47,17 +55,17 @@ function getTimeGreeting() {
 export default function Tab1Screen() {
   const folderSheetRef = useRef<BottomSheetMethods>(null);
   const [createFolderOpen, setCreateFolderOpen] = useState(false);
-  const [folder, setFolder] = useState("All folders");
+  const [folderID, setFolderID] = useState("");
+  const [editingFolder, setEditingFolder] = useState<Folder | null>(null);
+  const [deleteFolderTarget, setDeleteFolderTarget] = useState<Folder | null>(null);
   const { viewMode, setViewMode } = useRecipePreferences();
-  const [folders, setFolders] = useState([
-    "All folders",
-    "Favorites",
-    "Quick meals",
-    "Vegetarian",
-  ]);
   const [newFolder, setNewFolder] = useState("");
   const { width: windowWidth } = useWindowDimensions();
   const { data: user } = useCurrentUser();
+  const { data: savedFolders = [], isPending: foldersPending, isError: foldersError } = useFolders();
+  const createFolder = useCreateFolder();
+  const updateFolder = useUpdateFolder();
+  const deleteFolder = useDeleteFolder();
   const [search, setSearch] = useState("");
   const {
     recipes,
@@ -66,7 +74,9 @@ export default function Tab1Screen() {
     fetchNextPage,
     hasNextPage: hasMore,
     isFetchingNextPage,
-  } = useRecipes(search);
+  } = useRecipes(search, folderID);
+  const folders = [{ id: "", name: "All recipes" }, ...savedFolders];
+  const selectedFolder = folders.find((item) => item.id === folderID)?.name ?? "All recipes";
   const displayName = user?.name?.trim() || "there";
   const initial = displayName.charAt(0).toUpperCase();
   const greeting = getTimeGreeting();
@@ -155,7 +165,7 @@ export default function Tab1Screen() {
                     size={18}
                     color={colors.leaf}
                   />
-                  <ThemedText style={styles.folderLabel}>{folder}</ThemedText>
+                  <ThemedText style={styles.folderLabel}>{selectedFolder}</ThemedText>
                   <Ionicons
                     name="chevron-down"
                     size={17}
@@ -187,29 +197,59 @@ export default function Tab1Screen() {
                       style={styles.folderList}
                       contentContainerStyle={styles.sheetContent}
                     >
-                      {folders.map((option) => (
+                      {foldersPending ? (
+                        <ThemedText style={styles.statusText}>Loading folders...</ThemedText>
+                      ) : foldersError ? (
+                        <ThemedText style={styles.statusText}>Unable to load folders.</ThemedText>
+                      ) : folders.map((option) => (
                         <Pressable
-                          key={option}
+                          key={option.id || "all"}
                           style={styles.folderOption}
                           onPress={() => {
-                            setFolder(option);
+                            setFolderID(option.id);
                             folderSheetRef.current?.close();
                           }}
                         >
                           <ThemedText
                             style={[
                               styles.folderOptionLabel,
-                              option === folder && styles.selectedFolder,
+                              option.id === folderID && styles.selectedFolder,
                             ]}
                           >
-                            {option}
+                            {option.name}
                           </ThemedText>
-                          {option === folder && (
+                          {option.id === folderID && (
                             <Ionicons
                               name="checkmark"
                               size={17}
                               color={colors.leaf}
                             />
+                          )}
+                          {option.id && (
+                            <View style={styles.folderActions}>
+                              <Pressable
+                                accessibilityLabel={`Rename ${option.name}`}
+                                onPress={(event) => {
+                                  event.stopPropagation();
+                                  setEditingFolder(option);
+                                  setNewFolder(option.name);
+                                  setCreateFolderOpen(true);
+                                  folderSheetRef.current?.close();
+                                }}
+                              >
+                                <Ionicons name="pencil-outline" size={17} color={colors.muted} />
+                              </Pressable>
+                              <Pressable
+                                accessibilityLabel={`Delete ${option.name}`}
+                                onPress={(event) => {
+                                  event.stopPropagation();
+                                  setDeleteFolderTarget(option);
+                                  folderSheetRef.current?.close();
+                                }}
+                              >
+                                <Ionicons name="trash-outline" size={17} color="#EA7450" />
+                              </Pressable>
+                            </View>
                           )}
                         </Pressable>
                       ))}
@@ -218,6 +258,8 @@ export default function Tab1Screen() {
                         style={styles.newFolder}
                         onPress={() => {
                           folderSheetRef.current?.close();
+                          setEditingFolder(null);
+                          setNewFolder("");
                           setCreateFolderOpen(true);
                         }}
                       >
@@ -250,7 +292,7 @@ export default function Tab1Screen() {
                       >
                         <View style={styles.dialogHeader}>
                           <ThemedText style={styles.dialogTitle}>
-                            New folder
+                            {editingFolder ? "Rename folder" : "New folder"}
                           </ThemedText>
                           <Pressable
                             accessibilityLabel="Close create folder dialog"
@@ -265,7 +307,7 @@ export default function Tab1Screen() {
                         </View>
                         <TextInput
                           autoFocus
-                          accessibilityLabel="New folder name"
+                          accessibilityLabel={editingFolder ? "Folder name" : "New folder name"}
                           placeholder="Folder name"
                           placeholderTextColor={colors.muted}
                           value={newFolder}
@@ -285,22 +327,66 @@ export default function Tab1Screen() {
                           <Pressable
                             accessibilityRole="button"
                             style={styles.addFolderButton}
-                            onPress={() => {
+                            onPress={async () => {
                               const name = newFolder.trim();
-                              if (!name || folders.includes(name)) return;
-                              setFolders([...folders, name]);
-                              setFolder(name);
-                              setNewFolder("");
-                              setCreateFolderOpen(false);
+                              if (!name) return;
+                              try {
+                                const saved = editingFolder
+                                  ? await updateFolder.mutateAsync({ id: editingFolder.id, name })
+                                  : await createFolder.mutateAsync(name);
+                                setFolderID(saved.id);
+                                setNewFolder("");
+                                setEditingFolder(null);
+                                setCreateFolderOpen(false);
+                              } catch (error) {
+                                toast.error(error instanceof Error ? error.message : "Unable to save folder.");
+                              }
                             }}
+                            disabled={createFolder.isPending || updateFolder.isPending}
                           >
                             <ThemedText style={styles.addFolderLabel}>
-                              Create
+                              {editingFolder ? "Save" : "Create"}
                             </ThemedText>
                           </Pressable>
                         </View>
                       </Pressable>
                     </KeyboardAvoidingView>
+                  </Pressable>
+                </Modal>
+                <Modal
+                  visible={deleteFolderTarget !== null}
+                  transparent
+                  animationType="fade"
+                  onRequestClose={() => setDeleteFolderTarget(null)}
+                >
+                  <Pressable style={styles.modalBackdrop} onPress={() => setDeleteFolderTarget(null)}>
+                    <Pressable style={styles.folderDialog} onPress={(event) => event.stopPropagation()}>
+                      <ThemedText style={styles.dialogTitle}>Delete folder?</ThemedText>
+                      <ThemedText style={styles.deleteFolderCopy}>
+                        Recipes inside “{deleteFolderTarget?.name}” will stay saved, but the folder will be removed.
+                      </ThemedText>
+                      <View style={styles.dialogActions}>
+                        <Pressable style={styles.cancelButton} onPress={() => setDeleteFolderTarget(null)}>
+                          <ThemedText style={styles.cancelLabel}>Cancel</ThemedText>
+                        </Pressable>
+                        <Pressable
+                          style={styles.deleteFolderButton}
+                          disabled={deleteFolder.isPending}
+                          onPress={async () => {
+                            if (!deleteFolderTarget) return;
+                            try {
+                              await deleteFolder.mutateAsync(deleteFolderTarget.id);
+                              if (folderID === deleteFolderTarget.id) setFolderID("");
+                              setDeleteFolderTarget(null);
+                            } catch (error) {
+                              toast.error(error instanceof Error ? error.message : "Unable to delete folder.");
+                            }
+                          }}
+                        >
+                          <ThemedText style={styles.deleteFolderLabel}>Delete</ThemedText>
+                        </Pressable>
+                      </View>
+                    </Pressable>
                   </Pressable>
                 </Modal>
               </View>
@@ -560,6 +646,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
   },
   folderOptionLabel: { color: colors.ink, fontSize: 15 },
+  folderActions: { flexDirection: "row", alignItems: "center", gap: 14 },
   selectedFolder: { color: colors.leaf, fontWeight: "800" },
   newFolder: {
     width: "100%",
@@ -601,6 +688,16 @@ const styles = StyleSheet.create({
     backgroundColor: colors.leaf,
   },
   addFolderLabel: { color: "#fff", fontSize: 15, fontWeight: "800" },
+  deleteFolderCopy: { color: colors.muted, fontSize: 14, lineHeight: 20 },
+  deleteFolderButton: {
+    minHeight: 44,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#EA7450",
+  },
+  deleteFolderLabel: { color: "#fff", fontSize: 15, fontWeight: "800" },
   banner: {
     minHeight: 78,
     borderRadius: 17,
