@@ -55,7 +55,9 @@ export interface Grocery {
   id: string;
   name: string;
   unit: string;
+  quantity?: number;
   tag?: string;
+  recipe_id?: string;
 }
 
 const tokenKey = 'malas.jwt';
@@ -231,7 +233,7 @@ function isRecipe(value: unknown): value is Recipe {
 function isGrocery(value: unknown): value is Grocery {
   if (!value || typeof value !== 'object') return false;
   const grocery = value as Record<string, unknown>;
-  return typeof grocery.id === 'string' && typeof grocery.name === 'string' && typeof grocery.unit === 'string' && (grocery.tag === undefined || typeof grocery.tag === 'string');
+  return typeof grocery.id === 'string' && typeof grocery.name === 'string' && typeof grocery.unit === 'string' && (grocery.quantity === undefined || typeof grocery.quantity === 'number') && (grocery.tag === undefined || typeof grocery.tag === 'string') && (grocery.recipe_id === undefined || typeof grocery.recipe_id === 'string');
 }
 
 function isLinkImportResult(value: unknown): value is LinkImportResult {

@@ -60,6 +60,8 @@ const (
 	EdgeUser = "user"
 	// EdgeFolder holds the string denoting the folder edge name in mutations.
 	EdgeFolder = "folder"
+	// EdgeGroceries holds the string denoting the groceries edge name in mutations.
+	EdgeGroceries = "groceries"
 	// Table holds the table name of the recipe in the database.
 	Table = "recipes"
 	// UserTable is the table that holds the user relation/edge.
@@ -76,6 +78,13 @@ const (
 	FolderInverseTable = "folders"
 	// FolderColumn is the table column denoting the folder relation/edge.
 	FolderColumn = "folder_id"
+	// GroceriesTable is the table that holds the groceries relation/edge.
+	GroceriesTable = "groceries"
+	// GroceriesInverseTable is the table name for the Grocery entity.
+	// It exists in this package in order to avoid circular dependency with the "grocery" package.
+	GroceriesInverseTable = "groceries"
+	// GroceriesColumn is the table column denoting the groceries relation/edge.
+	GroceriesColumn = "recipe_id"
 )
 
 // Columns holds all SQL columns for recipe fields.
@@ -254,6 +263,20 @@ func ByFolderField(field string, opts ...sql.OrderTermOption) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newFolderStep(), sql.OrderByField(field, opts...))
 	}
 }
+
+// ByGroceriesCount orders the results by groceries count.
+func ByGroceriesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newGroceriesStep(), opts...)
+	}
+}
+
+// ByGroceries orders the results by groceries terms.
+func ByGroceries(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newGroceriesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newUserStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -266,5 +289,12 @@ func newFolderStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(FolderInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2O, true, FolderTable, FolderColumn),
+	)
+}
+func newGroceriesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(GroceriesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, GroceriesTable, GroceriesColumn),
 	)
 }

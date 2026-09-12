@@ -18,13 +18,16 @@ func (Grocery) Fields() []ent.Field {
 		field.Int("user_id"),
 		field.String("name"),
 		field.String("unit"),
+		field.Float("quantity").Optional().Nillable(),
 		field.String("tag").Optional(),
+		field.UUID("recipe_id", uuid.UUID{}).Optional().Nillable(),
 	}
 }
 
 func (Grocery) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("user", User.Type).Ref("groceries").Field("user_id").Unique().Required(),
+		edge.From("recipe", Recipe.Type).Ref("groceries").Field("recipe_id").Unique(),
 	}
 }
 

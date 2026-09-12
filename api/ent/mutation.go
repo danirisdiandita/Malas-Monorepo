@@ -1247,10 +1247,14 @@ type GroceryMutation struct {
 	id            *uuid.UUID
 	name          *string
 	unit          *string
+	quantity      *float64
+	addquantity   *float64
 	tag           *string
 	clearedFields map[string]struct{}
 	user          *int
 	cleareduser   bool
+	recipe        *uuid.UUID
+	clearedrecipe bool
 	done          bool
 	oldValue      func(context.Context) (*Grocery, error)
 	predicates    []predicate.Grocery
@@ -1468,6 +1472,76 @@ func (m *GroceryMutation) ResetUnit() {
 	m.unit = nil
 }
 
+// SetQuantity sets the "quantity" field.
+func (m *GroceryMutation) SetQuantity(f float64) {
+	m.quantity = &f
+	m.addquantity = nil
+}
+
+// Quantity returns the value of the "quantity" field in the mutation.
+func (m *GroceryMutation) Quantity() (r float64, exists bool) {
+	v := m.quantity
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldQuantity returns the old "quantity" field's value of the Grocery entity.
+// If the Grocery object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GroceryMutation) OldQuantity(ctx context.Context) (v *float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldQuantity is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldQuantity requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldQuantity: %w", err)
+	}
+	return oldValue.Quantity, nil
+}
+
+// AddQuantity adds f to the "quantity" field.
+func (m *GroceryMutation) AddQuantity(f float64) {
+	if m.addquantity != nil {
+		*m.addquantity += f
+	} else {
+		m.addquantity = &f
+	}
+}
+
+// AddedQuantity returns the value that was added to the "quantity" field in this mutation.
+func (m *GroceryMutation) AddedQuantity() (r float64, exists bool) {
+	v := m.addquantity
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearQuantity clears the value of the "quantity" field.
+func (m *GroceryMutation) ClearQuantity() {
+	m.quantity = nil
+	m.addquantity = nil
+	m.clearedFields[grocery.FieldQuantity] = struct{}{}
+}
+
+// QuantityCleared returns if the "quantity" field was cleared in this mutation.
+func (m *GroceryMutation) QuantityCleared() bool {
+	_, ok := m.clearedFields[grocery.FieldQuantity]
+	return ok
+}
+
+// ResetQuantity resets all changes to the "quantity" field.
+func (m *GroceryMutation) ResetQuantity() {
+	m.quantity = nil
+	m.addquantity = nil
+	delete(m.clearedFields, grocery.FieldQuantity)
+}
+
 // SetTag sets the "tag" field.
 func (m *GroceryMutation) SetTag(s string) {
 	m.tag = &s
@@ -1517,6 +1591,55 @@ func (m *GroceryMutation) ResetTag() {
 	delete(m.clearedFields, grocery.FieldTag)
 }
 
+// SetRecipeID sets the "recipe_id" field.
+func (m *GroceryMutation) SetRecipeID(u uuid.UUID) {
+	m.recipe = &u
+}
+
+// RecipeID returns the value of the "recipe_id" field in the mutation.
+func (m *GroceryMutation) RecipeID() (r uuid.UUID, exists bool) {
+	v := m.recipe
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRecipeID returns the old "recipe_id" field's value of the Grocery entity.
+// If the Grocery object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GroceryMutation) OldRecipeID(ctx context.Context) (v *uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRecipeID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRecipeID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRecipeID: %w", err)
+	}
+	return oldValue.RecipeID, nil
+}
+
+// ClearRecipeID clears the value of the "recipe_id" field.
+func (m *GroceryMutation) ClearRecipeID() {
+	m.recipe = nil
+	m.clearedFields[grocery.FieldRecipeID] = struct{}{}
+}
+
+// RecipeIDCleared returns if the "recipe_id" field was cleared in this mutation.
+func (m *GroceryMutation) RecipeIDCleared() bool {
+	_, ok := m.clearedFields[grocery.FieldRecipeID]
+	return ok
+}
+
+// ResetRecipeID resets all changes to the "recipe_id" field.
+func (m *GroceryMutation) ResetRecipeID() {
+	m.recipe = nil
+	delete(m.clearedFields, grocery.FieldRecipeID)
+}
+
 // ClearUser clears the "user" edge to the User entity.
 func (m *GroceryMutation) ClearUser() {
 	m.cleareduser = true
@@ -1542,6 +1665,33 @@ func (m *GroceryMutation) UserIDs() (ids []int) {
 func (m *GroceryMutation) ResetUser() {
 	m.user = nil
 	m.cleareduser = false
+}
+
+// ClearRecipe clears the "recipe" edge to the Recipe entity.
+func (m *GroceryMutation) ClearRecipe() {
+	m.clearedrecipe = true
+	m.clearedFields[grocery.FieldRecipeID] = struct{}{}
+}
+
+// RecipeCleared reports if the "recipe" edge to the Recipe entity was cleared.
+func (m *GroceryMutation) RecipeCleared() bool {
+	return m.RecipeIDCleared() || m.clearedrecipe
+}
+
+// RecipeIDs returns the "recipe" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// RecipeID instead. It exists only for internal usage by the builders.
+func (m *GroceryMutation) RecipeIDs() (ids []uuid.UUID) {
+	if id := m.recipe; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetRecipe resets all changes to the "recipe" edge.
+func (m *GroceryMutation) ResetRecipe() {
+	m.recipe = nil
+	m.clearedrecipe = false
 }
 
 // Where appends a list predicates to the GroceryMutation builder.
@@ -1578,7 +1728,7 @@ func (m *GroceryMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *GroceryMutation) Fields() []string {
-	fields := make([]string, 0, 4)
+	fields := make([]string, 0, 6)
 	if m.user != nil {
 		fields = append(fields, grocery.FieldUserID)
 	}
@@ -1588,8 +1738,14 @@ func (m *GroceryMutation) Fields() []string {
 	if m.unit != nil {
 		fields = append(fields, grocery.FieldUnit)
 	}
+	if m.quantity != nil {
+		fields = append(fields, grocery.FieldQuantity)
+	}
 	if m.tag != nil {
 		fields = append(fields, grocery.FieldTag)
+	}
+	if m.recipe != nil {
+		fields = append(fields, grocery.FieldRecipeID)
 	}
 	return fields
 }
@@ -1605,8 +1761,12 @@ func (m *GroceryMutation) Field(name string) (ent.Value, bool) {
 		return m.Name()
 	case grocery.FieldUnit:
 		return m.Unit()
+	case grocery.FieldQuantity:
+		return m.Quantity()
 	case grocery.FieldTag:
 		return m.Tag()
+	case grocery.FieldRecipeID:
+		return m.RecipeID()
 	}
 	return nil, false
 }
@@ -1622,8 +1782,12 @@ func (m *GroceryMutation) OldField(ctx context.Context, name string) (ent.Value,
 		return m.OldName(ctx)
 	case grocery.FieldUnit:
 		return m.OldUnit(ctx)
+	case grocery.FieldQuantity:
+		return m.OldQuantity(ctx)
 	case grocery.FieldTag:
 		return m.OldTag(ctx)
+	case grocery.FieldRecipeID:
+		return m.OldRecipeID(ctx)
 	}
 	return nil, fmt.Errorf("unknown Grocery field %s", name)
 }
@@ -1654,12 +1818,26 @@ func (m *GroceryMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetUnit(v)
 		return nil
+	case grocery.FieldQuantity:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetQuantity(v)
+		return nil
 	case grocery.FieldTag:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetTag(v)
+		return nil
+	case grocery.FieldRecipeID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRecipeID(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Grocery field %s", name)
@@ -1669,6 +1847,9 @@ func (m *GroceryMutation) SetField(name string, value ent.Value) error {
 // this mutation.
 func (m *GroceryMutation) AddedFields() []string {
 	var fields []string
+	if m.addquantity != nil {
+		fields = append(fields, grocery.FieldQuantity)
+	}
 	return fields
 }
 
@@ -1677,6 +1858,8 @@ func (m *GroceryMutation) AddedFields() []string {
 // was not set, or was not defined in the schema.
 func (m *GroceryMutation) AddedField(name string) (ent.Value, bool) {
 	switch name {
+	case grocery.FieldQuantity:
+		return m.AddedQuantity()
 	}
 	return nil, false
 }
@@ -1686,6 +1869,13 @@ func (m *GroceryMutation) AddedField(name string) (ent.Value, bool) {
 // type.
 func (m *GroceryMutation) AddField(name string, value ent.Value) error {
 	switch name {
+	case grocery.FieldQuantity:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddQuantity(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Grocery numeric field %s", name)
 }
@@ -1694,8 +1884,14 @@ func (m *GroceryMutation) AddField(name string, value ent.Value) error {
 // mutation.
 func (m *GroceryMutation) ClearedFields() []string {
 	var fields []string
+	if m.FieldCleared(grocery.FieldQuantity) {
+		fields = append(fields, grocery.FieldQuantity)
+	}
 	if m.FieldCleared(grocery.FieldTag) {
 		fields = append(fields, grocery.FieldTag)
+	}
+	if m.FieldCleared(grocery.FieldRecipeID) {
+		fields = append(fields, grocery.FieldRecipeID)
 	}
 	return fields
 }
@@ -1711,8 +1907,14 @@ func (m *GroceryMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *GroceryMutation) ClearField(name string) error {
 	switch name {
+	case grocery.FieldQuantity:
+		m.ClearQuantity()
+		return nil
 	case grocery.FieldTag:
 		m.ClearTag()
+		return nil
+	case grocery.FieldRecipeID:
+		m.ClearRecipeID()
 		return nil
 	}
 	return fmt.Errorf("unknown Grocery nullable field %s", name)
@@ -1731,8 +1933,14 @@ func (m *GroceryMutation) ResetField(name string) error {
 	case grocery.FieldUnit:
 		m.ResetUnit()
 		return nil
+	case grocery.FieldQuantity:
+		m.ResetQuantity()
+		return nil
 	case grocery.FieldTag:
 		m.ResetTag()
+		return nil
+	case grocery.FieldRecipeID:
+		m.ResetRecipeID()
 		return nil
 	}
 	return fmt.Errorf("unknown Grocery field %s", name)
@@ -1740,9 +1948,12 @@ func (m *GroceryMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *GroceryMutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.user != nil {
 		edges = append(edges, grocery.EdgeUser)
+	}
+	if m.recipe != nil {
+		edges = append(edges, grocery.EdgeRecipe)
 	}
 	return edges
 }
@@ -1755,13 +1966,17 @@ func (m *GroceryMutation) AddedIDs(name string) []ent.Value {
 		if id := m.user; id != nil {
 			return []ent.Value{*id}
 		}
+	case grocery.EdgeRecipe:
+		if id := m.recipe; id != nil {
+			return []ent.Value{*id}
+		}
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *GroceryMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	return edges
 }
 
@@ -1773,9 +1988,12 @@ func (m *GroceryMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *GroceryMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.cleareduser {
 		edges = append(edges, grocery.EdgeUser)
+	}
+	if m.clearedrecipe {
+		edges = append(edges, grocery.EdgeRecipe)
 	}
 	return edges
 }
@@ -1786,6 +2004,8 @@ func (m *GroceryMutation) EdgeCleared(name string) bool {
 	switch name {
 	case grocery.EdgeUser:
 		return m.cleareduser
+	case grocery.EdgeRecipe:
+		return m.clearedrecipe
 	}
 	return false
 }
@@ -1797,6 +2017,9 @@ func (m *GroceryMutation) ClearEdge(name string) error {
 	case grocery.EdgeUser:
 		m.ClearUser()
 		return nil
+	case grocery.EdgeRecipe:
+		m.ClearRecipe()
+		return nil
 	}
 	return fmt.Errorf("unknown Grocery unique edge %s", name)
 }
@@ -1807,6 +2030,9 @@ func (m *GroceryMutation) ResetEdge(name string) error {
 	switch name {
 	case grocery.EdgeUser:
 		m.ResetUser()
+		return nil
+	case grocery.EdgeRecipe:
+		m.ResetRecipe()
 		return nil
 	}
 	return fmt.Errorf("unknown Grocery edge %s", name)
@@ -1847,6 +2073,9 @@ type RecipeMutation struct {
 	cleareduser              bool
 	folder                   *uuid.UUID
 	clearedfolder            bool
+	groceries                map[uuid.UUID]struct{}
+	removedgroceries         map[uuid.UUID]struct{}
+	clearedgroceries         bool
 	done                     bool
 	oldValue                 func(context.Context) (*Recipe, error)
 	predicates               []predicate.Recipe
@@ -2994,6 +3223,60 @@ func (m *RecipeMutation) ResetFolder() {
 	m.clearedfolder = false
 }
 
+// AddGroceryIDs adds the "groceries" edge to the Grocery entity by ids.
+func (m *RecipeMutation) AddGroceryIDs(ids ...uuid.UUID) {
+	if m.groceries == nil {
+		m.groceries = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.groceries[ids[i]] = struct{}{}
+	}
+}
+
+// ClearGroceries clears the "groceries" edge to the Grocery entity.
+func (m *RecipeMutation) ClearGroceries() {
+	m.clearedgroceries = true
+}
+
+// GroceriesCleared reports if the "groceries" edge to the Grocery entity was cleared.
+func (m *RecipeMutation) GroceriesCleared() bool {
+	return m.clearedgroceries
+}
+
+// RemoveGroceryIDs removes the "groceries" edge to the Grocery entity by IDs.
+func (m *RecipeMutation) RemoveGroceryIDs(ids ...uuid.UUID) {
+	if m.removedgroceries == nil {
+		m.removedgroceries = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.groceries, ids[i])
+		m.removedgroceries[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedGroceries returns the removed IDs of the "groceries" edge to the Grocery entity.
+func (m *RecipeMutation) RemovedGroceriesIDs() (ids []uuid.UUID) {
+	for id := range m.removedgroceries {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// GroceriesIDs returns the "groceries" edge IDs in the mutation.
+func (m *RecipeMutation) GroceriesIDs() (ids []uuid.UUID) {
+	for id := range m.groceries {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetGroceries resets all changes to the "groceries" edge.
+func (m *RecipeMutation) ResetGroceries() {
+	m.groceries = nil
+	m.clearedgroceries = false
+	m.removedgroceries = nil
+}
+
 // Where appends a list predicates to the RecipeMutation builder.
 func (m *RecipeMutation) Where(ps ...predicate.Recipe) {
 	m.predicates = append(m.predicates, ps...)
@@ -3564,12 +3847,15 @@ func (m *RecipeMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *RecipeMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.user != nil {
 		edges = append(edges, recipe.EdgeUser)
 	}
 	if m.folder != nil {
 		edges = append(edges, recipe.EdgeFolder)
+	}
+	if m.groceries != nil {
+		edges = append(edges, recipe.EdgeGroceries)
 	}
 	return edges
 }
@@ -3586,30 +3872,50 @@ func (m *RecipeMutation) AddedIDs(name string) []ent.Value {
 		if id := m.folder; id != nil {
 			return []ent.Value{*id}
 		}
+	case recipe.EdgeGroceries:
+		ids := make([]ent.Value, 0, len(m.groceries))
+		for id := range m.groceries {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *RecipeMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
+	if m.removedgroceries != nil {
+		edges = append(edges, recipe.EdgeGroceries)
+	}
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *RecipeMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case recipe.EdgeGroceries:
+		ids := make([]ent.Value, 0, len(m.removedgroceries))
+		for id := range m.removedgroceries {
+			ids = append(ids, id)
+		}
+		return ids
+	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *RecipeMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.cleareduser {
 		edges = append(edges, recipe.EdgeUser)
 	}
 	if m.clearedfolder {
 		edges = append(edges, recipe.EdgeFolder)
+	}
+	if m.clearedgroceries {
+		edges = append(edges, recipe.EdgeGroceries)
 	}
 	return edges
 }
@@ -3622,6 +3928,8 @@ func (m *RecipeMutation) EdgeCleared(name string) bool {
 		return m.cleareduser
 	case recipe.EdgeFolder:
 		return m.clearedfolder
+	case recipe.EdgeGroceries:
+		return m.clearedgroceries
 	}
 	return false
 }
@@ -3649,6 +3957,9 @@ func (m *RecipeMutation) ResetEdge(name string) error {
 		return nil
 	case recipe.EdgeFolder:
 		m.ResetFolder()
+		return nil
+	case recipe.EdgeGroceries:
+		m.ResetGroceries()
 		return nil
 	}
 	return fmt.Errorf("unknown Recipe edge %s", name)

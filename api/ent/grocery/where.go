@@ -69,9 +69,19 @@ func Unit(v string) predicate.Grocery {
 	return predicate.Grocery(sql.FieldEQ(FieldUnit, v))
 }
 
+// Quantity applies equality check predicate on the "quantity" field. It's identical to QuantityEQ.
+func Quantity(v float64) predicate.Grocery {
+	return predicate.Grocery(sql.FieldEQ(FieldQuantity, v))
+}
+
 // Tag applies equality check predicate on the "tag" field. It's identical to TagEQ.
 func Tag(v string) predicate.Grocery {
 	return predicate.Grocery(sql.FieldEQ(FieldTag, v))
+}
+
+// RecipeID applies equality check predicate on the "recipe_id" field. It's identical to RecipeIDEQ.
+func RecipeID(v uuid.UUID) predicate.Grocery {
+	return predicate.Grocery(sql.FieldEQ(FieldRecipeID, v))
 }
 
 // UserIDEQ applies the EQ predicate on the "user_id" field.
@@ -224,6 +234,56 @@ func UnitContainsFold(v string) predicate.Grocery {
 	return predicate.Grocery(sql.FieldContainsFold(FieldUnit, v))
 }
 
+// QuantityEQ applies the EQ predicate on the "quantity" field.
+func QuantityEQ(v float64) predicate.Grocery {
+	return predicate.Grocery(sql.FieldEQ(FieldQuantity, v))
+}
+
+// QuantityNEQ applies the NEQ predicate on the "quantity" field.
+func QuantityNEQ(v float64) predicate.Grocery {
+	return predicate.Grocery(sql.FieldNEQ(FieldQuantity, v))
+}
+
+// QuantityIn applies the In predicate on the "quantity" field.
+func QuantityIn(vs ...float64) predicate.Grocery {
+	return predicate.Grocery(sql.FieldIn(FieldQuantity, vs...))
+}
+
+// QuantityNotIn applies the NotIn predicate on the "quantity" field.
+func QuantityNotIn(vs ...float64) predicate.Grocery {
+	return predicate.Grocery(sql.FieldNotIn(FieldQuantity, vs...))
+}
+
+// QuantityGT applies the GT predicate on the "quantity" field.
+func QuantityGT(v float64) predicate.Grocery {
+	return predicate.Grocery(sql.FieldGT(FieldQuantity, v))
+}
+
+// QuantityGTE applies the GTE predicate on the "quantity" field.
+func QuantityGTE(v float64) predicate.Grocery {
+	return predicate.Grocery(sql.FieldGTE(FieldQuantity, v))
+}
+
+// QuantityLT applies the LT predicate on the "quantity" field.
+func QuantityLT(v float64) predicate.Grocery {
+	return predicate.Grocery(sql.FieldLT(FieldQuantity, v))
+}
+
+// QuantityLTE applies the LTE predicate on the "quantity" field.
+func QuantityLTE(v float64) predicate.Grocery {
+	return predicate.Grocery(sql.FieldLTE(FieldQuantity, v))
+}
+
+// QuantityIsNil applies the IsNil predicate on the "quantity" field.
+func QuantityIsNil() predicate.Grocery {
+	return predicate.Grocery(sql.FieldIsNull(FieldQuantity))
+}
+
+// QuantityNotNil applies the NotNil predicate on the "quantity" field.
+func QuantityNotNil() predicate.Grocery {
+	return predicate.Grocery(sql.FieldNotNull(FieldQuantity))
+}
+
 // TagEQ applies the EQ predicate on the "tag" field.
 func TagEQ(v string) predicate.Grocery {
 	return predicate.Grocery(sql.FieldEQ(FieldTag, v))
@@ -299,6 +359,36 @@ func TagContainsFold(v string) predicate.Grocery {
 	return predicate.Grocery(sql.FieldContainsFold(FieldTag, v))
 }
 
+// RecipeIDEQ applies the EQ predicate on the "recipe_id" field.
+func RecipeIDEQ(v uuid.UUID) predicate.Grocery {
+	return predicate.Grocery(sql.FieldEQ(FieldRecipeID, v))
+}
+
+// RecipeIDNEQ applies the NEQ predicate on the "recipe_id" field.
+func RecipeIDNEQ(v uuid.UUID) predicate.Grocery {
+	return predicate.Grocery(sql.FieldNEQ(FieldRecipeID, v))
+}
+
+// RecipeIDIn applies the In predicate on the "recipe_id" field.
+func RecipeIDIn(vs ...uuid.UUID) predicate.Grocery {
+	return predicate.Grocery(sql.FieldIn(FieldRecipeID, vs...))
+}
+
+// RecipeIDNotIn applies the NotIn predicate on the "recipe_id" field.
+func RecipeIDNotIn(vs ...uuid.UUID) predicate.Grocery {
+	return predicate.Grocery(sql.FieldNotIn(FieldRecipeID, vs...))
+}
+
+// RecipeIDIsNil applies the IsNil predicate on the "recipe_id" field.
+func RecipeIDIsNil() predicate.Grocery {
+	return predicate.Grocery(sql.FieldIsNull(FieldRecipeID))
+}
+
+// RecipeIDNotNil applies the NotNil predicate on the "recipe_id" field.
+func RecipeIDNotNil() predicate.Grocery {
+	return predicate.Grocery(sql.FieldNotNull(FieldRecipeID))
+}
+
 // HasUser applies the HasEdge predicate on the "user" edge.
 func HasUser() predicate.Grocery {
 	return predicate.Grocery(func(s *sql.Selector) {
@@ -314,6 +404,29 @@ func HasUser() predicate.Grocery {
 func HasUserWith(preds ...predicate.User) predicate.Grocery {
 	return predicate.Grocery(func(s *sql.Selector) {
 		step := newUserStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasRecipe applies the HasEdge predicate on the "recipe" edge.
+func HasRecipe() predicate.Grocery {
+	return predicate.Grocery(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, RecipeTable, RecipeColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasRecipeWith applies the HasEdge predicate on the "recipe" edge with a given conditions (other predicates).
+func HasRecipeWith(preds ...predicate.Recipe) predicate.Grocery {
+	return predicate.Grocery(func(s *sql.Selector) {
+		step := newRecipeStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

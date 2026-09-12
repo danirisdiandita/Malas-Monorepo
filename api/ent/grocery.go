@@ -9,6 +9,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/grocery"
+	"github.com/danirisdiandita/malas-monorepo/api/ent/recipe"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/user"
 	"github.com/google/uuid"
 )
@@ -24,8 +25,12 @@ type Grocery struct {
 	Name string `json:"name,omitempty"`
 	// Unit holds the value of the "unit" field.
 	Unit string `json:"unit,omitempty"`
+	// Quantity holds the value of the "quantity" field.
+	Quantity *float64 `json:"quantity,omitempty"`
 	// Tag holds the value of the "tag" field.
 	Tag string `json:"tag,omitempty"`
+	// RecipeID holds the value of the "recipe_id" field.
+	RecipeID *uuid.UUID `json:"recipe_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the GroceryQuery when eager-loading is set.
 	Edges        GroceryEdges `json:"edges"`
@@ -36,9 +41,11 @@ type Grocery struct {
 type GroceryEdges struct {
 	// User holds the value of the user edge.
 	User *User `json:"user,omitempty"`
+	// Recipe holds the value of the recipe edge.
+	Recipe *Recipe `json:"recipe,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
+	loadedTypes [2]bool
 }
 
 // UserOrErr returns the User value or an error if the edge
@@ -52,11 +59,26 @@ func (e GroceryEdges) UserOrErr() (*User, error) {
 	return nil, &NotLoadedError{edge: "user"}
 }
 
+// RecipeOrErr returns the Recipe value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e GroceryEdges) RecipeOrErr() (*Recipe, error) {
+	if e.Recipe != nil {
+		return e.Recipe, nil
+	} else if e.loadedTypes[1] {
+		return nil, &NotFoundError{label: recipe.Label}
+	}
+	return nil, &NotLoadedError{edge: "recipe"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*Grocery) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case grocery.FieldRecipeID:
+			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
+		case grocery.FieldQuantity:
+			values[i] = new(sql.NullFloat64)
 		case grocery.FieldUserID:
 			values[i] = new(sql.NullInt64)
 		case grocery.FieldName, grocery.FieldUnit, grocery.FieldTag:
@@ -102,11 +124,25 @@ func (_m *Grocery) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.Unit = value.String
 			}
+		case grocery.FieldQuantity:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field quantity", values[i])
+			} else if value.Valid {
+				_m.Quantity = new(float64)
+				*_m.Quantity = value.Float64
+			}
 		case grocery.FieldTag:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field tag", values[i])
 			} else if value.Valid {
 				_m.Tag = value.String
+			}
+		case grocery.FieldRecipeID:
+			if value, ok := values[i].(*sql.NullScanner); !ok {
+				return fmt.Errorf("unexpected type %T for field recipe_id", values[i])
+			} else if value.Valid {
+				_m.RecipeID = new(uuid.UUID)
+				*_m.RecipeID = *value.S.(*uuid.UUID)
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
@@ -124,6 +160,11 @@ func (_m *Grocery) Value(name string) (ent.Value, error) {
 // QueryUser queries the "user" edge of the Grocery entity.
 func (_m *Grocery) QueryUser() *UserQuery {
 	return NewGroceryClient(_m.config).QueryUser(_m)
+}
+
+// QueryRecipe queries the "recipe" edge of the Grocery entity.
+func (_m *Grocery) QueryRecipe() *RecipeQuery {
+	return NewGroceryClient(_m.config).QueryRecipe(_m)
 }
 
 // Update returns a builder for updating this Grocery.
@@ -158,8 +199,18 @@ func (_m *Grocery) String() string {
 	builder.WriteString("unit=")
 	builder.WriteString(_m.Unit)
 	builder.WriteString(", ")
+	if v := _m.Quantity; v != nil {
+		builder.WriteString("quantity=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
 	builder.WriteString("tag=")
 	builder.WriteString(_m.Tag)
+	builder.WriteString(", ")
+	if v := _m.RecipeID; v != nil {
+		builder.WriteString("recipe_id=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
 	builder.WriteByte(')')
 	return builder.String()
 }

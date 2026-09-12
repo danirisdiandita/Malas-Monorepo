@@ -19,10 +19,16 @@ const (
 	FieldName = "name"
 	// FieldUnit holds the string denoting the unit field in the database.
 	FieldUnit = "unit"
+	// FieldQuantity holds the string denoting the quantity field in the database.
+	FieldQuantity = "quantity"
 	// FieldTag holds the string denoting the tag field in the database.
 	FieldTag = "tag"
+	// FieldRecipeID holds the string denoting the recipe_id field in the database.
+	FieldRecipeID = "recipe_id"
 	// EdgeUser holds the string denoting the user edge name in mutations.
 	EdgeUser = "user"
+	// EdgeRecipe holds the string denoting the recipe edge name in mutations.
+	EdgeRecipe = "recipe"
 	// Table holds the table name of the grocery in the database.
 	Table = "groceries"
 	// UserTable is the table that holds the user relation/edge.
@@ -32,6 +38,13 @@ const (
 	UserInverseTable = "users"
 	// UserColumn is the table column denoting the user relation/edge.
 	UserColumn = "user_id"
+	// RecipeTable is the table that holds the recipe relation/edge.
+	RecipeTable = "groceries"
+	// RecipeInverseTable is the table name for the Recipe entity.
+	// It exists in this package in order to avoid circular dependency with the "recipe" package.
+	RecipeInverseTable = "recipes"
+	// RecipeColumn is the table column denoting the recipe relation/edge.
+	RecipeColumn = "recipe_id"
 )
 
 // Columns holds all SQL columns for grocery fields.
@@ -40,7 +53,9 @@ var Columns = []string{
 	FieldUserID,
 	FieldName,
 	FieldUnit,
+	FieldQuantity,
 	FieldTag,
+	FieldRecipeID,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -81,9 +96,19 @@ func ByUnit(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldUnit, opts...).ToFunc()
 }
 
+// ByQuantity orders the results by the quantity field.
+func ByQuantity(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldQuantity, opts...).ToFunc()
+}
+
 // ByTag orders the results by the tag field.
 func ByTag(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldTag, opts...).ToFunc()
+}
+
+// ByRecipeID orders the results by the recipe_id field.
+func ByRecipeID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRecipeID, opts...).ToFunc()
 }
 
 // ByUserField orders the results by user field.
@@ -92,10 +117,24 @@ func ByUserField(field string, opts ...sql.OrderTermOption) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newUserStep(), sql.OrderByField(field, opts...))
 	}
 }
+
+// ByRecipeField orders the results by recipe field.
+func ByRecipeField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newRecipeStep(), sql.OrderByField(field, opts...))
+	}
+}
 func newUserStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(UserInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2O, true, UserTable, UserColumn),
+	)
+}
+func newRecipeStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(RecipeInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, RecipeTable, RecipeColumn),
 	)
 }

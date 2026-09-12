@@ -46,6 +46,7 @@ func (Recipe) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("user", User.Type).Ref("recipes").Field("user_id").Unique().Required(),
 		edge.From("folder", Folder.Type).Ref("recipes").Field("folder_id").Unique(),
+		edge.To("groceries", Grocery.Type),
 	}
 }
 

@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/folder"
+	"github.com/danirisdiandita/malas-monorepo/api/ent/grocery"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/recipe"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/user"
 	"github.com/google/uuid"
@@ -257,6 +258,21 @@ func (_c *RecipeCreate) SetFolder(v *Folder) *RecipeCreate {
 	return _c.SetFolderID(v.ID)
 }
 
+// AddGroceryIDs adds the "groceries" edge to the Grocery entity by IDs.
+func (_c *RecipeCreate) AddGroceryIDs(ids ...uuid.UUID) *RecipeCreate {
+	_c.mutation.AddGroceryIDs(ids...)
+	return _c
+}
+
+// AddGroceries adds the "groceries" edges to the Grocery entity.
+func (_c *RecipeCreate) AddGroceries(v ...*Grocery) *RecipeCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddGroceryIDs(ids...)
+}
+
 // Mutation returns the RecipeMutation object of the builder.
 func (_c *RecipeCreate) Mutation() *RecipeMutation {
 	return _c.mutation
@@ -479,6 +495,22 @@ func (_c *RecipeCreate) createSpec() (*Recipe, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.FolderID = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.GroceriesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   recipe.GroceriesTable,
+			Columns: []string{recipe.GroceriesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(grocery.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

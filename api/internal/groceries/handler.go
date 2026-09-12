@@ -10,10 +10,12 @@ import (
 )
 
 type Item struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-	Unit string `json:"unit"`
-	Tag  string `json:"tag,omitempty"`
+	ID       string   `json:"id"`
+	Name     string   `json:"name"`
+	Unit     string   `json:"unit"`
+	Quantity *float64 `json:"quantity,omitempty"`
+	Tag      string   `json:"tag,omitempty"`
+	RecipeID *string  `json:"recipe_id,omitempty"`
 }
 
 func List(db *ent.Client) http.HandlerFunc {
@@ -30,7 +32,12 @@ func List(db *ent.Client) http.HandlerFunc {
 		}
 		items := make([]Item, 0, len(rows))
 		for _, row := range rows {
-			items = append(items, Item{ID: row.ID.String(), Name: row.Name, Unit: row.Unit, Tag: row.Tag})
+			var recipeID *string
+			if row.RecipeID != nil {
+				value := row.RecipeID.String()
+				recipeID = &value
+			}
+			items = append(items, Item{ID: row.ID.String(), Name: row.Name, Unit: row.Unit, Quantity: row.Quantity, Tag: row.Tag, RecipeID: recipeID})
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("Cache-Control", "private, no-store")

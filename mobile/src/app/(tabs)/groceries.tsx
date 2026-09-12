@@ -61,7 +61,7 @@ export default function GroceriesScreen() {
                   >
                     {item.name}
                   </ThemedText>
-                  <ThemedText style={styles.quantity}>{item.unit}</ThemedText>
+                  <ThemedText style={styles.quantity}>{[item.quantity, item.unit].filter(Boolean).join(" ")}</ThemedText>
                 </Pressable>;
               })}
             </View>

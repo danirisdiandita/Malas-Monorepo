@@ -74,9 +74,11 @@ type RecipeEdges struct {
 	User *User `json:"user,omitempty"`
 	// Folder holds the value of the folder edge.
 	Folder *Folder `json:"folder,omitempty"`
+	// Groceries holds the value of the groceries edge.
+	Groceries []*Grocery `json:"groceries,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
 }
 
 // UserOrErr returns the User value or an error if the edge
@@ -99,6 +101,15 @@ func (e RecipeEdges) FolderOrErr() (*Folder, error) {
 		return nil, &NotFoundError{label: folder.Label}
 	}
 	return nil, &NotLoadedError{edge: "folder"}
+}
+
+// GroceriesOrErr returns the Groceries value or an error if the edge
+// was not loaded in eager-loading.
+func (e RecipeEdges) GroceriesOrErr() ([]*Grocery, error) {
+	if e.loadedTypes[2] {
+		return e.Groceries, nil
+	}
+	return nil, &NotLoadedError{edge: "groceries"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -293,6 +304,11 @@ func (_m *Recipe) QueryUser() *UserQuery {
 // QueryFolder queries the "folder" edge of the Recipe entity.
 func (_m *Recipe) QueryFolder() *FolderQuery {
 	return NewRecipeClient(_m.config).QueryFolder(_m)
+}
+
+// QueryGroceries queries the "groceries" edge of the Recipe entity.
+func (_m *Recipe) QueryGroceries() *GroceryQuery {
+	return NewRecipeClient(_m.config).QueryGroceries(_m)
 }
 
 // Update returns a builder for updating this Recipe.

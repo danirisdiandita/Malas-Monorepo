@@ -10,6 +10,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/grocery"
+	"github.com/danirisdiandita/malas-monorepo/api/ent/recipe"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/user"
 	"github.com/google/uuid"
 )
@@ -39,6 +40,20 @@ func (_c *GroceryCreate) SetUnit(v string) *GroceryCreate {
 	return _c
 }
 
+// SetQuantity sets the "quantity" field.
+func (_c *GroceryCreate) SetQuantity(v float64) *GroceryCreate {
+	_c.mutation.SetQuantity(v)
+	return _c
+}
+
+// SetNillableQuantity sets the "quantity" field if the given value is not nil.
+func (_c *GroceryCreate) SetNillableQuantity(v *float64) *GroceryCreate {
+	if v != nil {
+		_c.SetQuantity(*v)
+	}
+	return _c
+}
+
 // SetTag sets the "tag" field.
 func (_c *GroceryCreate) SetTag(v string) *GroceryCreate {
 	_c.mutation.SetTag(v)
@@ -49,6 +64,20 @@ func (_c *GroceryCreate) SetTag(v string) *GroceryCreate {
 func (_c *GroceryCreate) SetNillableTag(v *string) *GroceryCreate {
 	if v != nil {
 		_c.SetTag(*v)
+	}
+	return _c
+}
+
+// SetRecipeID sets the "recipe_id" field.
+func (_c *GroceryCreate) SetRecipeID(v uuid.UUID) *GroceryCreate {
+	_c.mutation.SetRecipeID(v)
+	return _c
+}
+
+// SetNillableRecipeID sets the "recipe_id" field if the given value is not nil.
+func (_c *GroceryCreate) SetNillableRecipeID(v *uuid.UUID) *GroceryCreate {
+	if v != nil {
+		_c.SetRecipeID(*v)
 	}
 	return _c
 }
@@ -70,6 +99,11 @@ func (_c *GroceryCreate) SetNillableID(v *uuid.UUID) *GroceryCreate {
 // SetUser sets the "user" edge to the User entity.
 func (_c *GroceryCreate) SetUser(v *User) *GroceryCreate {
 	return _c.SetUserID(v.ID)
+}
+
+// SetRecipe sets the "recipe" edge to the Recipe entity.
+func (_c *GroceryCreate) SetRecipe(v *Recipe) *GroceryCreate {
+	return _c.SetRecipeID(v.ID)
 }
 
 // Mutation returns the GroceryMutation object of the builder.
@@ -170,6 +204,10 @@ func (_c *GroceryCreate) createSpec() (*Grocery, *sqlgraph.CreateSpec) {
 		_spec.SetField(grocery.FieldUnit, field.TypeString, value)
 		_node.Unit = value
 	}
+	if value, ok := _c.mutation.Quantity(); ok {
+		_spec.SetField(grocery.FieldQuantity, field.TypeFloat64, value)
+		_node.Quantity = &value
+	}
 	if value, ok := _c.mutation.Tag(); ok {
 		_spec.SetField(grocery.FieldTag, field.TypeString, value)
 		_node.Tag = value
@@ -189,6 +227,23 @@ func (_c *GroceryCreate) createSpec() (*Grocery, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.UserID = nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.RecipeIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   grocery.RecipeTable,
+			Columns: []string{grocery.RecipeColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(recipe.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.RecipeID = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

@@ -12,7 +12,9 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/grocery"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/predicate"
+	"github.com/danirisdiandita/malas-monorepo/api/ent/recipe"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/user"
+	"github.com/google/uuid"
 )
 
 // GroceryUpdate is the builder for updating Grocery entities.
@@ -70,6 +72,33 @@ func (_u *GroceryUpdate) SetNillableUnit(v *string) *GroceryUpdate {
 	return _u
 }
 
+// SetQuantity sets the "quantity" field.
+func (_u *GroceryUpdate) SetQuantity(v float64) *GroceryUpdate {
+	_u.mutation.ResetQuantity()
+	_u.mutation.SetQuantity(v)
+	return _u
+}
+
+// SetNillableQuantity sets the "quantity" field if the given value is not nil.
+func (_u *GroceryUpdate) SetNillableQuantity(v *float64) *GroceryUpdate {
+	if v != nil {
+		_u.SetQuantity(*v)
+	}
+	return _u
+}
+
+// AddQuantity adds value to the "quantity" field.
+func (_u *GroceryUpdate) AddQuantity(v float64) *GroceryUpdate {
+	_u.mutation.AddQuantity(v)
+	return _u
+}
+
+// ClearQuantity clears the value of the "quantity" field.
+func (_u *GroceryUpdate) ClearQuantity() *GroceryUpdate {
+	_u.mutation.ClearQuantity()
+	return _u
+}
+
 // SetTag sets the "tag" field.
 func (_u *GroceryUpdate) SetTag(v string) *GroceryUpdate {
 	_u.mutation.SetTag(v)
@@ -90,9 +119,34 @@ func (_u *GroceryUpdate) ClearTag() *GroceryUpdate {
 	return _u
 }
 
+// SetRecipeID sets the "recipe_id" field.
+func (_u *GroceryUpdate) SetRecipeID(v uuid.UUID) *GroceryUpdate {
+	_u.mutation.SetRecipeID(v)
+	return _u
+}
+
+// SetNillableRecipeID sets the "recipe_id" field if the given value is not nil.
+func (_u *GroceryUpdate) SetNillableRecipeID(v *uuid.UUID) *GroceryUpdate {
+	if v != nil {
+		_u.SetRecipeID(*v)
+	}
+	return _u
+}
+
+// ClearRecipeID clears the value of the "recipe_id" field.
+func (_u *GroceryUpdate) ClearRecipeID() *GroceryUpdate {
+	_u.mutation.ClearRecipeID()
+	return _u
+}
+
 // SetUser sets the "user" edge to the User entity.
 func (_u *GroceryUpdate) SetUser(v *User) *GroceryUpdate {
 	return _u.SetUserID(v.ID)
+}
+
+// SetRecipe sets the "recipe" edge to the Recipe entity.
+func (_u *GroceryUpdate) SetRecipe(v *Recipe) *GroceryUpdate {
+	return _u.SetRecipeID(v.ID)
 }
 
 // Mutation returns the GroceryMutation object of the builder.
@@ -103,6 +157,12 @@ func (_u *GroceryUpdate) Mutation() *GroceryMutation {
 // ClearUser clears the "user" edge to the User entity.
 func (_u *GroceryUpdate) ClearUser() *GroceryUpdate {
 	_u.mutation.ClearUser()
+	return _u
+}
+
+// ClearRecipe clears the "recipe" edge to the Recipe entity.
+func (_u *GroceryUpdate) ClearRecipe() *GroceryUpdate {
+	_u.mutation.ClearRecipe()
 	return _u
 }
 
@@ -159,6 +219,15 @@ func (_u *GroceryUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.Unit(); ok {
 		_spec.SetField(grocery.FieldUnit, field.TypeString, value)
 	}
+	if value, ok := _u.mutation.Quantity(); ok {
+		_spec.SetField(grocery.FieldQuantity, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedQuantity(); ok {
+		_spec.AddField(grocery.FieldQuantity, field.TypeFloat64, value)
+	}
+	if _u.mutation.QuantityCleared() {
+		_spec.ClearField(grocery.FieldQuantity, field.TypeFloat64)
+	}
 	if value, ok := _u.mutation.Tag(); ok {
 		_spec.SetField(grocery.FieldTag, field.TypeString, value)
 	}
@@ -187,6 +256,35 @@ func (_u *GroceryUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.RecipeCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   grocery.RecipeTable,
+			Columns: []string{grocery.RecipeColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(recipe.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RecipeIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   grocery.RecipeTable,
+			Columns: []string{grocery.RecipeColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(recipe.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -256,6 +354,33 @@ func (_u *GroceryUpdateOne) SetNillableUnit(v *string) *GroceryUpdateOne {
 	return _u
 }
 
+// SetQuantity sets the "quantity" field.
+func (_u *GroceryUpdateOne) SetQuantity(v float64) *GroceryUpdateOne {
+	_u.mutation.ResetQuantity()
+	_u.mutation.SetQuantity(v)
+	return _u
+}
+
+// SetNillableQuantity sets the "quantity" field if the given value is not nil.
+func (_u *GroceryUpdateOne) SetNillableQuantity(v *float64) *GroceryUpdateOne {
+	if v != nil {
+		_u.SetQuantity(*v)
+	}
+	return _u
+}
+
+// AddQuantity adds value to the "quantity" field.
+func (_u *GroceryUpdateOne) AddQuantity(v float64) *GroceryUpdateOne {
+	_u.mutation.AddQuantity(v)
+	return _u
+}
+
+// ClearQuantity clears the value of the "quantity" field.
+func (_u *GroceryUpdateOne) ClearQuantity() *GroceryUpdateOne {
+	_u.mutation.ClearQuantity()
+	return _u
+}
+
 // SetTag sets the "tag" field.
 func (_u *GroceryUpdateOne) SetTag(v string) *GroceryUpdateOne {
 	_u.mutation.SetTag(v)
@@ -276,9 +401,34 @@ func (_u *GroceryUpdateOne) ClearTag() *GroceryUpdateOne {
 	return _u
 }
 
+// SetRecipeID sets the "recipe_id" field.
+func (_u *GroceryUpdateOne) SetRecipeID(v uuid.UUID) *GroceryUpdateOne {
+	_u.mutation.SetRecipeID(v)
+	return _u
+}
+
+// SetNillableRecipeID sets the "recipe_id" field if the given value is not nil.
+func (_u *GroceryUpdateOne) SetNillableRecipeID(v *uuid.UUID) *GroceryUpdateOne {
+	if v != nil {
+		_u.SetRecipeID(*v)
+	}
+	return _u
+}
+
+// ClearRecipeID clears the value of the "recipe_id" field.
+func (_u *GroceryUpdateOne) ClearRecipeID() *GroceryUpdateOne {
+	_u.mutation.ClearRecipeID()
+	return _u
+}
+
 // SetUser sets the "user" edge to the User entity.
 func (_u *GroceryUpdateOne) SetUser(v *User) *GroceryUpdateOne {
 	return _u.SetUserID(v.ID)
+}
+
+// SetRecipe sets the "recipe" edge to the Recipe entity.
+func (_u *GroceryUpdateOne) SetRecipe(v *Recipe) *GroceryUpdateOne {
+	return _u.SetRecipeID(v.ID)
 }
 
 // Mutation returns the GroceryMutation object of the builder.
@@ -289,6 +439,12 @@ func (_u *GroceryUpdateOne) Mutation() *GroceryMutation {
 // ClearUser clears the "user" edge to the User entity.
 func (_u *GroceryUpdateOne) ClearUser() *GroceryUpdateOne {
 	_u.mutation.ClearUser()
+	return _u
+}
+
+// ClearRecipe clears the "recipe" edge to the Recipe entity.
+func (_u *GroceryUpdateOne) ClearRecipe() *GroceryUpdateOne {
+	_u.mutation.ClearRecipe()
 	return _u
 }
 
@@ -375,6 +531,15 @@ func (_u *GroceryUpdateOne) sqlSave(ctx context.Context) (_node *Grocery, err er
 	if value, ok := _u.mutation.Unit(); ok {
 		_spec.SetField(grocery.FieldUnit, field.TypeString, value)
 	}
+	if value, ok := _u.mutation.Quantity(); ok {
+		_spec.SetField(grocery.FieldQuantity, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedQuantity(); ok {
+		_spec.AddField(grocery.FieldQuantity, field.TypeFloat64, value)
+	}
+	if _u.mutation.QuantityCleared() {
+		_spec.ClearField(grocery.FieldQuantity, field.TypeFloat64)
+	}
 	if value, ok := _u.mutation.Tag(); ok {
 		_spec.SetField(grocery.FieldTag, field.TypeString, value)
 	}
@@ -403,6 +568,35 @@ func (_u *GroceryUpdateOne) sqlSave(ctx context.Context) (_node *Grocery, err er
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.RecipeCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   grocery.RecipeTable,
+			Columns: []string{grocery.RecipeColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(recipe.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RecipeIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   grocery.RecipeTable,
+			Columns: []string{grocery.RecipeColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(recipe.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"database/sql/driver"
 	"fmt"
 	"math"
 
@@ -12,6 +13,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/folder"
+	"github.com/danirisdiandita/malas-monorepo/api/ent/grocery"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/predicate"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/recipe"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/user"
@@ -21,12 +23,13 @@ import (
 // RecipeQuery is the builder for querying Recipe entities.
 type RecipeQuery struct {
 	config
-	ctx        *QueryContext
-	order      []recipe.OrderOption
-	inters     []Interceptor
-	predicates []predicate.Recipe
-	withUser   *UserQuery
-	withFolder *FolderQuery
+	ctx           *QueryContext
+	order         []recipe.OrderOption
+	inters        []Interceptor
+	predicates    []predicate.Recipe
+	withUser      *UserQuery
+	withFolder    *FolderQuery
+	withGroceries *GroceryQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -100,6 +103,28 @@ func (_q *RecipeQuery) QueryFolder() *FolderQuery {
 			sqlgraph.From(recipe.Table, recipe.FieldID, selector),
 			sqlgraph.To(folder.Table, folder.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, recipe.FolderTable, recipe.FolderColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryGroceries chains the current query on the "groceries" edge.
+func (_q *RecipeQuery) QueryGroceries() *GroceryQuery {
+	query := (&GroceryClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(recipe.Table, recipe.FieldID, selector),
+			sqlgraph.To(grocery.Table, grocery.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, recipe.GroceriesTable, recipe.GroceriesColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -294,13 +319,14 @@ func (_q *RecipeQuery) Clone() *RecipeQuery {
 		return nil
 	}
 	return &RecipeQuery{
-		config:     _q.config,
-		ctx:        _q.ctx.Clone(),
-		order:      append([]recipe.OrderOption{}, _q.order...),
-		inters:     append([]Interceptor{}, _q.inters...),
-		predicates: append([]predicate.Recipe{}, _q.predicates...),
-		withUser:   _q.withUser.Clone(),
-		withFolder: _q.withFolder.Clone(),
+		config:        _q.config,
+		ctx:           _q.ctx.Clone(),
+		order:         append([]recipe.OrderOption{}, _q.order...),
+		inters:        append([]Interceptor{}, _q.inters...),
+		predicates:    append([]predicate.Recipe{}, _q.predicates...),
+		withUser:      _q.withUser.Clone(),
+		withFolder:    _q.withFolder.Clone(),
+		withGroceries: _q.withGroceries.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -326,6 +352,17 @@ func (_q *RecipeQuery) WithFolder(opts ...func(*FolderQuery)) *RecipeQuery {
 		opt(query)
 	}
 	_q.withFolder = query
+	return _q
+}
+
+// WithGroceries tells the query-builder to eager-load the nodes that are connected to
+// the "groceries" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *RecipeQuery) WithGroceries(opts ...func(*GroceryQuery)) *RecipeQuery {
+	query := (&GroceryClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withGroceries = query
 	return _q
 }
 
@@ -407,9 +444,10 @@ func (_q *RecipeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Recip
 	var (
 		nodes       = []*Recipe{}
 		_spec       = _q.querySpec()
-		loadedTypes = [2]bool{
+		loadedTypes = [3]bool{
 			_q.withUser != nil,
 			_q.withFolder != nil,
+			_q.withGroceries != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -439,6 +477,13 @@ func (_q *RecipeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Recip
 	if query := _q.withFolder; query != nil {
 		if err := _q.loadFolder(ctx, query, nodes, nil,
 			func(n *Recipe, e *Folder) { n.Edges.Folder = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withGroceries; query != nil {
+		if err := _q.loadGroceries(ctx, query, nodes,
+			func(n *Recipe) { n.Edges.Groceries = []*Grocery{} },
+			func(n *Recipe, e *Grocery) { n.Edges.Groceries = append(n.Edges.Groceries, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -503,6 +548,39 @@ func (_q *RecipeQuery) loadFolder(ctx context.Context, query *FolderQuery, nodes
 		for i := range nodes {
 			assign(nodes[i], n)
 		}
+	}
+	return nil
+}
+func (_q *RecipeQuery) loadGroceries(ctx context.Context, query *GroceryQuery, nodes []*Recipe, init func(*Recipe), assign func(*Recipe, *Grocery)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*Recipe)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(grocery.FieldRecipeID)
+	}
+	query.Where(predicate.Grocery(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(recipe.GroceriesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.RecipeID
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "recipe_id" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "recipe_id" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
 	}
 	return nil
 }

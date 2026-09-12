@@ -14,6 +14,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/folder"
+	"github.com/danirisdiandita/malas-monorepo/api/ent/grocery"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/predicate"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/recipe"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/user"
@@ -395,6 +396,21 @@ func (_u *RecipeUpdate) SetFolder(v *Folder) *RecipeUpdate {
 	return _u.SetFolderID(v.ID)
 }
 
+// AddGroceryIDs adds the "groceries" edge to the Grocery entity by IDs.
+func (_u *RecipeUpdate) AddGroceryIDs(ids ...uuid.UUID) *RecipeUpdate {
+	_u.mutation.AddGroceryIDs(ids...)
+	return _u
+}
+
+// AddGroceries adds the "groceries" edges to the Grocery entity.
+func (_u *RecipeUpdate) AddGroceries(v ...*Grocery) *RecipeUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddGroceryIDs(ids...)
+}
+
 // Mutation returns the RecipeMutation object of the builder.
 func (_u *RecipeUpdate) Mutation() *RecipeMutation {
 	return _u.mutation
@@ -410,6 +426,27 @@ func (_u *RecipeUpdate) ClearUser() *RecipeUpdate {
 func (_u *RecipeUpdate) ClearFolder() *RecipeUpdate {
 	_u.mutation.ClearFolder()
 	return _u
+}
+
+// ClearGroceries clears all "groceries" edges to the Grocery entity.
+func (_u *RecipeUpdate) ClearGroceries() *RecipeUpdate {
+	_u.mutation.ClearGroceries()
+	return _u
+}
+
+// RemoveGroceryIDs removes the "groceries" edge to Grocery entities by IDs.
+func (_u *RecipeUpdate) RemoveGroceryIDs(ids ...uuid.UUID) *RecipeUpdate {
+	_u.mutation.RemoveGroceryIDs(ids...)
+	return _u
+}
+
+// RemoveGroceries removes "groceries" edges to Grocery entities.
+func (_u *RecipeUpdate) RemoveGroceries(v ...*Grocery) *RecipeUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveGroceryIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -626,6 +663,51 @@ func (_u *RecipeUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(folder.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.GroceriesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   recipe.GroceriesTable,
+			Columns: []string{recipe.GroceriesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(grocery.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedGroceriesIDs(); len(nodes) > 0 && !_u.mutation.GroceriesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   recipe.GroceriesTable,
+			Columns: []string{recipe.GroceriesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(grocery.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.GroceriesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   recipe.GroceriesTable,
+			Columns: []string{recipe.GroceriesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(grocery.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -1014,6 +1096,21 @@ func (_u *RecipeUpdateOne) SetFolder(v *Folder) *RecipeUpdateOne {
 	return _u.SetFolderID(v.ID)
 }
 
+// AddGroceryIDs adds the "groceries" edge to the Grocery entity by IDs.
+func (_u *RecipeUpdateOne) AddGroceryIDs(ids ...uuid.UUID) *RecipeUpdateOne {
+	_u.mutation.AddGroceryIDs(ids...)
+	return _u
+}
+
+// AddGroceries adds the "groceries" edges to the Grocery entity.
+func (_u *RecipeUpdateOne) AddGroceries(v ...*Grocery) *RecipeUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddGroceryIDs(ids...)
+}
+
 // Mutation returns the RecipeMutation object of the builder.
 func (_u *RecipeUpdateOne) Mutation() *RecipeMutation {
 	return _u.mutation
@@ -1029,6 +1126,27 @@ func (_u *RecipeUpdateOne) ClearUser() *RecipeUpdateOne {
 func (_u *RecipeUpdateOne) ClearFolder() *RecipeUpdateOne {
 	_u.mutation.ClearFolder()
 	return _u
+}
+
+// ClearGroceries clears all "groceries" edges to the Grocery entity.
+func (_u *RecipeUpdateOne) ClearGroceries() *RecipeUpdateOne {
+	_u.mutation.ClearGroceries()
+	return _u
+}
+
+// RemoveGroceryIDs removes the "groceries" edge to Grocery entities by IDs.
+func (_u *RecipeUpdateOne) RemoveGroceryIDs(ids ...uuid.UUID) *RecipeUpdateOne {
+	_u.mutation.RemoveGroceryIDs(ids...)
+	return _u
+}
+
+// RemoveGroceries removes "groceries" edges to Grocery entities.
+func (_u *RecipeUpdateOne) RemoveGroceries(v ...*Grocery) *RecipeUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveGroceryIDs(ids...)
 }
 
 // Where appends a list predicates to the RecipeUpdate builder.
@@ -1275,6 +1393,51 @@ func (_u *RecipeUpdateOne) sqlSave(ctx context.Context) (_node *Recipe, err erro
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(folder.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.GroceriesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   recipe.GroceriesTable,
+			Columns: []string{recipe.GroceriesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(grocery.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedGroceriesIDs(); len(nodes) > 0 && !_u.mutation.GroceriesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   recipe.GroceriesTable,
+			Columns: []string{recipe.GroceriesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(grocery.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.GroceriesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   recipe.GroceriesTable,
+			Columns: []string{recipe.GroceriesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(grocery.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

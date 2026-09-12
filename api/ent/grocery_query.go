@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/grocery"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/predicate"
+	"github.com/danirisdiandita/malas-monorepo/api/ent/recipe"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/user"
 	"github.com/google/uuid"
 )
@@ -25,6 +26,7 @@ type GroceryQuery struct {
 	inters     []Interceptor
 	predicates []predicate.Grocery
 	withUser   *UserQuery
+	withRecipe *RecipeQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -76,6 +78,28 @@ func (_q *GroceryQuery) QueryUser() *UserQuery {
 			sqlgraph.From(grocery.Table, grocery.FieldID, selector),
 			sqlgraph.To(user.Table, user.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, grocery.UserTable, grocery.UserColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryRecipe chains the current query on the "recipe" edge.
+func (_q *GroceryQuery) QueryRecipe() *RecipeQuery {
+	query := (&RecipeClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(grocery.Table, grocery.FieldID, selector),
+			sqlgraph.To(recipe.Table, recipe.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, grocery.RecipeTable, grocery.RecipeColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -276,6 +300,7 @@ func (_q *GroceryQuery) Clone() *GroceryQuery {
 		inters:     append([]Interceptor{}, _q.inters...),
 		predicates: append([]predicate.Grocery{}, _q.predicates...),
 		withUser:   _q.withUser.Clone(),
+		withRecipe: _q.withRecipe.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -290,6 +315,17 @@ func (_q *GroceryQuery) WithUser(opts ...func(*UserQuery)) *GroceryQuery {
 		opt(query)
 	}
 	_q.withUser = query
+	return _q
+}
+
+// WithRecipe tells the query-builder to eager-load the nodes that are connected to
+// the "recipe" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *GroceryQuery) WithRecipe(opts ...func(*RecipeQuery)) *GroceryQuery {
+	query := (&RecipeClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withRecipe = query
 	return _q
 }
 
@@ -371,8 +407,9 @@ func (_q *GroceryQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Groc
 	var (
 		nodes       = []*Grocery{}
 		_spec       = _q.querySpec()
-		loadedTypes = [1]bool{
+		loadedTypes = [2]bool{
 			_q.withUser != nil,
+			_q.withRecipe != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -396,6 +433,12 @@ func (_q *GroceryQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Groc
 	if query := _q.withUser; query != nil {
 		if err := _q.loadUser(ctx, query, nodes, nil,
 			func(n *Grocery, e *User) { n.Edges.User = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withRecipe; query != nil {
+		if err := _q.loadRecipe(ctx, query, nodes, nil,
+			func(n *Grocery, e *Recipe) { n.Edges.Recipe = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -431,6 +474,38 @@ func (_q *GroceryQuery) loadUser(ctx context.Context, query *UserQuery, nodes []
 	}
 	return nil
 }
+func (_q *GroceryQuery) loadRecipe(ctx context.Context, query *RecipeQuery, nodes []*Grocery, init func(*Grocery), assign func(*Grocery, *Recipe)) error {
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*Grocery)
+	for i := range nodes {
+		if nodes[i].RecipeID == nil {
+			continue
+		}
+		fk := *nodes[i].RecipeID
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(recipe.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "recipe_id" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
 
 func (_q *GroceryQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := _q.querySpec()
@@ -459,6 +534,9 @@ func (_q *GroceryQuery) querySpec() *sqlgraph.QuerySpec {
 		}
 		if _q.withUser != nil {
 			_spec.Node.AddColumnOnce(grocery.FieldUserID)
+		}
+		if _q.withRecipe != nil {
+			_spec.Node.AddColumnOnce(grocery.FieldRecipeID)
 		}
 	}
 	if ps := _q.predicates; len(ps) > 0 {

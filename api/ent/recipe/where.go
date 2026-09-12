@@ -1098,6 +1098,29 @@ func HasFolderWith(preds ...predicate.Folder) predicate.Recipe {
 	})
 }
 
+// HasGroceries applies the HasEdge predicate on the "groceries" edge.
+func HasGroceries() predicate.Recipe {
+	return predicate.Recipe(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, GroceriesTable, GroceriesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasGroceriesWith applies the HasEdge predicate on the "groceries" edge with a given conditions (other predicates).
+func HasGroceriesWith(preds ...predicate.Grocery) predicate.Recipe {
+	return predicate.Recipe(func(s *sql.Selector) {
+		step := newGroceriesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.Recipe) predicate.Recipe {
 	return predicate.Recipe(sql.AndPredicates(predicates...))

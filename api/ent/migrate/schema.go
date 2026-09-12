@@ -71,7 +71,9 @@ var (
 		{Name: "id", Type: field.TypeUUID},
 		{Name: "name", Type: field.TypeString},
 		{Name: "unit", Type: field.TypeString},
+		{Name: "quantity", Type: field.TypeFloat64, Nullable: true},
 		{Name: "tag", Type: field.TypeString, Nullable: true},
+		{Name: "recipe_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "user_id", Type: field.TypeInt},
 	}
 	// GroceriesTable holds the schema information for the "groceries" table.
@@ -81,8 +83,14 @@ var (
 		PrimaryKey: []*schema.Column{GroceriesColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
+				Symbol:     "groceries_recipes_groceries",
+				Columns:    []*schema.Column{GroceriesColumns[5]},
+				RefColumns: []*schema.Column{RecipesColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
 				Symbol:     "groceries_users_groceries",
-				Columns:    []*schema.Column{GroceriesColumns[4]},
+				Columns:    []*schema.Column{GroceriesColumns[6]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -91,7 +99,7 @@ var (
 			{
 				Name:    "grocery_user_id",
 				Unique:  false,
-				Columns: []*schema.Column{GroceriesColumns[4]},
+				Columns: []*schema.Column{GroceriesColumns[6]},
 			},
 		},
 	}
@@ -235,7 +243,8 @@ var (
 func init() {
 	AccountsTable.ForeignKeys[0].RefTable = UsersTable
 	FoldersTable.ForeignKeys[0].RefTable = UsersTable
-	GroceriesTable.ForeignKeys[0].RefTable = UsersTable
+	GroceriesTable.ForeignKeys[0].RefTable = RecipesTable
+	GroceriesTable.ForeignKeys[1].RefTable = UsersTable
 	RecipesTable.ForeignKeys[0].RefTable = FoldersTable
 	RecipesTable.ForeignKeys[1].RefTable = UsersTable
 	RefreshTokensTable.ForeignKeys[0].RefTable = UsersTable

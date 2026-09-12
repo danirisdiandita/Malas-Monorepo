@@ -692,6 +692,22 @@ func (c *GroceryClient) QueryUser(_m *Grocery) *UserQuery {
 	return query
 }
 
+// QueryRecipe queries the recipe edge of a Grocery.
+func (c *GroceryClient) QueryRecipe(_m *Grocery) *RecipeQuery {
+	query := (&RecipeClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(grocery.Table, grocery.FieldID, id),
+			sqlgraph.To(recipe.Table, recipe.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, grocery.RecipeTable, grocery.RecipeColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *GroceryClient) Hooks() []Hook {
 	return c.hooks.Grocery
@@ -850,6 +866,22 @@ func (c *RecipeClient) QueryFolder(_m *Recipe) *FolderQuery {
 			sqlgraph.From(recipe.Table, recipe.FieldID, id),
 			sqlgraph.To(folder.Table, folder.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, recipe.FolderTable, recipe.FolderColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryGroceries queries the groceries edge of a Recipe.
+func (c *RecipeClient) QueryGroceries(_m *Recipe) *GroceryQuery {
+	query := (&GroceryClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(recipe.Table, recipe.FieldID, id),
+			sqlgraph.To(grocery.Table, grocery.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, recipe.GroceriesTable, recipe.GroceriesColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
