@@ -240,12 +240,13 @@ func (p *Pipeline) process(ctx context.Context, row *ent.Recipe) error {
 			return err
 		}
 	}
-	if hook.ContentType != string(TikTokPhoto) {
-		return fmt.Errorf("recipe extraction currently requires a TikTok photo post")
-	}
+	isVideo := strings.EqualFold(hook.ContentType, string(TikTokVideo)) || strings.EqualFold(hook.ContentType, "facebook:reels")
 	assets := collectImagePostAssetURLs(items)
+	if isVideo {
+		assets = collectVideoAssetURLs(items)
+	}
 	if len(assets) == 0 {
-		return fmt.Errorf("post contains no recipe photos")
+		return fmt.Errorf("post contains no downloadable media")
 	}
 	for i := range assets {
 		assets[i].File, assets[i].Error = downloadAsset(ctx, p.Client, assets[i].URL, filepath.Join(folder, "assets"), i)
@@ -267,19 +268,36 @@ func (p *Pipeline) process(ctx context.Context, row *ent.Recipe) error {
 	for i, a := range assets {
 		paths[i] = filepath.Join(folder, a.File)
 	}
-	combined, err := stackPhotos(paths)
+	var extractionImage, coverSource, videoData []byte
+	var err error
+	if isVideo {
+		videoData, err = os.ReadFile(paths[0])
+		if err != nil {
+			return fmt.Errorf("read downloaded video: %w", err)
+		}
+		extractionImage, err = firstVideoFrame(ctx, paths[0])
+		if err != nil {
+			return err
+		}
+		coverSource = extractionImage
+		if err = os.WriteFile(filepath.Join(folder, "assets", "first-frame.jpg"), extractionImage, 0600); err != nil {
+			return fmt.Errorf("save first video frame: %w", err)
+		}
+	} else {
+		extractionImage, err = stackPhotos(paths)
+		if err != nil {
+			return err
+		}
+		coverSource, err = os.ReadFile(paths[0])
+		if err != nil {
+			return err
+		}
+	}
+	extracted, err := p.extract(ctx, final, extractionImage, videoData)
 	if err != nil {
 		return err
 	}
-	extracted, err := p.extract(ctx, final, combined)
-	if err != nil {
-		return err
-	}
-	original, err := os.ReadFile(paths[0])
-	if err != nil {
-		return err
-	}
-	compressed, err := compressImage(original)
+	compressed, err := compressImage(coverSource)
 	if err != nil {
 		return fmt.Errorf("compress cover: %w", err)
 	}

@@ -113,7 +113,7 @@ func HandleImport(token, debugDir, authURL, webhookSecret, tikTokActorURL, faceb
 			return
 		}
 		recipeID := ""
-		if contentType == TikTokPhoto {
+		if contentType == TikTokPhoto || contentType == TikTokVideo || contentType == FacebookReels {
 			if pipeline == nil || pipeline.Config.OpenRouterKey == "" || pipeline.Storage == nil {
 				http.Error(w, "Recipe extraction requires OPENROUTER_API_KEY and S3 configuration", 503)
 				return
