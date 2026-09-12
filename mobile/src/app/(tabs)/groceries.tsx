@@ -1,9 +1,12 @@
 import { Ionicons } from "@react-native-vector-icons/ionicons";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ScrollView, StyleSheet, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { useState } from "react";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { useGroceries } from "@/hooks/use-groceries";
+import type { Grocery } from "@/lib/api";
 
 const colors = {
   ink: "#14231A",
@@ -13,27 +16,13 @@ const colors = {
   line: "#D9E1D7",
   tomato: "#E87955",
 };
-const groups = [
-  {
-    title: "Produce",
-    count: "3 items",
-    items: [
-      ["Avocados", "2 ripe", true],
-      ["Cherry tomatoes", "1 pint", false],
-      ["Basil", "1 bunch", false],
-    ],
-  },
-  {
-    title: "Pantry & dairy",
-    count: "2 items",
-    items: [
-      ["Parmesan", "200 g", false],
-      ["Olive oil", "1 bottle", false],
-    ],
-  },
-];
-
 export default function GroceriesScreen() {
+  const { data: groceries, isPending, isError } = useGroceries();
+  const [checked, setChecked] = useState<Record<string, boolean>>({});
+  const items = groceries ?? [];
+  const checkedCount = items.filter((item) => checked[item.id]).length;
+  const groups = groupGroceries(items);
+
   return (
     <ThemedView style={styles.screen}>
       <SafeAreaView style={styles.safeArea}>
@@ -43,50 +32,74 @@ export default function GroceriesScreen() {
               <ThemedText style={styles.title}>Grocery list</ThemedText>
             </View>
           </View>
+          {isPending ? <ThemedText style={styles.status}>Loading groceries...</ThemedText> : isError ? <ThemedText style={styles.status}>Unable to load groceries.</ThemedText> : items.length === 0 ? <EmptyGroceries /> : <>
           <View style={styles.progressCard}>
             <View style={styles.progressTop}>
-              <ThemedText style={styles.progressLabel}>
-                3 of 12 items
-              </ThemedText>
-              <ThemedText style={styles.progressHint}>Almost there</ThemedText>
+              <ThemedText style={styles.progressLabel}>{checkedCount} of {items.length} items</ThemedText>
+              <ThemedText style={styles.progressHint}>{checkedCount === items.length ? "All done" : "Keep going"}</ThemedText>
             </View>
             <View style={styles.track}>
-              <View style={styles.progress} />
+              <View style={[styles.progress, { width: `${(checkedCount / items.length) * 100}%` }]} />
             </View>
           </View>
           {groups.map((group) => (
             <View key={group.title} style={styles.group}>
               <View style={styles.groupHeader}>
                 <ThemedText style={styles.groupTitle}>{group.title}</ThemedText>
-                <ThemedText style={styles.count}>{group.count}</ThemedText>
+                <ThemedText style={styles.count}>{group.items.length} items</ThemedText>
               </View>
-              {group.items.map(([name, quantity, checked]) => (
-                <View key={String(name)} style={styles.item}>
-                  <View style={[styles.checkbox, checked && styles.checked]}>
-                    {checked && (
+              {group.items.map((item) => {
+                const isChecked = checked[item.id] === true;
+                return <Pressable key={item.id} style={styles.item} onPress={() => setChecked((current) => ({ ...current, [item.id]: !isChecked }))} accessibilityRole="checkbox" accessibilityState={{ checked: isChecked }}>
+                  <View style={[styles.checkbox, isChecked && styles.checked]}>
+                    {isChecked && (
                       <Ionicons name="checkmark" size={12} color="#fff" />
                     )}
                   </View>
                   <ThemedText
-                    style={[styles.itemName, checked && styles.completed]}
+                    style={[styles.itemName, isChecked && styles.completed]}
                   >
-                    {name}
+                    {item.name}
                   </ThemedText>
-                  <ThemedText style={styles.quantity}>{quantity}</ThemedText>
-                </View>
-              ))}
+                  <ThemedText style={styles.quantity}>{item.unit}</ThemedText>
+                </Pressable>;
+              })}
             </View>
-          ))}
+          ))}</>}
         </ScrollView>
       </SafeAreaView>
     </ThemedView>
   );
 }
 
+function EmptyGroceries() {
+  return (
+    <View style={styles.emptyState}>
+      <View style={styles.emptyIcon}><Ionicons name="cart-outline" size={42} color={colors.leaf} /></View>
+      <ThemedText style={styles.emptyTitle}>Your grocery list is empty</ThemedText>
+      <ThemedText style={styles.emptyBody}>Add ingredients from a saved recipe and we’ll organize your shopping trip for you.</ThemedText>
+      <Pressable disabled style={styles.emptyButton} accessibilityRole="button" accessibilityLabel="Add ingredients from a recipe">
+        <Ionicons name="add" size={19} color="#FFFFFF" />
+        <ThemedText style={styles.emptyButtonLabel}>Add from a recipe</ThemedText>
+      </Pressable>
+      <ThemedText style={styles.emptyHint}>Recipe linking will be available soon.</ThemedText>
+    </View>
+  );
+}
+
+function groupGroceries(items: Grocery[]) {
+  const groups = new Map<string, Grocery[]>();
+  for (const item of items) {
+    const title = item.tag || "Other";
+    groups.set(title, [...(groups.get(title) ?? []), item]);
+  }
+  return [...groups.entries()].map(([title, groupItems]) => ({ title, items: groupItems }));
+}
+
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: "#FCFBF8" },
   safeArea: { flex: 1 },
-  content: { padding: 20, gap: 18, paddingBottom: 30 },
+  content: { flexGrow: 1, padding: 20, gap: 18, paddingBottom: 30 },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -143,4 +156,12 @@ const styles = StyleSheet.create({
   itemName: { color: colors.ink, fontSize: 16, fontWeight: "700", flex: 1 },
   completed: { color: colors.muted, textDecorationLine: "line-through" },
   quantity: { color: colors.muted, fontSize: 14 },
+  status: { color: colors.muted, fontSize: 15, textAlign: "center", paddingVertical: 24 },
+  emptyState: { flex: 1, width: "100%", alignItems: "center", justifyContent: "center", paddingHorizontal: 12, gap: 12 },
+  emptyIcon: { width: 120, height: 120, borderRadius: 60, backgroundColor: "#EAF5DE", borderWidth: 2, borderColor: "#D7EBC4", alignItems: "center", justifyContent: "center", marginBottom: 8 },
+  emptyTitle: { color: colors.ink, fontSize: 23, fontWeight: "900", textAlign: "center" },
+  emptyBody: { color: colors.muted, fontSize: 13, lineHeight: 19, textAlign: "center", maxWidth: 306 },
+  emptyButton: { width: 242, height: 52, borderRadius: 16, backgroundColor: colors.tomato, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 9, marginTop: 8, opacity: 0.55 },
+  emptyButtonLabel: { color: "#FFFFFF", fontSize: 13, fontWeight: "900" },
+  emptyHint: { color: "#9AA79F", fontSize: 11, fontWeight: "700", textAlign: "center" },
 });

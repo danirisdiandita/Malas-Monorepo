@@ -51,6 +51,13 @@ export interface RecipePage {
   next_page: number;
 }
 
+export interface Grocery {
+  id: string;
+  name: string;
+  unit: string;
+  tag?: string;
+}
+
 const tokenKey = 'malas.jwt';
 const refreshTokenKey = 'malas.refresh';
 const apiUrl =
@@ -150,6 +157,14 @@ export async function rateRecipe(id: string, rating: number): Promise<void> {
   if (!response.ok) throw new Error((await response.text()) || 'Unable to save rating.');
 }
 
+export async function getGroceries(): Promise<Grocery[]> {
+  const response = await authenticatedFetch('/groceries');
+  if (!response.ok) throw new Error('Unable to load groceries.');
+  const body: unknown = await response.json();
+  if (!Array.isArray(body) || !body.every(isGrocery)) throw new Error('Invalid groceries response.');
+  return body;
+}
+
 export async function importLink(url: string): Promise<LinkImportResult> {
   const response = await authenticatedFetch('/imports/link', {
     method: 'POST',
@@ -206,6 +221,12 @@ function isRecipe(value: unknown): value is Recipe {
   if (!value || typeof value !== 'object') return false;
   const recipe = value as Record<string, unknown>;
   return typeof recipe.id === 'string' && typeof recipe.name === 'string' && typeof recipe.process_minutes === 'number' && typeof recipe.servings === 'number' && typeof recipe.difficulty === 'string' && typeof recipe.source === 'string' && Array.isArray(recipe.tags) && recipe.tags.every((tag) => typeof tag === 'string') && Array.isArray(recipe.ingredients) && recipe.ingredients.every((ingredient) => typeof ingredient === 'string') && Array.isArray(recipe.instructions) && recipe.instructions.every((instruction) => typeof instruction === 'string');
+}
+
+function isGrocery(value: unknown): value is Grocery {
+  if (!value || typeof value !== 'object') return false;
+  const grocery = value as Record<string, unknown>;
+  return typeof grocery.id === 'string' && typeof grocery.name === 'string' && typeof grocery.unit === 'string' && (grocery.tag === undefined || typeof grocery.tag === 'string');
 }
 
 function isLinkImportResult(value: unknown): value is LinkImportResult {

@@ -5,6 +5,7 @@ import (
 
 	"github.com/danirisdiandita/malas-monorepo/api/ent"
 	"github.com/danirisdiandita/malas-monorepo/api/internal/config"
+	"github.com/danirisdiandita/malas-monorepo/api/internal/groceries"
 	"github.com/danirisdiandita/malas-monorepo/api/internal/handlers"
 	"github.com/danirisdiandita/malas-monorepo/api/internal/imports"
 	"github.com/danirisdiandita/malas-monorepo/api/internal/recipes"
@@ -56,6 +57,7 @@ func NewRouter(deps Dependencies) http.Handler {
 		r.Get("/recipes", recipes.StoredList(deps.DB, deps.Imports.Storage))
 		r.Get("/recipes/{id}", recipes.StoredGet(deps.DB, deps.Imports.Storage))
 		r.Post("/recipes/{id}/rating", recipes.Rate(deps.DB))
+		r.Get("/groceries", groceries.List(deps.DB))
 		r.Post("/imports/link", imports.HandleImport(deps.Config.Apify.APIToken, deps.Config.Apify.DebugDir, deps.Config.AuthURL, deps.Config.ImportWebhookSecret, deps.Config.Apify.TikTokActorURL, deps.Config.Apify.FacebookReelsActorURL, deps.Imports))
 		r.Get("/imports/{runID}", deps.Imports.Status)
 		r.Post("/imports/{runID}/retry", deps.Imports.Retry)

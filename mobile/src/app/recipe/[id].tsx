@@ -1,5 +1,4 @@
 import Ionicons from "@react-native-vector-icons/ionicons";
-import * as Clipboard from "expo-clipboard";
 import { router, useLocalSearchParams } from "expo-router";
 import { Fragment, useState } from "react";
 import {
@@ -26,8 +25,12 @@ export default function RecipeDetailScreen() {
   const [ratingOpen, setRatingOpen] = useState(false);
   const [selectedRating, setSelectedRating] = useState(0);
   const [copied, setCopied] = useState(false);
-  const [checkedIngredients, setCheckedIngredients] = useState<Record<number, boolean>>({});
-  const [checkedDirections, setCheckedDirections] = useState<Record<number, boolean>>({});
+  const [checkedIngredients, setCheckedIngredients] = useState<
+    Record<number, boolean>
+  >({});
+  const [checkedDirections, setCheckedDirections] = useState<
+    Record<number, boolean>
+  >({});
   const rateRecipe = useRateRecipe(recipeId);
 
   if (isPending) return <StatusScreen message="Loading recipe..." />;
@@ -78,7 +81,7 @@ export default function RecipeDetailScreen() {
             )}
             <Pressable
               style={[styles.circleButton, styles.backButton]}
-              onPress={() => router.back()}
+              onPress={() => router.replace("/recipes")}
               accessibilityLabel="Go back"
             >
               <Ionicons name="chevron-back" size={22} color={yuzuColors.ink} />
@@ -154,7 +157,12 @@ export default function RecipeDetailScreen() {
                     key={`${index}-${ingredient}`}
                     accessibilityRole="checkbox"
                     accessibilityState={{ checked }}
-                    onPress={() => setCheckedIngredients((current) => ({ ...current, [index]: !checked }))}
+                    onPress={() =>
+                      setCheckedIngredients((current) => ({
+                        ...current,
+                        [index]: !checked,
+                      }))
+                    }
                     style={styles.ingredientRow}
                   >
                     <Ionicons
@@ -162,7 +170,12 @@ export default function RecipeDetailScreen() {
                       size={21}
                       color={checked ? yuzuColors.leaf : yuzuColors.muted}
                     />
-                    <ThemedText style={[styles.ingredient, checked && styles.ingredientChecked]}>
+                    <ThemedText
+                      style={[
+                        styles.ingredient,
+                        checked && styles.ingredientChecked,
+                      ]}
+                    >
                       {ingredient}
                     </ThemedText>
                   </Pressable>
@@ -173,20 +186,31 @@ export default function RecipeDetailScreen() {
               <ThemedText style={styles.heading}>Directions</ThemedText>
               {recipe.instructions.map((instruction, index) => {
                 const checked = checkedDirections[index] === true;
-                return <Pressable
-                  key={`${index}-${instruction}`}
-                  accessibilityRole="checkbox"
-                  accessibilityState={{ checked }}
-                  onPress={() => setCheckedDirections((current) => ({ ...current, [index]: !checked }))}
-                  style={styles.step}
-                >
-                  <View style={styles.stepNumber}>
-                    <ThemedText style={styles.stepNumberText}>
-                      {index + 1}
+                return (
+                  <Pressable
+                    key={`${index}-${instruction}`}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked }}
+                    onPress={() =>
+                      setCheckedDirections((current) => ({
+                        ...current,
+                        [index]: !checked,
+                      }))
+                    }
+                    style={styles.step}
+                  >
+                    <View style={styles.stepNumber}>
+                      <ThemedText style={styles.stepNumberText}>
+                        {index + 1}
+                      </ThemedText>
+                    </View>
+                    <ThemedText
+                      style={[styles.stepText, checked && styles.stepChecked]}
+                    >
+                      {instruction}
                     </ThemedText>
-                  </View>
-                  <ThemedText style={[styles.stepText, checked && styles.stepChecked]}>{instruction}</ThemedText>
-                </Pressable>;
+                  </Pressable>
+                );
               })}
             </View>
           </View>
@@ -213,24 +237,53 @@ export default function RecipeDetailScreen() {
           animationType="fade"
           onRequestClose={() => setRatingOpen(false)}
         >
-          <Pressable style={styles.ratingBackdrop} onPress={() => setRatingOpen(false)}>
-            <Pressable style={styles.ratingModal} onPress={(event) => event.stopPropagation()}>
-              <ThemedText style={styles.ratingTitle}>Rate this recipe</ThemedText>
-              <ThemedText style={styles.ratingBody}>How much do you love it?</ThemedText>
+          <Pressable
+            style={styles.ratingBackdrop}
+            onPress={() => setRatingOpen(false)}
+          >
+            <Pressable
+              style={styles.ratingModal}
+              onPress={(event) => event.stopPropagation()}
+            >
+              <ThemedText style={styles.ratingTitle}>
+                Rate this recipe
+              </ThemedText>
+              <ThemedText style={styles.ratingBody}>
+                How much do you love it?
+              </ThemedText>
               <View style={styles.ratingStars}>
                 {[1, 2, 3, 4, 5].map((value) => (
-                  <Pressable key={value} accessibilityRole="button" accessibilityLabel={`${value} stars`} onPress={() => setSelectedRating(value)}>
-                    <Ionicons name={value <= selectedRating ? "star" : "star-outline"} size={34} color={yuzuColors.sun} />
+                  <Pressable
+                    key={value}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${value} stars`}
+                    onPress={() => setSelectedRating(value)}
+                  >
+                    <Ionicons
+                      name={value <= selectedRating ? "star" : "star-outline"}
+                      size={34}
+                      color={yuzuColors.sun}
+                    />
                   </Pressable>
                 ))}
               </View>
               <Pressable
                 accessibilityRole="button"
                 disabled={selectedRating === 0 || rateRecipe.isPending}
-                style={[styles.saveRating, (selectedRating === 0 || rateRecipe.isPending) && styles.saveRatingDisabled]}
-                onPress={() => rateRecipe.mutate(selectedRating, { onSuccess: () => setRatingOpen(false) })}
+                style={[
+                  styles.saveRating,
+                  (selectedRating === 0 || rateRecipe.isPending) &&
+                    styles.saveRatingDisabled,
+                ]}
+                onPress={() =>
+                  rateRecipe.mutate(selectedRating, {
+                    onSuccess: () => setRatingOpen(false),
+                  })
+                }
               >
-                <ThemedText style={styles.saveRatingLabel}>{rateRecipe.isPending ? "Saving..." : "Save rating"}</ThemedText>
+                <ThemedText style={styles.saveRatingLabel}>
+                  {rateRecipe.isPending ? "Saving..." : "Save rating"}
+                </ThemedText>
               </Pressable>
             </Pressable>
           </Pressable>
@@ -336,12 +389,34 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   sourceLinkLabel: { color: yuzuColors.leaf, fontSize: 13, fontWeight: "800" },
-  ratingBackdrop: { flex: 1, backgroundColor: "#14231A66", alignItems: "center", justifyContent: "center", padding: 20 },
-  ratingModal: { width: "100%", maxWidth: 360, borderRadius: 22, backgroundColor: "#FCFBF8", padding: 22, alignItems: "center", gap: 8 },
+  ratingBackdrop: {
+    flex: 1,
+    backgroundColor: "#14231A66",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 20,
+  },
+  ratingModal: {
+    width: "100%",
+    maxWidth: 360,
+    borderRadius: 22,
+    backgroundColor: "#FCFBF8",
+    padding: 22,
+    alignItems: "center",
+    gap: 8,
+  },
   ratingTitle: { color: yuzuColors.ink, fontSize: 22, fontWeight: "900" },
   ratingBody: { color: yuzuColors.muted, fontSize: 14 },
   ratingStars: { flexDirection: "row", gap: 7, marginVertical: 10 },
-  saveRating: { width: "100%", height: 46, borderRadius: 14, backgroundColor: yuzuColors.ink, alignItems: "center", justifyContent: "center", marginTop: 4 },
+  saveRating: {
+    width: "100%",
+    height: 46,
+    borderRadius: 14,
+    backgroundColor: yuzuColors.ink,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 4,
+  },
   saveRatingDisabled: { opacity: 0.45 },
   saveRatingLabel: { color: "#FFFFFF", fontSize: 14, fontWeight: "800" },
   metadata: { flexDirection: "row", gap: 8, marginTop: 14 },
@@ -390,8 +465,16 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     flex: 1,
   },
-  ingredientRow: { flexDirection: "row", alignItems: "center", gap: 9, paddingVertical: 5 },
-  ingredientChecked: { color: yuzuColors.muted, textDecorationLine: "line-through" },
+  ingredientRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 9,
+    paddingVertical: 5,
+  },
+  ingredientChecked: {
+    color: yuzuColors.muted,
+    textDecorationLine: "line-through",
+  },
   step: {
     flexDirection: "row",
     gap: 9,

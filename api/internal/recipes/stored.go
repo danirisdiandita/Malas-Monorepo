@@ -45,23 +45,40 @@ func presentation(row *ent.Recipe) Recipe {
 }
 
 func valueOrZero(value *float64) float64 {
-	if value == nil { return 0 }
+	if value == nil {
+		return 0
+	}
 	return *value
 }
 
 func Rate(db *ent.Client) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		owner, err := OwnerID(db, r)
-		if err != nil { http.Error(w, "unauthorized", http.StatusUnauthorized); return }
+		if err != nil {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
 		id, err := uuid.Parse(chi.URLParam(r, "id"))
-		if err != nil { http.NotFound(w, r); return }
-		var input struct { Rating float64 `json:"rating"` }
+		if err != nil {
+			http.NotFound(w, r)
+			return
+		}
+		var input struct {
+			Rating float64 `json:"rating"`
+		}
 		if json.NewDecoder(http.MaxBytesReader(w, r.Body, 1024)).Decode(&input) != nil || input.Rating < 1 || input.Rating > 5 || input.Rating != float64(int(input.Rating)) {
-			http.Error(w, "rating must be an integer from 1 to 5", http.StatusBadRequest); return
+			http.Error(w, "rating must be an integer from 1 to 5", http.StatusBadRequest)
+			return
 		}
 		n, err := db.Recipe.Update().Where(recipe.ID(id), recipe.UserID(owner), recipe.ImportStatusEQ(recipe.ImportStatusDone)).SetRating(input.Rating).Save(r.Context())
-		if err != nil { http.Error(w, "unable to save rating", http.StatusInternalServerError); return }
-		if n == 0 { http.NotFound(w, r); return }
+		if err != nil {
+			http.Error(w, "unable to save rating", http.StatusInternalServerError)
+			return
+		}
+		if n == 0 {
+			http.NotFound(w, r)
+			return
+		}
 		w.WriteHeader(http.StatusNoContent)
 	}
 }
