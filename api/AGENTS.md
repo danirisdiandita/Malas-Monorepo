@@ -30,6 +30,14 @@ Use domain packages such as `internal/recipes`, `internal/groceries`, and
 `internal/imports` once each feature has real behavior. Keep small features in
 the existing package until splitting them improves ownership or testability.
 
+## Query and blocking rules
+
+- Always avoid N+1 database queries. Use Ent eager loading, joins, batching, or
+  bulk operations when loading or writing related records, and verify the query
+  shape for relational features.
+- If a safe implementation is blocked, report that directly. Do not guess,
+  hide the limitation, or ship an unverified workaround.
+
 ## Adding a new service or feature
 
 1. Add the domain under `internal/<domain>`; do not add another generic

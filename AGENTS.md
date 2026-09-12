@@ -28,3 +28,10 @@ If the Eraser MCP session or connection is lost:
 4. If the file no longer exists, create a new shared file and rebuild the ERD from `plan/idea/recipe-data-structure.md`; rebuild the Recipes folder flow from `mobile/src/app/(tabs)/recipes.tsx`.
 
 Do not store OAuth tokens or credentials in this repository.
+
+## Query and blocking rules
+
+- Always avoid N+1 database and API query patterns. Prefer eager loading, joins,
+  batching, or bulk operations; verify query behavior when adding related data.
+- If blocked or unable to complete a requested change safely, say so clearly
+  instead of guessing or silently shipping an incomplete workaround.

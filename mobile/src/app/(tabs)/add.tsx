@@ -47,10 +47,14 @@ export default function AddTabScreen() {
       return () => clearTimeout(timer);
     }, []),
   );
-  const chooseOption = () => {
-    choosingOption.current = true;
+  const chooseOption = (label: string) => {
+    if (label === "From social") {
+      choosingOption.current = true;
+      sheetRef.current?.close();
+      router.push("/social-import");
+      return;
+    }
     sheetRef.current?.close();
-    router.push("/add-recipe");
   };
   const processLink = () => {
     const url = recipeLink.trim();
@@ -138,7 +142,7 @@ export default function AddTabScreen() {
               <Pressable
                 key={label}
                 style={styles.option}
-                onPress={chooseOption}
+                onPress={() => chooseOption(label)}
               >
                 <View style={styles.optionIcon}>
                   <Ionicons
@@ -155,7 +159,7 @@ export default function AddTabScreen() {
                 />
               </Pressable>
             ))}
-            <Pressable style={styles.manual} onPress={chooseOption}>
+            <Pressable style={styles.manual} onPress={() => chooseOption("Add manually")}>
               <Ionicons name="create-outline" size={17} color={colors.leaf} />
               <ThemedText style={styles.manualLabel}>Add manually</ThemedText>
             </Pressable>

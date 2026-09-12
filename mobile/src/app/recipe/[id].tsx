@@ -13,7 +13,6 @@ import {
   ScrollView,
   StyleSheet,
   View,
-  Text,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { toast } from "sonner-native";
@@ -34,7 +33,6 @@ export default function RecipeDetailScreen() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [groceryConfirmOpen, setGroceryConfirmOpen] = useState(false);
   const [selectedRating, setSelectedRating] = useState(0);
-  const [copied, setCopied] = useState(false);
   const [checkedIngredients, setCheckedIngredients] = useState<
     Record<number, boolean>
   >({});
@@ -47,6 +45,8 @@ export default function RecipeDetailScreen() {
 
   if (isPending) return <StatusScreen message="Loading recipe..." />;
   if (isError || !recipe) return <StatusScreen message="Recipe not found." />;
+
+  const isTikTok = recipe.source.toLowerCase().startsWith("tiktok");
 
   return (
     <ThemedView style={styles.screen}>
@@ -142,12 +142,12 @@ export default function RecipeDetailScreen() {
                 onPress={() => Linking.openURL(recipe.url as string)}
               >
                 <Ionicons
-                  name="open-outline"
+                  name={isTikTok ? "logo-tiktok" : "open-outline"}
                   size={15}
                   color={yuzuColors.leaf}
                 />
                 <ThemedText style={styles.sourceLinkLabel}>
-                  View original source
+                  {isTikTok ? "View on TikTok" : "View original source"}
                 </ThemedText>
               </Pressable>
             )}

@@ -93,9 +93,14 @@ export default function Tab1Screen() {
                   </ThemedText>
                 </View>
                 <View style={styles.headerActions}>
-                  <View style={styles.avatar}>
+                  <Pressable
+                    style={styles.avatar}
+                    onPress={() => router.push("/profile")}
+                    accessibilityRole="button"
+                    accessibilityLabel="Open profile"
+                  >
                     <ThemedText style={styles.avatarText}>{initial}</ThemedText>
-                  </View>
+                  </Pressable>
                 </View>
               </View>
               <View style={styles.banner}>
