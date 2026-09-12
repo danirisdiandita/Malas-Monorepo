@@ -39,13 +39,17 @@ export default function SocialImportScreen() {
             >
               <Ionicons name="chevron-back" size={22} color={colors.ink} />
             </Pressable>
-            <ThemedText style={styles.headerTitle}>Import from social</ThemedText>
+            <ThemedText style={styles.headerTitle}>
+              Import from social
+            </ThemedText>
             <View style={styles.headerSpacer} />
           </View>
 
           <View style={styles.hero}>
             <ThemedText style={styles.eyebrow}>SAVE THE GOOD STUFF</ThemedText>
-            <ThemedText style={styles.title}>Bring a recipe from your feed</ThemedText>
+            <ThemedText style={styles.title}>
+              Bring a recipe from your feed
+            </ThemedText>
             <ThemedText style={styles.description}>
               Found something delicious while scrolling? Send the link to Yuzu
               and we’ll turn it into a recipe you can actually cook.
@@ -64,7 +68,11 @@ export default function SocialImportScreen() {
               {platforms.map(([icon, label]) => (
                 <View key={label} style={styles.platform}>
                   <View style={styles.platformIcon}>
-                    <Ionicons name={icon as never} size={22} color={colors.ink} />
+                    <Ionicons
+                      name={icon as never}
+                      size={22}
+                      color={colors.ink}
+                    />
                   </View>
                   <ThemedText style={styles.platformLabel}>{label}</ThemedText>
                 </View>
@@ -85,7 +93,7 @@ export default function SocialImportScreen() {
             </View>
             <Rule
               icon="link-outline"
-              title="Or paste the recipe link"
+              title="paste the recipe link"
               body="Copy the post link, return to Yuzu, and paste it into the recipe link field."
             />
           </View>
@@ -96,7 +104,9 @@ export default function SocialImportScreen() {
             onPress={() => router.replace("/add")}
           >
             <Ionicons name="link-outline" size={19} color="#fff" />
-            <ThemedText style={styles.primaryLabel}>Paste a recipe link</ThemedText>
+            <ThemedText style={styles.primaryLabel}>
+              Paste a recipe link
+            </ThemedText>
           </Pressable>
         </ScrollView>
       </SafeAreaView>
