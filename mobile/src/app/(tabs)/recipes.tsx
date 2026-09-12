@@ -59,7 +59,14 @@ export default function Tab1Screen() {
   const { width: windowWidth } = useWindowDimensions();
   const { data: user } = useCurrentUser();
   const [search, setSearch] = useState("");
-  const { recipes, isPending: recipesPending, error: recipesError, fetchNextPage, hasNextPage: hasMore, isFetchingNextPage } = useRecipes(search);
+  const {
+    recipes,
+    isPending: recipesPending,
+    error: recipesError,
+    fetchNextPage,
+    hasNextPage: hasMore,
+    isFetchingNextPage,
+  } = useRecipes(search);
   const displayName = user?.name?.trim() || "there";
   const initial = displayName.charAt(0).toUpperCase();
   const greeting = getTimeGreeting();
@@ -76,216 +83,242 @@ export default function Tab1Screen() {
           ItemSeparatorComponent={() => (
             <View style={{ height: viewMode === "list" ? 10 : 12 }} />
           )}
-          ListHeaderComponent={<View style={styles.listHeader}>
-          <View style={styles.header}>
-            <View>
-              <ThemedText style={styles.greeting}>{greeting}</ThemedText>
-              <ThemedText style={styles.profileName}>{displayName}</ThemedText>
-            </View>
-            <View style={styles.headerActions}>
-              <View style={styles.avatar}>
-                <ThemedText style={styles.avatarText}>{initial}</ThemedText>
-              </View>
-            </View>
-          </View>
-          <View style={styles.banner}>
-            <View style={styles.bannerTop}>
-              <ThemedText style={styles.bannerEyebrow}>
-                Unlock Unlimited Recipes
-              </ThemedText>
-              <ThemedText style={styles.bannerPrice}>from $8 / week</ThemedText>
-            </View>
-            <View style={styles.upgradeRow}>
-              <Pressable
-                accessibilityRole="button"
-                style={styles.upgradeButton}
-                onPress={() => router.push("/paywall")}
-              >
-                <ThemedText style={styles.upgradeLabel}>
-                  Upgrade to Pro
-                </ThemedText>
-              </Pressable>
-              <ThemedText style={styles.freeRecipes}>
-                3 free recipes left
-              </ThemedText>
-            </View>
-          </View>
-          <View style={styles.search}>
-            <Ionicons name="search-outline" size={17} color={colors.muted} />
-            <TextInput
-              accessibilityLabel="Search saved recipes"
-              placeholder="Search saved recipes"
-              placeholderTextColor={colors.muted}
-              value={search}
-              onChangeText={setSearch}
-              style={styles.searchInput}
-              returnKeyType="search"
-            />
-          </View>
-          <View>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Choose recipe folder"
-              style={styles.folderSelect}
-              onPress={() => folderSheetRef.current?.present()}
-            >
-              <Ionicons name="folder-outline" size={18} color={colors.leaf} />
-              <ThemedText style={styles.folderLabel}>{folder}</ThemedText>
-              <Ionicons name="chevron-down" size={17} color={colors.muted} />
-            </Pressable>
-            <BottomSheet
-              ref={folderSheetRef}
-              index={-1}
-              enableDynamicSizing
-              enablePanDownToClose
-              backgroundStyle={styles.sheet}
-            >
-              <BottomSheetView
-                style={[styles.sheetView, { width: windowWidth }]}
-              >
-                <View style={styles.dialogHeader}>
-                  <ThemedText style={styles.dialogTitle}>
-                    Choose a folder
+          ListHeaderComponent={
+            <View style={styles.listHeader}>
+              <View style={styles.header}>
+                <View>
+                  <ThemedText style={styles.greeting}>{greeting}</ThemedText>
+                  <ThemedText style={styles.profileName}>
+                    {displayName}
                   </ThemedText>
-                  <Pressable
-                    accessibilityLabel="Close folder selector"
-                    onPress={() => folderSheetRef.current?.close()}
-                  >
-                    <Ionicons name="close" size={22} color={colors.ink} />
-                  </Pressable>
                 </View>
-                <BottomSheetScrollView
-                  style={styles.folderList}
-                  contentContainerStyle={styles.sheetContent}
-                >
-                  {folders.map((option) => (
-                    <Pressable
-                      key={option}
-                      style={styles.folderOption}
-                      onPress={() => {
-                        setFolder(option);
-                        folderSheetRef.current?.close();
-                      }}
-                    >
-                      <ThemedText
-                        style={[
-                          styles.folderOptionLabel,
-                          option === folder && styles.selectedFolder,
-                        ]}
-                      >
-                        {option}
-                      </ThemedText>
-                      {option === folder && (
-                        <Ionicons
-                          name="checkmark"
-                          size={17}
-                          color={colors.leaf}
-                        />
-                      )}
-                    </Pressable>
-                  ))}
+                <View style={styles.headerActions}>
+                  <View style={styles.avatar}>
+                    <ThemedText style={styles.avatarText}>{initial}</ThemedText>
+                  </View>
+                </View>
+              </View>
+              <View style={styles.banner}>
+                <View style={styles.bannerTop}>
+                  <ThemedText style={styles.bannerEyebrow}>
+                    Unlock Unlimited Recipes
+                  </ThemedText>
+                  <ThemedText style={styles.bannerPrice}>
+                    from $8 / week
+                  </ThemedText>
+                </View>
+                <View style={styles.upgradeRow}>
                   <Pressable
                     accessibilityRole="button"
-                    style={styles.newFolder}
-                    onPress={() => {
-                      folderSheetRef.current?.close();
-                      setCreateFolderOpen(true);
-                    }}
+                    style={styles.upgradeButton}
+                    onPress={() => router.push("/paywall")}
                   >
-                    <Ionicons name="add" size={18} color={colors.leaf} />
-                    <ThemedText style={styles.newFolderLabel}>
-                      New folder
+                    <ThemedText style={styles.upgradeLabel}>
+                      Upgrade to Pro
                     </ThemedText>
                   </Pressable>
-                </BottomSheetScrollView>
-              </BottomSheetView>
-            </BottomSheet>
-            <Modal
-              visible={createFolderOpen}
-              transparent
-              animationType="fade"
-              onRequestClose={() => setCreateFolderOpen(false)}
-            >
-              <Pressable
-                style={styles.modalBackdrop}
-                onPress={() => setCreateFolderOpen(false)}
-              >
-                <KeyboardAvoidingView
-                  style={styles.keyboardAvoiding}
-                  behavior={Platform.OS === "ios" ? "padding" : "height"}
-                  keyboardVerticalOffset={24}
+                  <ThemedText style={styles.freeRecipes}>
+                    3 free recipes left
+                  </ThemedText>
+                </View>
+              </View>
+              <View style={styles.search}>
+                <Ionicons
+                  name="search-outline"
+                  size={17}
+                  color={colors.muted}
+                />
+                <TextInput
+                  accessibilityLabel="Search saved recipes"
+                  placeholder="Search saved recipes"
+                  placeholderTextColor={colors.muted}
+                  value={search}
+                  onChangeText={setSearch}
+                  style={styles.searchInput}
+                  returnKeyType="search"
+                />
+              </View>
+              <View>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Choose recipe folder"
+                  style={styles.folderSelect}
+                  onPress={() => folderSheetRef.current?.present()}
                 >
-                  <Pressable
-                    style={styles.folderDialog}
-                    onPress={(event) => event.stopPropagation()}
+                  <Ionicons
+                    name="folder-outline"
+                    size={18}
+                    color={colors.leaf}
+                  />
+                  <ThemedText style={styles.folderLabel}>{folder}</ThemedText>
+                  <Ionicons
+                    name="chevron-down"
+                    size={17}
+                    color={colors.muted}
+                  />
+                </Pressable>
+            <BottomSheet
+              ref={folderSheetRef}
+                  index={-1}
+                  enableDynamicSizing
+                  enablePanDownToClose
+                  backgroundStyle={styles.sheet}
+                >
+                  <BottomSheetView
+                    style={[styles.sheetView, { width: windowWidth }]}
                   >
                     <View style={styles.dialogHeader}>
                       <ThemedText style={styles.dialogTitle}>
-                        New folder
+                        Choose a folder
                       </ThemedText>
                       <Pressable
-                        accessibilityLabel="Close create folder dialog"
-                        onPress={() => setCreateFolderOpen(false)}
+                        accessibilityLabel="Close folder selector"
+                        onPress={() => folderSheetRef.current?.close()}
                       >
                         <Ionicons name="close" size={22} color={colors.ink} />
                       </Pressable>
                     </View>
-                    <TextInput
-                      autoFocus
-                      accessibilityLabel="New folder name"
-                      placeholder="Folder name"
-                      placeholderTextColor={colors.muted}
-                      value={newFolder}
-                      onChangeText={setNewFolder}
-                      style={styles.addFolderInput}
-                    />
-                    <View style={styles.dialogActions}>
+                    <BottomSheetScrollView
+                      style={styles.folderList}
+                      contentContainerStyle={styles.sheetContent}
+                    >
+                      {folders.map((option) => (
+                        <Pressable
+                          key={option}
+                          style={styles.folderOption}
+                          onPress={() => {
+                            setFolder(option);
+                            folderSheetRef.current?.close();
+                          }}
+                        >
+                          <ThemedText
+                            style={[
+                              styles.folderOptionLabel,
+                              option === folder && styles.selectedFolder,
+                            ]}
+                          >
+                            {option}
+                          </ThemedText>
+                          {option === folder && (
+                            <Ionicons
+                              name="checkmark"
+                              size={17}
+                              color={colors.leaf}
+                            />
+                          )}
+                        </Pressable>
+                      ))}
                       <Pressable
                         accessibilityRole="button"
-                        style={styles.cancelButton}
-                        onPress={() => setCreateFolderOpen(false)}
-                      >
-                        <ThemedText style={styles.cancelLabel}>
-                          Cancel
-                        </ThemedText>
-                      </Pressable>
-                      <Pressable
-                        accessibilityRole="button"
-                        style={styles.addFolderButton}
+                        style={styles.newFolder}
                         onPress={() => {
-                          const name = newFolder.trim();
-                          if (!name || folders.includes(name)) return;
-                          setFolders([...folders, name]);
-                          setFolder(name);
-                          setNewFolder("");
-                          setCreateFolderOpen(false);
+                          folderSheetRef.current?.close();
+                          setCreateFolderOpen(true);
                         }}
                       >
-                        <ThemedText style={styles.addFolderLabel}>
-                          Create
+                        <Ionicons name="add" size={18} color={colors.leaf} />
+                        <ThemedText style={styles.newFolderLabel}>
+                          New folder
                         </ThemedText>
                       </Pressable>
-                    </View>
+                    </BottomSheetScrollView>
+              </BottomSheetView>
+            </BottomSheet>
+            <Modal
+                  visible={createFolderOpen}
+                  transparent
+                  animationType="fade"
+                  onRequestClose={() => setCreateFolderOpen(false)}
+                >
+                  <Pressable
+                    style={styles.modalBackdrop}
+                    onPress={() => setCreateFolderOpen(false)}
+                  >
+                    <KeyboardAvoidingView
+                      style={styles.keyboardAvoiding}
+                      behavior={Platform.OS === "ios" ? "padding" : "height"}
+                      keyboardVerticalOffset={24}
+                    >
+                      <Pressable
+                        style={styles.folderDialog}
+                        onPress={(event) => event.stopPropagation()}
+                      >
+                        <View style={styles.dialogHeader}>
+                          <ThemedText style={styles.dialogTitle}>
+                            New folder
+                          </ThemedText>
+                          <Pressable
+                            accessibilityLabel="Close create folder dialog"
+                            onPress={() => setCreateFolderOpen(false)}
+                          >
+                            <Ionicons
+                              name="close"
+                              size={22}
+                              color={colors.ink}
+                            />
+                          </Pressable>
+                        </View>
+                        <TextInput
+                          autoFocus
+                          accessibilityLabel="New folder name"
+                          placeholder="Folder name"
+                          placeholderTextColor={colors.muted}
+                          value={newFolder}
+                          onChangeText={setNewFolder}
+                          style={styles.addFolderInput}
+                        />
+                        <View style={styles.dialogActions}>
+                          <Pressable
+                            accessibilityRole="button"
+                            style={styles.cancelButton}
+                            onPress={() => setCreateFolderOpen(false)}
+                          >
+                            <ThemedText style={styles.cancelLabel}>
+                              Cancel
+                            </ThemedText>
+                          </Pressable>
+                          <Pressable
+                            accessibilityRole="button"
+                            style={styles.addFolderButton}
+                            onPress={() => {
+                              const name = newFolder.trim();
+                              if (!name || folders.includes(name)) return;
+                              setFolders([...folders, name]);
+                              setFolder(name);
+                              setNewFolder("");
+                              setCreateFolderOpen(false);
+                            }}
+                          >
+                            <ThemedText style={styles.addFolderLabel}>
+                              Create
+                            </ThemedText>
+                          </Pressable>
+                        </View>
+                      </Pressable>
+                    </KeyboardAvoidingView>
                   </Pressable>
-                </KeyboardAvoidingView>
-              </Pressable>
-            </Modal>
-          </View>
-          <View style={styles.sectionHeader}>
-            <ThemedText style={styles.sectionTitle}>Your Recipes</ThemedText>
-            <Pressable
-              accessibilityLabel={`Switch to ${viewMode === "grid" ? "list" : "grid"} view`}
-              style={styles.viewToggle}
-              onPress={() => setViewMode(viewMode === "grid" ? "list" : "grid")}
-            >
-              <Ionicons
-                name={viewMode === "grid" ? "list-outline" : "grid-outline"}
-                size={18}
-                color={colors.leaf}
-              />
-            </Pressable>
-          </View>
-          </View>}
+                </Modal>
+              </View>
+              <View style={styles.sectionHeader}>
+                <ThemedText style={styles.sectionTitle}>
+                  Your Recipes
+                </ThemedText>
+                <Pressable
+                  accessibilityLabel={`Switch to ${viewMode === "grid" ? "list" : "grid"} view`}
+                  style={styles.viewToggle}
+                  onPress={() =>
+                    setViewMode(viewMode === "grid" ? "list" : "grid")
+                  }
+                >
+                  <Ionicons
+                    name={viewMode === "grid" ? "list-outline" : "grid-outline"}
+                    size={18}
+                    color={colors.leaf}
+                  />
+                </Pressable>
+              </View>
+            </View>
+          }
           renderItem={({ item, index }) => (
             <RecipeCard
               imageURL={item.image_url}
@@ -293,17 +326,29 @@ export default function Tab1Screen() {
               color={index % 2 === 0 ? "#F8E5A9" : "#F4D2C5"}
               icon={index % 2 === 0 ? "nutrition-outline" : "leaf-outline"}
               list={viewMode === "list"}
-              meta={[item.process_minutes > 0 ? `${item.process_minutes} min` : '', item.difficulty, item.servings > 0 ? `${item.servings} servings` : ''].filter(Boolean).join(' · ')}
+              meta={[
+                item.process_minutes > 0 ? `${item.process_minutes} min` : "",
+                item.difficulty,
+                item.servings > 0 ? `${item.servings} servings` : "",
+              ]
+                .filter(Boolean)
+                .join(" · ")}
               onPress={() => router.push(`/recipe/${item.id}`)}
             />
           )}
           ListEmptyComponent={
             recipesPending ? (
-              <ThemedText style={styles.statusText}>Loading recipes...</ThemedText>
+              <ThemedText style={styles.statusText}>
+                Loading recipes...
+              </ThemedText>
             ) : recipesError ? (
-              <ThemedText style={styles.statusText}>Unable to load recipes.</ThemedText>
+              <ThemedText style={styles.statusText}>
+                Unable to load recipes.
+              </ThemedText>
             ) : search.trim() ? (
-              <ThemedText style={styles.statusText}>No recipes found.</ThemedText>
+              <ThemedText style={styles.statusText}>
+                No recipes found.
+              </ThemedText>
             ) : (
               <EmptyRecipes />
             )
@@ -312,7 +357,11 @@ export default function Tab1Screen() {
             if (hasMore && !isFetchingNextPage) fetchNextPage();
           }}
           onEndReachedThreshold={0.5}
-          ListFooterComponent={isFetchingNextPage ? <ThemedText style={styles.statusText}>Loading more...</ThemedText> : null}
+          ListFooterComponent={
+            isFetchingNextPage ? (
+              <ThemedText style={styles.statusText}>Loading more...</ThemedText>
+            ) : null
+          }
         />
       </SafeAreaView>
     </ThemedView>
@@ -322,33 +371,21 @@ export default function Tab1Screen() {
 function EmptyRecipes() {
   return (
     <View style={styles.emptyState}>
-      <ThemedText style={styles.emptyEyebrow}>YOUR KITCHEN STARTS HERE</ThemedText>
-      <ThemedText style={styles.emptyTitle}>Save your first recipe</ThemedText>
+      <ThemedText style={styles.emptyEyebrow}>START YOUR COLLECTION</ThemedText>
+      <ThemedText style={styles.emptyTitle}>Add your first recipe</ThemedText>
       <ThemedText style={styles.emptyDescription}>
-        Keep every recipe you love in one calm, organized place — ready whenever you want to cook.
+        Keep finding recipes while scrolling, but never saving them? Start here.
       </ThemedText>
       <Pressable
         accessibilityRole="button"
         style={styles.emptyPrimary}
-        onPress={() => router.push("/add-recipe")}
+        onPress={() => router.push("/add")}
       >
         <Ionicons name="add" size={19} color="#FFFFFF" />
-        <ThemedText style={styles.emptyPrimaryLabel}>Add your first recipe</ThemedText>
+        <ThemedText style={styles.emptyPrimaryLabel}>
+          Add a recipe
+        </ThemedText>
       </Pressable>
-      <View style={styles.quickOptions}>
-        {[
-          ["link-outline", "Paste link"],
-          ["camera-outline", "Take photo"],
-          ["sparkles-outline", "Ask AI"],
-        ].map(([icon, label]) => (
-          <View key={label} style={styles.quickOption}>
-            <View style={styles.quickIcon}>
-              <Ionicons name={icon as IoniconsIconName} size={16} color={colors.leaf} />
-            </View>
-            <ThemedText style={styles.quickLabel}>{label}</ThemedText>
-          </View>
-        ))}
-      </View>
     </View>
   );
 }
@@ -371,7 +408,12 @@ function RecipeCard({
   onPress: () => void;
 }) {
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={`Open recipe ${title}`} onPress={onPress} style={[styles.card, list ? styles.listCard : styles.gridCard]}>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Open recipe ${title}`}
+      onPress={onPress}
+      style={[styles.card, list ? styles.listCard : styles.gridCard]}
+    >
       <View
         style={[
           styles.cardImage,
@@ -401,7 +443,7 @@ function RecipeCard({
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: "#FCFBF8" },
   safeArea: { flex: 1 },
-  content: { padding: 20, gap: 16, paddingBottom: 28 },
+  content: { padding: 20, gap: 8, paddingBottom: 8 },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -621,29 +663,40 @@ const styles = StyleSheet.create({
   },
   listCardImage: { width: 54, height: 54, borderRadius: 14 },
   cardInfo: { flex: 1 },
-  statusText: { color: colors.muted, fontSize: 15, textAlign: "center", paddingVertical: 24 },
-  emptyState: {
-    minHeight: 300,
-    borderRadius: 26,
-    borderWidth: 1,
-    borderColor: colors.line,
-    backgroundColor: "#FFFFFF",
-    alignItems: "center",
-    padding: 24,
-    gap: 14,
-    shadowColor: colors.ink,
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 5 },
-    elevation: 2,
+  statusText: {
+    color: colors.muted,
+    fontSize: 15,
+    textAlign: "center",
+    paddingVertical: 24,
   },
-  emptyEyebrow: { color: "#EA7450", fontSize: 10, fontWeight: "900", letterSpacing: 1.5 },
-  emptyTitle: { color: colors.ink, fontSize: 25, fontWeight: "800", textAlign: "center" },
-  emptyDescription: { color: "#68736B", fontSize: 13, lineHeight: 19, textAlign: "center" },
+  emptyState: {
+    minHeight: 0,
+    alignItems: "center",
+    paddingVertical: 8,
+    gap: 8,
+  },
+  emptyEyebrow: {
+    color: "#EA7450",
+    fontSize: 9,
+    fontWeight: "900",
+    letterSpacing: 1.2,
+  },
+  emptyTitle: {
+    color: colors.ink,
+    fontSize: 21,
+    fontWeight: "800",
+    textAlign: "center",
+  },
+  emptyDescription: {
+    color: "#68736B",
+    fontSize: 12,
+    lineHeight: 17,
+    textAlign: "center",
+  },
   emptyPrimary: {
-    width: "100%",
-    height: 50,
-    borderRadius: 17,
+    width: "92%",
+    height: 44,
+    borderRadius: 14,
     backgroundColor: colors.ink,
     flexDirection: "row",
     alignItems: "center",
@@ -654,10 +707,22 @@ const styles = StyleSheet.create({
     shadowRadius: 7,
     shadowOffset: { width: 0, height: 4 },
   },
-  emptyPrimaryLabel: { color: "#FFFFFF", fontSize: 14, fontWeight: "800" },
-  quickOptions: { flexDirection: "row", gap: 16, alignItems: "center", marginTop: 2 },
+  emptyPrimaryLabel: { color: "#FFFFFF", fontSize: 13, fontWeight: "800" },
+  quickOptions: {
+    flexDirection: "row",
+    gap: 16,
+    alignItems: "center",
+    marginTop: 2,
+  },
   quickOption: { alignItems: "center", gap: 5 },
-  quickIcon: { width: 34, height: 34, borderRadius: 12, backgroundColor: "#F5F7F1", alignItems: "center", justifyContent: "center" },
+  quickIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 12,
+    backgroundColor: "#F5F7F1",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   quickLabel: { color: "#68736B", fontSize: 10, fontWeight: "800" },
   cardMore: { marginRight: 2 },
   cardTitle: {
