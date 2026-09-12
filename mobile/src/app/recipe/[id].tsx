@@ -2,6 +2,7 @@ import Ionicons from "@react-native-vector-icons/ionicons";
 import { router, useLocalSearchParams } from "expo-router";
 import { Fragment, useState } from "react";
 import {
+  ActivityIndicator,
   Linking,
   Modal,
   Pressable,
@@ -15,7 +16,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { yuzuColors } from "@/components/yuzu-screen";
-import { useRateRecipe, useRecipe } from "@/hooks/use-recipe";
+import { useDeleteRecipe, useRateRecipe, useRecipe } from "@/hooks/use-recipe";
 import { RecipeImage } from "@/components/recipe-image";
 
 export default function RecipeDetailScreen() {
@@ -23,6 +24,8 @@ export default function RecipeDetailScreen() {
   const recipeId = typeof id === "string" ? id : "";
   const { data: recipe, isPending, isError } = useRecipe(recipeId);
   const [ratingOpen, setRatingOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [selectedRating, setSelectedRating] = useState(0);
   const [copied, setCopied] = useState(false);
   const [checkedIngredients, setCheckedIngredients] = useState<
@@ -32,6 +35,7 @@ export default function RecipeDetailScreen() {
     Record<number, boolean>
   >({});
   const rateRecipe = useRateRecipe(recipeId);
+  const deleteRecipe = useDeleteRecipe(recipeId);
 
   if (isPending) return <StatusScreen message="Loading recipe..." />;
   if (isError || !recipe) return <StatusScreen message="Recipe not found." />;
@@ -99,6 +103,19 @@ export default function RecipeDetailScreen() {
                 size={21}
                 color={yuzuColors.tomato}
               />
+            </Pressable>
+          </View>
+
+          <View style={styles.navbar}>
+            <ThemedText style={styles.navbarTitle} numberOfLines={1}>
+              {recipe.name}
+            </ThemedText>
+            <Pressable
+              style={styles.navbarButton}
+              onPress={() => setMenuOpen(true)}
+              accessibilityLabel="Recipe options"
+            >
+              <Ionicons name="ellipsis-horizontal" size={22} color={yuzuColors.ink} />
             </Pressable>
           </View>
 
@@ -176,7 +193,7 @@ export default function RecipeDetailScreen() {
                         checked && styles.ingredientChecked,
                       ]}
                     >
-                      {ingredient}
+                      {formatIngredient(ingredient)}
                     </ThemedText>
                   </Pressable>
                 );
@@ -231,6 +248,73 @@ export default function RecipeDetailScreen() {
             </ThemedText>
           </Pressable>
         </View>
+        <Modal
+          visible={menuOpen}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setMenuOpen(false)}
+        >
+          <Pressable style={styles.menuBackdrop} onPress={() => setMenuOpen(false)}>
+            <View style={styles.menu}>
+              <Pressable
+                style={styles.menuItem}
+                onPress={() => {
+                  setMenuOpen(false);
+                  setDeleteConfirmOpen(true);
+                }}
+                disabled={deleteRecipe.isPending}
+                accessibilityRole="button"
+              >
+                <Ionicons name="trash-outline" size={18} color={yuzuColors.tomato} />
+                <ThemedText style={styles.deleteLabel}>Delete recipe</ThemedText>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Modal>
+        <Modal
+          visible={deleteConfirmOpen}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setDeleteConfirmOpen(false)}
+        >
+          <Pressable
+            style={styles.confirmBackdrop}
+            onPress={() => setDeleteConfirmOpen(false)}
+          >
+            <Pressable
+              style={styles.confirmModal}
+              onPress={(event) => event.stopPropagation()}
+            >
+              <View style={styles.confirmIcon}>
+                <Ionicons name="trash-outline" size={24} color={yuzuColors.tomato} />
+              </View>
+              <ThemedText style={styles.confirmTitle}>Delete this recipe?</ThemedText>
+              <ThemedText style={styles.confirmBody}>
+                “{recipe.name}” will be permanently removed from your recipes.
+              </ThemedText>
+              <View style={styles.confirmActions}>
+                <Pressable
+                  style={styles.cancelButton}
+                  onPress={() => setDeleteConfirmOpen(false)}
+                  disabled={deleteRecipe.isPending}
+                >
+                  <ThemedText style={styles.cancelLabel}>Cancel</ThemedText>
+                </Pressable>
+                <Pressable
+                  style={[styles.confirmDeleteButton, deleteRecipe.isPending && styles.saveRatingDisabled]}
+                  onPress={() => deleteRecipe.mutate(undefined, { onSuccess: () => router.replace("/recipes") })}
+                  disabled={deleteRecipe.isPending}
+                >
+                  {deleteRecipe.isPending ? (
+                    <ActivityIndicator color="#FFFFFF" />
+                  ) : (
+                    <ThemedText style={styles.confirmDeleteLabel}>Delete</ThemedText>
+                  )}
+                </Pressable>
+              </View>
+            </Pressable>
+          </Pressable>
+        </Modal>
         <Modal
           visible={ratingOpen}
           transparent
@@ -301,6 +385,39 @@ function StatusScreen({ message }: { message: string }) {
   );
 }
 
+function formatIngredient(value: string) {
+  const match = value.match(/^(.*?·\s*)(\d+(?:\.\d+)?)(\s.*)?$/);
+  if (!match) return value;
+  return `${match[1]}${decimalAsFraction(Number(match[2]))}${match[3] ?? ""}`;
+}
+
+function decimalAsFraction(value: number) {
+  if (!Number.isFinite(value) || Number.isInteger(value)) return String(value);
+  const whole = Math.floor(value);
+  const target = value - whole;
+  let lowerNumerator = 0;
+  let lowerDenominator = 1;
+  let upperNumerator = 1;
+  let upperDenominator = 1;
+  for (let i = 0; i < 12; i += 1) {
+    const numerator = lowerNumerator + upperNumerator;
+    const denominator = lowerDenominator + upperDenominator;
+    if (denominator > 16) break;
+    if (Math.abs(target - numerator / denominator) < 0.01) {
+      const fraction = `${numerator}/${denominator}`;
+      return whole ? `${whole} ${fraction}` : fraction;
+    }
+    if (target > numerator / denominator) {
+      lowerNumerator = numerator;
+      lowerDenominator = denominator;
+    } else {
+      upperNumerator = numerator;
+      upperDenominator = denominator;
+    }
+  }
+  return String(value);
+}
+
 function Meta({
   icon,
   label,
@@ -367,6 +484,9 @@ const styles = StyleSheet.create({
   },
   backButton: { left: 16 },
   favoriteButton: { right: 16 },
+  navbar: { minHeight: 52, paddingHorizontal: 20, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
+  navbarTitle: { flex: 1, color: yuzuColors.ink, fontSize: 17, fontWeight: "800" },
+  navbarButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: yuzuColors.line },
   content: { paddingHorizontal: 20, paddingTop: 18 },
   source: {
     color: yuzuColors.tomato,
@@ -508,6 +628,20 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   groceryLabel: { color: "#FFFFFF", fontSize: 14, fontWeight: "800" },
+  deleteLabel: { color: yuzuColors.tomato, fontSize: 13, fontWeight: "800" },
+  menuBackdrop: { flex: 1, alignItems: "flex-end", paddingTop: 226, paddingRight: 20, backgroundColor: "#00000022" },
+  menu: { backgroundColor: "#FFFFFF", borderRadius: 14, minWidth: 150, padding: 6, shadowColor: "#000", shadowOpacity: 0.16, shadowRadius: 8, elevation: 5 },
+  menuItem: { alignItems: "center", flexDirection: "row", gap: 8, paddingHorizontal: 12, paddingVertical: 11 },
+  confirmBackdrop: { flex: 1, backgroundColor: "#14231A66", alignItems: "center", justifyContent: "center", padding: 20 },
+  confirmModal: { width: "100%", maxWidth: 360, borderRadius: 24, backgroundColor: "#FCFBF8", padding: 22, alignItems: "center", gap: 9 },
+  confirmIcon: { width: 52, height: 52, borderRadius: 26, backgroundColor: "#FCE2D8", alignItems: "center", justifyContent: "center", marginBottom: 2 },
+  confirmTitle: { color: yuzuColors.ink, fontSize: 22, fontWeight: "900" },
+  confirmBody: { color: yuzuColors.muted, fontSize: 14, lineHeight: 20, textAlign: "center" },
+  confirmActions: { width: "100%", flexDirection: "row", gap: 9, marginTop: 8 },
+  cancelButton: { flex: 1, height: 46, borderRadius: 14, borderWidth: 1, borderColor: yuzuColors.line, alignItems: "center", justifyContent: "center" },
+  cancelLabel: { color: yuzuColors.ink, fontSize: 14, fontWeight: "800" },
+  confirmDeleteButton: { flex: 1, height: 46, borderRadius: 14, backgroundColor: yuzuColors.tomato, alignItems: "center", justifyContent: "center" },
+  confirmDeleteLabel: { color: "#FFFFFF", fontSize: 14, fontWeight: "800" },
   statusScreen: {
     flex: 1,
     alignItems: "center",

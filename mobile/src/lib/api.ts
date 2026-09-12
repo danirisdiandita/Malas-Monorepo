@@ -157,6 +157,11 @@ export async function rateRecipe(id: string, rating: number): Promise<void> {
   if (!response.ok) throw new Error((await response.text()) || 'Unable to save rating.');
 }
 
+export async function deleteRecipe(id: string): Promise<void> {
+  const response = await authenticatedFetch(`/recipes/${encodeURIComponent(id)}`, { method: 'DELETE' });
+  if (!response.ok) throw new Error((await response.text()) || 'Unable to delete recipe.');
+}
+
 export async function getGroceries(): Promise<Grocery[]> {
   const response = await authenticatedFetch('/groceries');
   if (!response.ok) throw new Error('Unable to load groceries.');

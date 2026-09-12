@@ -160,6 +160,38 @@ func StoredGet(db *ent.Client, storage *Storage) http.HandlerFunc {
 	}
 }
 
+func Delete(db *ent.Client, storage *Storage) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		owner, err := OwnerID(db, r)
+		if err != nil {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+		id, err := uuid.Parse(chi.URLParam(r, "id"))
+		if err != nil {
+			http.NotFound(w, r)
+			return
+		}
+		row, err := db.Recipe.Query().Where(recipe.ID(id), recipe.UserID(owner)).Only(r.Context())
+		if ent.IsNotFound(err) {
+			http.NotFound(w, r)
+			return
+		}
+		if err != nil {
+			http.Error(w, "unable to load recipe", http.StatusInternalServerError)
+			return
+		}
+		if err := db.Recipe.DeleteOne(row).Exec(r.Context()); err != nil {
+			http.Error(w, "unable to delete recipe", http.StatusInternalServerError)
+			return
+		}
+		if row.ImageS3Key != "" && storage != nil {
+			_ = storage.Delete(r.Context(), row.ImageS3Key)
+		}
+		w.WriteHeader(http.StatusNoContent)
+	}
+}
+
 func withImage(ctx context.Context, row *ent.Recipe, storage *Storage) (Recipe, error) {
 	result := presentation(row)
 	if row.ImageS3Key == "" {

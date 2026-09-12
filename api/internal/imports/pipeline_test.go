@@ -188,7 +188,7 @@ func TestWebhookRecipeIntegration(t *testing.T) {
 				t.Error("collage missing a photo")
 			}
 		}
-		content := `{"name":"Test chicken","servings":2,"process_minutes":20,"ingredients":[{"name":"Chicken","quantity":"200","unit":"g"}],"instructions":["Cook the chicken."],"tags":["dinner"],"notes":""}`
+		content := `{"name":"Test chicken","servings":2,"process_minutes":20,"ingredients":[{"name":"Chicken","quantity":200,"unit":"g"}],"instructions":["Cook the chicken."],"tags":["dinner"],"notes":""}`
 		_ = json.NewEncoder(w).Encode(map[string]any{"choices": []any{map[string]any{"finish_reason": "stop", "message": map[string]string{"content": content}}}})
 	}))
 	defer fake.Close()

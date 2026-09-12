@@ -75,6 +75,11 @@ func (s *Storage) Upload(ctx context.Context, key string, body io.Reader, size i
 	return err
 }
 
+func (s *Storage) Delete(ctx context.Context, key string) error {
+	_, err := s.Client.DeleteObject(ctx, &s3.DeleteObjectInput{Bucket: &s.Bucket, Key: &key})
+	return err
+}
+
 func (s *Storage) ImageURL(ctx context.Context, key string) (string, error) {
 	signed, err := s.Presigner.PresignGetObject(ctx,
 		&s3.GetObjectInput{Bucket: &s.Bucket, Key: &key},
