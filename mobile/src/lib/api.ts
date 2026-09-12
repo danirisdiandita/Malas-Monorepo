@@ -58,6 +58,7 @@ export interface Grocery {
   quantity?: number;
   tag?: string;
   recipe_id?: string;
+  checked: boolean;
 }
 
 const tokenKey = 'malas.jwt';
@@ -172,6 +173,11 @@ export async function getGroceries(): Promise<Grocery[]> {
   return body;
 }
 
+export async function clearGroceries(): Promise<void> {
+  const response = await authenticatedFetch('/groceries', { method: 'DELETE' });
+  if (!response.ok) throw new Error((await response.text()) || 'Unable to clear groceries.');
+}
+
 export async function addRecipeIngredients(id: string): Promise<{ count: number }> {
   const response = await authenticatedFetch(`/recipes/${encodeURIComponent(id)}/groceries`, { method: 'POST' });
   if (!response.ok) throw new Error((await response.text()) || 'Unable to add groceries.');
@@ -239,7 +245,7 @@ function isRecipe(value: unknown): value is Recipe {
 function isGrocery(value: unknown): value is Grocery {
   if (!value || typeof value !== 'object') return false;
   const grocery = value as Record<string, unknown>;
-  return typeof grocery.id === 'string' && typeof grocery.name === 'string' && typeof grocery.unit === 'string' && (grocery.quantity === undefined || typeof grocery.quantity === 'number') && (grocery.tag === undefined || typeof grocery.tag === 'string') && (grocery.recipe_id === undefined || typeof grocery.recipe_id === 'string');
+  return typeof grocery.id === 'string' && typeof grocery.name === 'string' && typeof grocery.unit === 'string' && typeof grocery.checked === 'boolean' && (grocery.quantity === undefined || typeof grocery.quantity === 'number') && (grocery.tag === undefined || typeof grocery.tag === 'string') && (grocery.recipe_id === undefined || typeof grocery.recipe_id === 'string');
 }
 
 function isLinkImportResult(value: unknown): value is LinkImportResult {

@@ -21,6 +21,7 @@ func (Grocery) Fields() []ent.Field {
 		field.Float("quantity").Optional().Nillable(),
 		field.String("tag").Optional(),
 		field.UUID("recipe_id", uuid.UUID{}).Optional().Nillable(),
+		field.Bool("checked").Default(false),
 	}
 }
 

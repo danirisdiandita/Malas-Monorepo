@@ -1,12 +1,14 @@
 import { Ionicons } from "@react-native-vector-icons/ionicons";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useState } from "react";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { useGroceries } from "@/hooks/use-groceries";
+import { useClearGroceries, useGroceries } from "@/hooks/use-groceries";
+import { toast } from "sonner-native";
 import type { Grocery } from "@/lib/api";
+import { decimalAsFraction } from "@/lib/fractions";
 
 const colors = {
   ink: "#14231A",
@@ -18,9 +20,11 @@ const colors = {
 };
 export default function GroceriesScreen() {
   const { data: groceries, isPending, isError } = useGroceries();
+  const clearGroceries = useClearGroceries();
   const [checked, setChecked] = useState<Record<string, boolean>>({});
+  const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
   const items = groceries ?? [];
-  const checkedCount = items.filter((item) => checked[item.id]).length;
+  const checkedCount = items.filter((item) => checked[item.id] ?? item.checked).length;
   const groups = groupGroceries(items);
 
   return (
@@ -31,6 +35,16 @@ export default function GroceriesScreen() {
             <View>
               <ThemedText style={styles.title}>Grocery list</ThemedText>
             </View>
+            {items.length > 0 && (
+              <Pressable
+                onPress={() => setClearConfirmOpen(true)}
+                disabled={clearGroceries.isPending}
+                accessibilityRole="button"
+                accessibilityLabel="Clear all groceries"
+              >
+                <ThemedText style={styles.clearAll}>Clear all</ThemedText>
+              </Pressable>
+            )}
           </View>
           {isPending ? <ThemedText style={styles.status}>Loading groceries...</ThemedText> : isError ? <ThemedText style={styles.status}>Unable to load groceries.</ThemedText> : items.length === 0 ? <EmptyGroceries /> : <>
           <View style={styles.progressCard}>
@@ -49,7 +63,7 @@ export default function GroceriesScreen() {
                 <ThemedText style={styles.count}>{group.items.length} items</ThemedText>
               </View>
               {group.items.map((item) => {
-                const isChecked = checked[item.id] === true;
+                const isChecked = checked[item.id] ?? item.checked;
                 return <Pressable key={item.id} style={styles.item} onPress={() => setChecked((current) => ({ ...current, [item.id]: !isChecked }))} accessibilityRole="checkbox" accessibilityState={{ checked: isChecked }}>
                   <View style={[styles.checkbox, isChecked && styles.checked]}>
                     {isChecked && (
@@ -61,12 +75,33 @@ export default function GroceriesScreen() {
                   >
                     {item.name}
                   </ThemedText>
-                  <ThemedText style={styles.quantity}>{[item.quantity, item.unit].filter(Boolean).join(" ")}</ThemedText>
+                  <ThemedText style={styles.quantity}>{[item.quantity == null ? "" : decimalAsFraction(item.quantity), item.unit].filter(Boolean).join(" ")}</ThemedText>
                 </Pressable>;
               })}
             </View>
           ))}</>}
         </ScrollView>
+        <Modal visible={clearConfirmOpen} transparent animationType="fade" onRequestClose={() => setClearConfirmOpen(false)}>
+          <Pressable style={styles.confirmBackdrop} onPress={() => setClearConfirmOpen(false)}>
+            <Pressable style={styles.confirmModal} onPress={(event) => event.stopPropagation()}>
+              <View style={styles.confirmIcon}><Ionicons name="trash-outline" size={24} color={colors.tomato} /></View>
+              <ThemedText style={styles.confirmTitle}>Clear grocery list?</ThemedText>
+              <ThemedText style={styles.confirmBody}>All {items.length} current grocery items will be permanently deleted.</ThemedText>
+              <View style={styles.confirmActions}>
+                <Pressable style={styles.cancelButton} onPress={() => setClearConfirmOpen(false)} disabled={clearGroceries.isPending}>
+                  <ThemedText style={styles.cancelLabel}>Cancel</ThemedText>
+                </Pressable>
+                <Pressable
+                  style={[styles.clearConfirmButton, clearGroceries.isPending && styles.disabled]}
+                  onPress={() => clearGroceries.mutate(undefined, { onSuccess: () => { setClearConfirmOpen(false); setChecked({}); toast.success("Grocery list cleared"); }, onError: (error) => toast.error(error.message) })}
+                  disabled={clearGroceries.isPending}
+                >
+                  {clearGroceries.isPending ? <ActivityIndicator color="#FFFFFF" /> : <ThemedText style={styles.confirmDeleteLabel}>Clear all</ThemedText>}
+                </Pressable>
+              </View>
+            </Pressable>
+          </Pressable>
+        </Modal>
       </SafeAreaView>
     </ThemedView>
   );
@@ -112,6 +147,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1.1,
   },
   title: { color: colors.ink, fontSize: 28, fontWeight: "800", marginTop: 3 },
+  clearAll: { color: colors.tomato, fontSize: 13, fontWeight: "800" },
   progressCard: {
     backgroundColor: colors.sage,
     borderRadius: 16,
@@ -164,4 +200,15 @@ const styles = StyleSheet.create({
   emptyButton: { width: 242, height: 52, borderRadius: 16, backgroundColor: colors.tomato, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 9, marginTop: 8, opacity: 0.55 },
   emptyButtonLabel: { color: "#FFFFFF", fontSize: 13, fontWeight: "900" },
   emptyHint: { color: "#9AA79F", fontSize: 11, fontWeight: "700", textAlign: "center" },
+  confirmBackdrop: { flex: 1, backgroundColor: "#14231A66", alignItems: "center", justifyContent: "center", padding: 20 },
+  confirmModal: { width: "100%", maxWidth: 360, borderRadius: 24, backgroundColor: "#FCFBF8", padding: 22, alignItems: "center", gap: 9 },
+  confirmIcon: { width: 52, height: 52, borderRadius: 26, backgroundColor: "#FCE2D8", alignItems: "center", justifyContent: "center", marginBottom: 2 },
+  confirmTitle: { color: colors.ink, fontSize: 22, fontWeight: "900" },
+  confirmBody: { color: colors.muted, fontSize: 14, lineHeight: 20, textAlign: "center" },
+  confirmActions: { width: "100%", flexDirection: "row", gap: 9, marginTop: 8 },
+  cancelButton: { flex: 1, height: 46, borderRadius: 14, borderWidth: 1, borderColor: colors.line, alignItems: "center", justifyContent: "center" },
+  cancelLabel: { color: colors.ink, fontSize: 14, fontWeight: "800" },
+  clearConfirmButton: { flex: 1, height: 46, borderRadius: 14, backgroundColor: colors.tomato, alignItems: "center", justifyContent: "center" },
+  confirmDeleteLabel: { color: "#FFFFFF", fontSize: 14, fontWeight: "800" },
+  disabled: { opacity: 0.45 },
 });

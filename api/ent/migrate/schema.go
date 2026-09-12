@@ -73,6 +73,7 @@ var (
 		{Name: "unit", Type: field.TypeString},
 		{Name: "quantity", Type: field.TypeFloat64, Nullable: true},
 		{Name: "tag", Type: field.TypeString, Nullable: true},
+		{Name: "checked", Type: field.TypeBool, Default: false},
 		{Name: "recipe_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "user_id", Type: field.TypeInt},
 	}
@@ -84,13 +85,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "groceries_recipes_groceries",
-				Columns:    []*schema.Column{GroceriesColumns[5]},
+				Columns:    []*schema.Column{GroceriesColumns[6]},
 				RefColumns: []*schema.Column{RecipesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "groceries_users_groceries",
-				Columns:    []*schema.Column{GroceriesColumns[6]},
+				Columns:    []*schema.Column{GroceriesColumns[7]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -99,7 +100,7 @@ var (
 			{
 				Name:    "grocery_user_id",
 				Unique:  false,
-				Columns: []*schema.Column{GroceriesColumns[6]},
+				Columns: []*schema.Column{GroceriesColumns[7]},
 			},
 		},
 	}

@@ -139,6 +139,20 @@ func (_u *GroceryUpdate) ClearRecipeID() *GroceryUpdate {
 	return _u
 }
 
+// SetChecked sets the "checked" field.
+func (_u *GroceryUpdate) SetChecked(v bool) *GroceryUpdate {
+	_u.mutation.SetChecked(v)
+	return _u
+}
+
+// SetNillableChecked sets the "checked" field if the given value is not nil.
+func (_u *GroceryUpdate) SetNillableChecked(v *bool) *GroceryUpdate {
+	if v != nil {
+		_u.SetChecked(*v)
+	}
+	return _u
+}
+
 // SetUser sets the "user" edge to the User entity.
 func (_u *GroceryUpdate) SetUser(v *User) *GroceryUpdate {
 	return _u.SetUserID(v.ID)
@@ -233,6 +247,9 @@ func (_u *GroceryUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.TagCleared() {
 		_spec.ClearField(grocery.FieldTag, field.TypeString)
+	}
+	if value, ok := _u.mutation.Checked(); ok {
+		_spec.SetField(grocery.FieldChecked, field.TypeBool, value)
 	}
 	if _u.mutation.UserCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -421,6 +438,20 @@ func (_u *GroceryUpdateOne) ClearRecipeID() *GroceryUpdateOne {
 	return _u
 }
 
+// SetChecked sets the "checked" field.
+func (_u *GroceryUpdateOne) SetChecked(v bool) *GroceryUpdateOne {
+	_u.mutation.SetChecked(v)
+	return _u
+}
+
+// SetNillableChecked sets the "checked" field if the given value is not nil.
+func (_u *GroceryUpdateOne) SetNillableChecked(v *bool) *GroceryUpdateOne {
+	if v != nil {
+		_u.SetChecked(*v)
+	}
+	return _u
+}
+
 // SetUser sets the "user" edge to the User entity.
 func (_u *GroceryUpdateOne) SetUser(v *User) *GroceryUpdateOne {
 	return _u.SetUserID(v.ID)
@@ -545,6 +576,9 @@ func (_u *GroceryUpdateOne) sqlSave(ctx context.Context) (_node *Grocery, err er
 	}
 	if _u.mutation.TagCleared() {
 		_spec.ClearField(grocery.FieldTag, field.TypeString)
+	}
+	if value, ok := _u.mutation.Checked(); ok {
+		_spec.SetField(grocery.FieldChecked, field.TypeBool, value)
 	}
 	if _u.mutation.UserCleared() {
 		edge := &sqlgraph.EdgeSpec{

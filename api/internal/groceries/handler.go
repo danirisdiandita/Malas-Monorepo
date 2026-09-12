@@ -20,6 +20,7 @@ type Item struct {
 	Quantity *float64 `json:"quantity,omitempty"`
 	Tag      string   `json:"tag,omitempty"`
 	RecipeID *string  `json:"recipe_id,omitempty"`
+	Checked  bool     `json:"checked"`
 }
 
 func List(db *ent.Client) http.HandlerFunc {
@@ -41,11 +42,26 @@ func List(db *ent.Client) http.HandlerFunc {
 				value := row.RecipeID.String()
 				recipeID = &value
 			}
-			items = append(items, Item{ID: row.ID.String(), Name: row.Name, Unit: row.Unit, Quantity: row.Quantity, Tag: row.Tag, RecipeID: recipeID})
+			items = append(items, Item{ID: row.ID.String(), Name: row.Name, Unit: row.Unit, Quantity: row.Quantity, Tag: row.Tag, RecipeID: recipeID, Checked: row.Checked})
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("Cache-Control", "private, no-store")
 		_ = json.NewEncoder(w).Encode(items)
+	}
+}
+
+func Clear(db *ent.Client) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		owner, err := recipes.OwnerID(db, r)
+		if err != nil {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+		if _, err := db.Grocery.Delete().Where(grocery.UserID(owner)).Exec(r.Context()); err != nil {
+			http.Error(w, "unable to clear groceries", http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
 	}
 }
 

@@ -31,6 +31,8 @@ type Grocery struct {
 	Tag string `json:"tag,omitempty"`
 	// RecipeID holds the value of the "recipe_id" field.
 	RecipeID *uuid.UUID `json:"recipe_id,omitempty"`
+	// Checked holds the value of the "checked" field.
+	Checked bool `json:"checked,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the GroceryQuery when eager-loading is set.
 	Edges        GroceryEdges `json:"edges"`
@@ -77,6 +79,8 @@ func (*Grocery) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case grocery.FieldRecipeID:
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
+		case grocery.FieldChecked:
+			values[i] = new(sql.NullBool)
 		case grocery.FieldQuantity:
 			values[i] = new(sql.NullFloat64)
 		case grocery.FieldUserID:
@@ -143,6 +147,12 @@ func (_m *Grocery) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.RecipeID = new(uuid.UUID)
 				*_m.RecipeID = *value.S.(*uuid.UUID)
+			}
+		case grocery.FieldChecked:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field checked", values[i])
+			} else if value.Valid {
+				_m.Checked = value.Bool
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
@@ -211,6 +221,9 @@ func (_m *Grocery) String() string {
 		builder.WriteString("recipe_id=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
 	}
+	builder.WriteString(", ")
+	builder.WriteString("checked=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Checked))
 	builder.WriteByte(')')
 	return builder.String()
 }

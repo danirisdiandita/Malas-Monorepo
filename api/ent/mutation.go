@@ -1250,6 +1250,7 @@ type GroceryMutation struct {
 	quantity      *float64
 	addquantity   *float64
 	tag           *string
+	checked       *bool
 	clearedFields map[string]struct{}
 	user          *int
 	cleareduser   bool
@@ -1640,6 +1641,42 @@ func (m *GroceryMutation) ResetRecipeID() {
 	delete(m.clearedFields, grocery.FieldRecipeID)
 }
 
+// SetChecked sets the "checked" field.
+func (m *GroceryMutation) SetChecked(b bool) {
+	m.checked = &b
+}
+
+// Checked returns the value of the "checked" field in the mutation.
+func (m *GroceryMutation) Checked() (r bool, exists bool) {
+	v := m.checked
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldChecked returns the old "checked" field's value of the Grocery entity.
+// If the Grocery object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GroceryMutation) OldChecked(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldChecked is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldChecked requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldChecked: %w", err)
+	}
+	return oldValue.Checked, nil
+}
+
+// ResetChecked resets all changes to the "checked" field.
+func (m *GroceryMutation) ResetChecked() {
+	m.checked = nil
+}
+
 // ClearUser clears the "user" edge to the User entity.
 func (m *GroceryMutation) ClearUser() {
 	m.cleareduser = true
@@ -1728,7 +1765,7 @@ func (m *GroceryMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *GroceryMutation) Fields() []string {
-	fields := make([]string, 0, 6)
+	fields := make([]string, 0, 7)
 	if m.user != nil {
 		fields = append(fields, grocery.FieldUserID)
 	}
@@ -1746,6 +1783,9 @@ func (m *GroceryMutation) Fields() []string {
 	}
 	if m.recipe != nil {
 		fields = append(fields, grocery.FieldRecipeID)
+	}
+	if m.checked != nil {
+		fields = append(fields, grocery.FieldChecked)
 	}
 	return fields
 }
@@ -1767,6 +1807,8 @@ func (m *GroceryMutation) Field(name string) (ent.Value, bool) {
 		return m.Tag()
 	case grocery.FieldRecipeID:
 		return m.RecipeID()
+	case grocery.FieldChecked:
+		return m.Checked()
 	}
 	return nil, false
 }
@@ -1788,6 +1830,8 @@ func (m *GroceryMutation) OldField(ctx context.Context, name string) (ent.Value,
 		return m.OldTag(ctx)
 	case grocery.FieldRecipeID:
 		return m.OldRecipeID(ctx)
+	case grocery.FieldChecked:
+		return m.OldChecked(ctx)
 	}
 	return nil, fmt.Errorf("unknown Grocery field %s", name)
 }
@@ -1838,6 +1882,13 @@ func (m *GroceryMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetRecipeID(v)
+		return nil
+	case grocery.FieldChecked:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetChecked(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Grocery field %s", name)
@@ -1941,6 +1992,9 @@ func (m *GroceryMutation) ResetField(name string) error {
 		return nil
 	case grocery.FieldRecipeID:
 		m.ResetRecipeID()
+		return nil
+	case grocery.FieldChecked:
+		m.ResetChecked()
 		return nil
 	}
 	return fmt.Errorf("unknown Grocery field %s", name)

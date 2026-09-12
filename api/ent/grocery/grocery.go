@@ -25,6 +25,8 @@ const (
 	FieldTag = "tag"
 	// FieldRecipeID holds the string denoting the recipe_id field in the database.
 	FieldRecipeID = "recipe_id"
+	// FieldChecked holds the string denoting the checked field in the database.
+	FieldChecked = "checked"
 	// EdgeUser holds the string denoting the user edge name in mutations.
 	EdgeUser = "user"
 	// EdgeRecipe holds the string denoting the recipe edge name in mutations.
@@ -56,6 +58,7 @@ var Columns = []string{
 	FieldQuantity,
 	FieldTag,
 	FieldRecipeID,
+	FieldChecked,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -69,6 +72,8 @@ func ValidColumn(column string) bool {
 }
 
 var (
+	// DefaultChecked holds the default value on creation for the "checked" field.
+	DefaultChecked bool
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -109,6 +114,11 @@ func ByTag(opts ...sql.OrderTermOption) OrderOption {
 // ByRecipeID orders the results by the recipe_id field.
 func ByRecipeID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldRecipeID, opts...).ToFunc()
+}
+
+// ByChecked orders the results by the checked field.
+func ByChecked(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldChecked, opts...).ToFunc()
 }
 
 // ByUserField orders the results by user field.

@@ -95,6 +95,7 @@ The bottom navigation follows Pencil’s compact five-item pattern:
 Every interactive screen must account for loading, empty, success, error, and disabled states when those states are possible. Local mockup actions may use local state or navigation when no backend exists, but they must still provide immediate feedback.
 
 Use confirmation for destructive actions such as sign-out or deletion. Keep authentication and private routes protected regardless of visual state.
+Never use the platform default confirmation alert. Build destructive confirmations with the app-styled modal pattern and provide a clear cancel action.
 
 ## Review checklist
 

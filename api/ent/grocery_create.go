@@ -82,6 +82,20 @@ func (_c *GroceryCreate) SetNillableRecipeID(v *uuid.UUID) *GroceryCreate {
 	return _c
 }
 
+// SetChecked sets the "checked" field.
+func (_c *GroceryCreate) SetChecked(v bool) *GroceryCreate {
+	_c.mutation.SetChecked(v)
+	return _c
+}
+
+// SetNillableChecked sets the "checked" field if the given value is not nil.
+func (_c *GroceryCreate) SetNillableChecked(v *bool) *GroceryCreate {
+	if v != nil {
+		_c.SetChecked(*v)
+	}
+	return _c
+}
+
 // SetID sets the "id" field.
 func (_c *GroceryCreate) SetID(v uuid.UUID) *GroceryCreate {
 	_c.mutation.SetID(v)
@@ -141,6 +155,10 @@ func (_c *GroceryCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (_c *GroceryCreate) defaults() {
+	if _, ok := _c.mutation.Checked(); !ok {
+		v := grocery.DefaultChecked
+		_c.mutation.SetChecked(v)
+	}
 	if _, ok := _c.mutation.ID(); !ok {
 		v := grocery.DefaultID()
 		_c.mutation.SetID(v)
@@ -157,6 +175,9 @@ func (_c *GroceryCreate) check() error {
 	}
 	if _, ok := _c.mutation.Unit(); !ok {
 		return &ValidationError{Name: "unit", err: errors.New(`ent: missing required field "Grocery.unit"`)}
+	}
+	if _, ok := _c.mutation.Checked(); !ok {
+		return &ValidationError{Name: "checked", err: errors.New(`ent: missing required field "Grocery.checked"`)}
 	}
 	if len(_c.mutation.UserIDs()) == 0 {
 		return &ValidationError{Name: "user", err: errors.New(`ent: missing required edge "Grocery.user"`)}
@@ -211,6 +232,10 @@ func (_c *GroceryCreate) createSpec() (*Grocery, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Tag(); ok {
 		_spec.SetField(grocery.FieldTag, field.TypeString, value)
 		_node.Tag = value
+	}
+	if value, ok := _c.mutation.Checked(); ok {
+		_spec.SetField(grocery.FieldChecked, field.TypeBool, value)
+		_node.Checked = value
 	}
 	if nodes := _c.mutation.UserIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

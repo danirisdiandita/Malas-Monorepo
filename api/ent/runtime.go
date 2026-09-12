@@ -27,6 +27,10 @@ func init() {
 	folder.DefaultID = folderDescID.Default.(func() uuid.UUID)
 	groceryFields := schema.Grocery{}.Fields()
 	_ = groceryFields
+	// groceryDescChecked is the schema descriptor for checked field.
+	groceryDescChecked := groceryFields[7].Descriptor()
+	// grocery.DefaultChecked holds the default value on creation for the checked field.
+	grocery.DefaultChecked = groceryDescChecked.Default.(bool)
 	// groceryDescID is the schema descriptor for id field.
 	groceryDescID := groceryFields[0].Descriptor()
 	// grocery.DefaultID holds the default value on creation for the id field.

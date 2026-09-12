@@ -84,6 +84,11 @@ func RecipeID(v uuid.UUID) predicate.Grocery {
 	return predicate.Grocery(sql.FieldEQ(FieldRecipeID, v))
 }
 
+// Checked applies equality check predicate on the "checked" field. It's identical to CheckedEQ.
+func Checked(v bool) predicate.Grocery {
+	return predicate.Grocery(sql.FieldEQ(FieldChecked, v))
+}
+
 // UserIDEQ applies the EQ predicate on the "user_id" field.
 func UserIDEQ(v int) predicate.Grocery {
 	return predicate.Grocery(sql.FieldEQ(FieldUserID, v))
@@ -387,6 +392,16 @@ func RecipeIDIsNil() predicate.Grocery {
 // RecipeIDNotNil applies the NotNil predicate on the "recipe_id" field.
 func RecipeIDNotNil() predicate.Grocery {
 	return predicate.Grocery(sql.FieldNotNull(FieldRecipeID))
+}
+
+// CheckedEQ applies the EQ predicate on the "checked" field.
+func CheckedEQ(v bool) predicate.Grocery {
+	return predicate.Grocery(sql.FieldEQ(FieldChecked, v))
+}
+
+// CheckedNEQ applies the NEQ predicate on the "checked" field.
+func CheckedNEQ(v bool) predicate.Grocery {
+	return predicate.Grocery(sql.FieldNEQ(FieldChecked, v))
 }
 
 // HasUser applies the HasEdge predicate on the "user" edge.
