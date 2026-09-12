@@ -2,6 +2,7 @@ import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from "expo-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import * as SplashScreen from "expo-splash-screen";
 import { useColorScheme } from "react-native";
+import { Toaster } from "sonner-native";
 
 import { AnimatedSplashOverlay } from "@/components/animated-icon";
 
@@ -17,6 +18,7 @@ export default function RootLayout() {
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="(tabs)" />
         </Stack>
+        <Toaster />
       </QueryClientProvider>
     </ThemeProvider>
   );

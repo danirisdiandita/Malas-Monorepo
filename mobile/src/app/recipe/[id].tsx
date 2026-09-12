@@ -1,6 +1,10 @@
 import Ionicons from "@react-native-vector-icons/ionicons";
+import BottomSheet, {
+  BottomSheetView,
+  type BottomSheetMethods,
+} from "@expo/ui/community/bottom-sheet";
 import { router, useLocalSearchParams } from "expo-router";
-import { Fragment, useState } from "react";
+import { Fragment, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Linking,
@@ -12,11 +16,12 @@ import {
   Text,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { toast } from "sonner-native";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { yuzuColors } from "@/components/yuzu-screen";
-import { useDeleteRecipe, useRateRecipe, useRecipe } from "@/hooks/use-recipe";
+import { useAddRecipeIngredients, useDeleteRecipe, useRateRecipe, useRecipe } from "@/hooks/use-recipe";
 import { RecipeImage } from "@/components/recipe-image";
 
 export default function RecipeDetailScreen() {
@@ -24,8 +29,9 @@ export default function RecipeDetailScreen() {
   const recipeId = typeof id === "string" ? id : "";
   const { data: recipe, isPending, isError } = useRecipe(recipeId);
   const [ratingOpen, setRatingOpen] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
+  const menuSheetRef = useRef<BottomSheetMethods>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [groceryConfirmOpen, setGroceryConfirmOpen] = useState(false);
   const [selectedRating, setSelectedRating] = useState(0);
   const [copied, setCopied] = useState(false);
   const [checkedIngredients, setCheckedIngredients] = useState<
@@ -36,6 +42,7 @@ export default function RecipeDetailScreen() {
   >({});
   const rateRecipe = useRateRecipe(recipeId);
   const deleteRecipe = useDeleteRecipe(recipeId);
+  const addRecipe = useAddRecipeIngredients(recipeId);
 
   if (isPending) return <StatusScreen message="Loading recipe..." />;
   if (isError || !recipe) return <StatusScreen message="Recipe not found." />;
@@ -112,7 +119,7 @@ export default function RecipeDetailScreen() {
             </ThemedText>
             <Pressable
               style={styles.navbarButton}
-              onPress={() => setMenuOpen(true)}
+              onPress={() => menuSheetRef.current?.present()}
               accessibilityLabel="Recipe options"
             >
               <Ionicons name="ellipsis-horizontal" size={22} color={yuzuColors.ink} />
@@ -248,29 +255,42 @@ export default function RecipeDetailScreen() {
             </ThemedText>
           </Pressable>
         </View>
-        <Modal
-          visible={menuOpen}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setMenuOpen(false)}
+        <BottomSheet
+          ref={menuSheetRef}
+          index={-1}
+          enableDynamicSizing
+          enablePanDownToClose
+          backgroundStyle={styles.menuSheet}
         >
-          <Pressable style={styles.menuBackdrop} onPress={() => setMenuOpen(false)}>
-            <View style={styles.menu}>
-              <Pressable
-                style={styles.menuItem}
-                onPress={() => {
-                  setMenuOpen(false);
-                  setDeleteConfirmOpen(true);
-                }}
-                disabled={deleteRecipe.isPending}
-                accessibilityRole="button"
-              >
-                <Ionicons name="trash-outline" size={18} color={yuzuColors.tomato} />
-                <ThemedText style={styles.deleteLabel}>Delete recipe</ThemedText>
-              </Pressable>
-            </View>
-          </Pressable>
-        </Modal>
+          <BottomSheetView style={styles.menuSheetView}>
+            <View style={styles.menuSheetHandle} />
+            <ThemedText style={styles.menuSheetTitle}>Recipe options</ThemedText>
+            <Pressable
+              style={styles.menuItem}
+              onPress={() => {
+                menuSheetRef.current?.close();
+                setDeleteConfirmOpen(true);
+              }}
+              disabled={deleteRecipe.isPending}
+              accessibilityRole="button"
+            >
+              <Ionicons name="trash-outline" size={19} color={yuzuColors.tomato} />
+              <ThemedText style={styles.deleteLabel}>Delete recipe</ThemedText>
+            </Pressable>
+            <Pressable
+              style={styles.menuItem}
+              onPress={() => {
+                menuSheetRef.current?.close();
+                setGroceryConfirmOpen(true);
+              }}
+              disabled={addRecipe.isPending}
+              accessibilityRole="button"
+            >
+              <Ionicons name="bag-handle-outline" size={19} color={yuzuColors.leaf} />
+              <ThemedText style={styles.groceryMenuLabel}>Add ingredients to groceries</ThemedText>
+            </Pressable>
+          </BottomSheetView>
+        </BottomSheet>
         <Modal
           visible={deleteConfirmOpen}
           transparent
@@ -369,6 +389,37 @@ export default function RecipeDetailScreen() {
                   {rateRecipe.isPending ? "Saving..." : "Save rating"}
                 </ThemedText>
               </Pressable>
+            </Pressable>
+          </Pressable>
+        </Modal>
+        <Modal
+          visible={groceryConfirmOpen}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setGroceryConfirmOpen(false)}
+        >
+          <Pressable style={styles.confirmBackdrop} onPress={() => setGroceryConfirmOpen(false)}>
+            <Pressable style={styles.confirmModal} onPress={(event) => event.stopPropagation()}>
+              <View style={styles.confirmIcon}><Ionicons name="bag-handle-outline" size={24} color={yuzuColors.leaf} /></View>
+              <ThemedText style={styles.confirmTitle}>Add to grocery list?</ThemedText>
+              <ThemedText style={styles.confirmBody}>
+                Add {recipe.ingredients.length} {recipe.ingredients.length === 1 ? "ingredient" : "ingredients"} from this recipe to your grocery list?
+              </ThemedText>
+              <View style={styles.confirmActions}>
+                <Pressable style={styles.cancelButton} onPress={() => setGroceryConfirmOpen(false)} disabled={addRecipe.isPending}>
+                  <ThemedText style={styles.cancelLabel}>Cancel</ThemedText>
+                </Pressable>
+                <Pressable
+                  style={[styles.confirmDeleteButton, { backgroundColor: yuzuColors.leaf }, addRecipe.isPending && styles.saveRatingDisabled]}
+                  onPress={() => addRecipe.mutate(undefined, {
+                    onSuccess: ({ count }) => { setGroceryConfirmOpen(false); toast.success(`${count} ingredients added to groceries`); },
+                    onError: (error) => toast.error(error.message),
+                  })}
+                  disabled={addRecipe.isPending}
+                >
+                  {addRecipe.isPending ? <ActivityIndicator color="#FFFFFF" /> : <ThemedText style={styles.confirmDeleteLabel}>Add</ThemedText>}
+                </Pressable>
+              </View>
             </Pressable>
           </Pressable>
         </Modal>
@@ -629,9 +680,12 @@ const styles = StyleSheet.create({
   },
   groceryLabel: { color: "#FFFFFF", fontSize: 14, fontWeight: "800" },
   deleteLabel: { color: yuzuColors.tomato, fontSize: 13, fontWeight: "800" },
-  menuBackdrop: { flex: 1, alignItems: "flex-end", paddingTop: 226, paddingRight: 20, backgroundColor: "#00000022" },
-  menu: { backgroundColor: "#FFFFFF", borderRadius: 14, minWidth: 150, padding: 6, shadowColor: "#000", shadowOpacity: 0.16, shadowRadius: 8, elevation: 5 },
-  menuItem: { alignItems: "center", flexDirection: "row", gap: 8, paddingHorizontal: 12, paddingVertical: 11 },
+  groceryMenuLabel: { color: yuzuColors.leaf, fontSize: 13, fontWeight: "800" },
+  menuSheet: { backgroundColor: "#FCFBF8", borderTopLeftRadius: 24, borderTopRightRadius: 24 },
+  menuSheetView: { padding: 20, paddingBottom: 28, gap: 14 },
+  menuSheetHandle: { alignSelf: "center", width: 42, height: 4, borderRadius: 2, backgroundColor: yuzuColors.muted },
+  menuSheetTitle: { color: yuzuColors.ink, fontSize: 19, fontWeight: "900" },
+  menuItem: { alignItems: "center", flexDirection: "row", gap: 8, paddingVertical: 11 },
   confirmBackdrop: { flex: 1, backgroundColor: "#14231A66", alignItems: "center", justifyContent: "center", padding: 20 },
   confirmModal: { width: "100%", maxWidth: 360, borderRadius: 24, backgroundColor: "#FCFBF8", padding: 22, alignItems: "center", gap: 9 },
   confirmIcon: { width: 52, height: 52, borderRadius: 26, backgroundColor: "#FCE2D8", alignItems: "center", justifyContent: "center", marginBottom: 2 },

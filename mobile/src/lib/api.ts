@@ -172,6 +172,12 @@ export async function getGroceries(): Promise<Grocery[]> {
   return body;
 }
 
+export async function addRecipeIngredients(id: string): Promise<{ count: number }> {
+  const response = await authenticatedFetch(`/recipes/${encodeURIComponent(id)}/groceries`, { method: 'POST' });
+  if (!response.ok) throw new Error((await response.text()) || 'Unable to add groceries.');
+  return response.json();
+}
+
 export async function importLink(url: string): Promise<LinkImportResult> {
   const response = await authenticatedFetch('/imports/link', {
     method: 'POST',

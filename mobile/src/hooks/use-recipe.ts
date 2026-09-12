@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { deleteRecipe, getRecipe, rateRecipe } from '@/lib/api';
+import { addRecipeIngredients, deleteRecipe, getRecipe, rateRecipe } from '@/lib/api';
 
 export function useRecipe(id: string) {
   return useQuery({
@@ -24,5 +24,13 @@ export function useDeleteRecipe(id: string) {
   return useMutation({
     mutationFn: () => deleteRecipe(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['recipes'] }),
+  });
+}
+
+export function useAddRecipeIngredients(id: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => addRecipeIngredients(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['groceries'] }),
   });
 }
