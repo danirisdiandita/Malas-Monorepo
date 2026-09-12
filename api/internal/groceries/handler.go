@@ -81,6 +81,38 @@ func Clear(db *ent.Client) http.HandlerFunc {
 	}
 }
 
+func UpdateChecked(db *ent.Client) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		owner, err := recipes.OwnerID(db, r)
+		if err != nil {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+		id, err := uuid.Parse(chi.URLParam(r, "id"))
+		if err != nil {
+			http.NotFound(w, r)
+			return
+		}
+		var input struct {
+			Checked bool `json:"checked"`
+		}
+		if json.NewDecoder(http.MaxBytesReader(w, r.Body, 1024)).Decode(&input) != nil {
+			http.Error(w, "invalid checked value", http.StatusBadRequest)
+			return
+		}
+		n, err := db.Grocery.Update().Where(grocery.ID(id), grocery.UserID(owner)).SetChecked(input.Checked).Save(r.Context())
+		if err != nil {
+			http.Error(w, "unable to update grocery", http.StatusInternalServerError)
+			return
+		}
+		if n == 0 {
+			http.NotFound(w, r)
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
+	}
+}
+
 func AddFromRecipe(db *ent.Client) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		owner, err := recipes.OwnerID(db, r)

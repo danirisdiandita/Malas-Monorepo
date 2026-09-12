@@ -5,7 +5,7 @@ import { useState } from "react";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { useClearGroceries, useGroceries } from "@/hooks/use-groceries";
+import { useClearGroceries, useGroceries, useUpdateGroceryChecked } from "@/hooks/use-groceries";
 import { toast } from "sonner-native";
 import type { Grocery } from "@/lib/api";
 import { decimalAsFraction } from "@/lib/fractions";
@@ -22,6 +22,7 @@ const colors = {
 export default function GroceriesScreen() {
   const { data: groceries, isPending, isError } = useGroceries();
   const clearGroceries = useClearGroceries();
+  const updateChecked = useUpdateGroceryChecked();
   const [checked, setChecked] = useState<Record<string, boolean>>({});
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
   const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
@@ -67,7 +68,7 @@ export default function GroceriesScreen() {
               </Pressable> : <View style={styles.groupHeader}><ThemedText style={styles.groupTitle}>{group.title}</ThemedText><ThemedText style={styles.count}>{group.items.length} items</ThemedText></View>}
               {!group.items[0]?.recipe_name || !collapsedGroups[group.items[0].recipe_id ?? group.title] ? group.items.map((item) => {
                 const isChecked = checked[item.id] ?? item.checked;
-                return <Pressable key={item.id} style={styles.item} onPress={() => setChecked((current) => ({ ...current, [item.id]: !isChecked }))} accessibilityRole="checkbox" accessibilityState={{ checked: isChecked }}>
+                return <Pressable key={item.id} style={styles.item} disabled={updateChecked.isPending} onPress={() => { const next = !isChecked; setChecked((current) => ({ ...current, [item.id]: next })); updateChecked.mutate({ id: item.id, checked: next }, { onError: (error) => { setChecked((current) => ({ ...current, [item.id]: isChecked })); toast.error(error.message); } }); }} accessibilityRole="checkbox" accessibilityState={{ checked: isChecked }}>
                   <View style={[styles.checkbox, isChecked && styles.checked]}>
                     {isChecked && (
                       <Ionicons name="checkmark" size={12} color="#fff" />

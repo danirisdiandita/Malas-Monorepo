@@ -180,6 +180,11 @@ export async function clearGroceries(): Promise<void> {
   if (!response.ok) throw new Error((await response.text()) || 'Unable to clear groceries.');
 }
 
+export async function updateGroceryChecked(id: string, checked: boolean): Promise<void> {
+  const response = await authenticatedFetch(`/groceries/${encodeURIComponent(id)}/checked`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ checked }) });
+  if (!response.ok) throw new Error((await response.text()) || 'Unable to update grocery.');
+}
+
 export async function addRecipeIngredients(id: string): Promise<{ count: number }> {
   const response = await authenticatedFetch(`/recipes/${encodeURIComponent(id)}/groceries`, { method: 'POST' });
   if (!response.ok) throw new Error((await response.text()) || 'Unable to add groceries.');
