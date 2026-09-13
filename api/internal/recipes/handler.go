@@ -18,6 +18,8 @@ type Recipe struct {
 	Servings       int      `json:"servings"`
 	Difficulty     string   `json:"difficulty"`
 	Source         string   `json:"source"`
+	FolderID       string   `json:"folder_id,omitempty"`
+	FolderName     string   `json:"folder_name,omitempty"`
 	Tags           []string `json:"tags"`
 	Ingredients    []string `json:"ingredients"`
 	Instructions   []string `json:"instructions"`

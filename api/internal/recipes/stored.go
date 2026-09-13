@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/danirisdiandita/malas-monorepo/api/ent"
+	"github.com/danirisdiandita/malas-monorepo/api/ent/folder"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/grocery"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/recipe"
 	"github.com/go-chi/chi/v5"
@@ -41,9 +42,13 @@ func presentation(row *ent.Recipe) Recipe {
 	}
 	tags := append([]string{}, row.Tags...)
 	steps := append([]string{}, row.Instructions...)
+	folderID, folderName := "", ""
+	if row.Edges.Folder != nil {
+		folderID, folderName = row.Edges.Folder.ID.String(), row.Edges.Folder.Name
+	}
 	return Recipe{ID: row.ID.String(), Name: row.Name, Servings: row.Servings, ProcessMinutes: row.ProcessMinutes,
 		Difficulty: "", Source: row.Source, Tags: tags, Ingredients: ingredients, Instructions: steps,
-		Notes: row.Notes, URL: row.URL, Rating: valueOrZero(row.Rating)}
+		Notes: row.Notes, URL: row.URL, Rating: valueOrZero(row.Rating), FolderID: folderID, FolderName: folderName}
 }
 
 func valueOrZero(value *float64) float64 {
@@ -113,7 +118,7 @@ func StoredList(db *ent.Client, storage *Storage) http.HandlerFunc {
 		if q != "" {
 			query = query.Where(recipe.NameContainsFold(q))
 		}
-		rows, err := query.Order(ent.Desc(recipe.FieldCreatedAt)).Offset((page - 1) * pageSize).Limit(pageSize + 1).All(r.Context())
+		rows, err := query.WithFolder().Order(ent.Desc(recipe.FieldCreatedAt)).Offset((page - 1) * pageSize).Limit(pageSize + 1).All(r.Context())
 		if err != nil {
 			http.Error(w, "unable to load recipes", 500)
 			return
@@ -150,7 +155,7 @@ func StoredGet(db *ent.Client, storage *Storage) http.HandlerFunc {
 			http.NotFound(w, r)
 			return
 		}
-		row, err := db.Recipe.Query().Where(recipe.ID(id), recipe.UserID(owner), recipe.ImportStatusEQ(recipe.ImportStatusDone)).Only(r.Context())
+		row, err := db.Recipe.Query().Where(recipe.ID(id), recipe.UserID(owner), recipe.ImportStatusEQ(recipe.ImportStatusDone)).WithFolder().Only(r.Context())
 		if ent.IsNotFound(err) {
 			http.NotFound(w, r)
 			return
@@ -167,6 +172,56 @@ func StoredGet(db *ent.Client, storage *Storage) http.HandlerFunc {
 			return
 		}
 		_ = json.NewEncoder(w).Encode(result)
+	}
+}
+
+func MoveFolder(db *ent.Client) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		owner, err := OwnerID(db, r)
+		if err != nil {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+		id, err := uuid.Parse(chi.URLParam(r, "id"))
+		if err != nil {
+			http.NotFound(w, r)
+			return
+		}
+		var input struct {
+			FolderID *string `json:"folder_id"`
+		}
+		if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1024)).Decode(&input); err != nil {
+			http.Error(w, "invalid folder", http.StatusBadRequest)
+			return
+		}
+		update := db.Recipe.Update().Where(recipe.ID(id), recipe.UserID(owner), recipe.ImportStatusEQ(recipe.ImportStatusDone))
+		if input.FolderID == nil {
+			update.ClearFolderID()
+		} else {
+			folderID, err := uuid.Parse(*input.FolderID)
+			if err != nil {
+				http.Error(w, "invalid folder_id", http.StatusBadRequest)
+				return
+			}
+			if _, err := db.Folder.Query().Where(folder.ID(folderID), folder.UserID(owner)).Only(r.Context()); ent.IsNotFound(err) {
+				http.NotFound(w, r)
+				return
+			} else if err != nil {
+				http.Error(w, "unable to load folder", http.StatusInternalServerError)
+				return
+			}
+			update.SetFolderID(folderID)
+		}
+		n, err := update.Save(r.Context())
+		if err != nil {
+			http.Error(w, "unable to move recipe", http.StatusInternalServerError)
+			return
+		}
+		if n == 0 {
+			http.NotFound(w, r)
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
 	}
 }
 

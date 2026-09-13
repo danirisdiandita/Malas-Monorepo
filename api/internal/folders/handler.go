@@ -3,6 +3,7 @@ package folders
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/danirisdiandita/malas-monorepo/api/ent"
@@ -24,7 +25,13 @@ func List(db *ent.Client) http.HandlerFunc {
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
 		}
-		rows, err := db.Folder.Query().Where(folder.UserID(owner)).Order(ent.Asc(folder.FieldName)).All(r.Context())
+		page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+		if page < 1 { page = 1 }
+		pageSize, _ := strconv.Atoi(r.URL.Query().Get("page_size"))
+		if pageSize < 1 || pageSize > 50 { pageSize = 20 }
+		query := db.Folder.Query().Where(folder.UserID(owner))
+		if q := strings.TrimSpace(r.URL.Query().Get("q")); q != "" { query = query.Where(folder.NameContainsFold(q)) }
+		rows, err := query.Order(ent.Asc(folder.FieldName)).Offset((page - 1) * pageSize).Limit(pageSize + 1).All(r.Context())
 		if err != nil {
 			http.Error(w, "unable to load folders", http.StatusInternalServerError)
 			return
@@ -33,8 +40,10 @@ func List(db *ent.Client) http.HandlerFunc {
 		for _, row := range rows {
 			items = append(items, Item{ID: row.ID.String(), Name: row.Name})
 		}
+		nextPage := 0
+		if len(items) > pageSize { nextPage, items = page+1, items[:pageSize] }
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(items)
+		_ = json.NewEncoder(w).Encode(map[string]any{"items": items, "next_page": nextPage})
 	}
 }
 

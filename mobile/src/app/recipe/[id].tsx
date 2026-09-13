@@ -24,9 +24,11 @@ import { yuzuColors } from "@/components/yuzu-screen";
 import {
   useAddRecipeIngredients,
   useDeleteRecipe,
+  useMoveRecipeToFolder,
   useRateRecipe,
   useRecipe,
 } from "@/hooks/use-recipe";
+import { useFolders } from "@/hooks/use-folders";
 import { RecipeImage } from "@/components/recipe-image";
 import { decimalAsFraction } from "@/lib/fractions";
 
@@ -37,6 +39,7 @@ export default function RecipeDetailScreen() {
   const { data: recipe, isPending, isError } = useRecipe(recipeId);
   const [ratingOpen, setRatingOpen] = useState(false);
   const menuSheetRef = useRef<BottomSheetMethods>(null);
+  const folderSheetRef = useRef<BottomSheetMethods>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleteGroceries, setDeleteGroceries] = useState(false);
   const [groceryConfirmOpen, setGroceryConfirmOpen] = useState(false);
@@ -52,6 +55,8 @@ export default function RecipeDetailScreen() {
   const rateRecipe = useRateRecipe(recipeId);
   const deleteRecipe = useDeleteRecipe(recipeId);
   const addRecipe = useAddRecipeIngredients(recipeId);
+  const moveRecipe = useMoveRecipeToFolder(recipeId);
+  const { folders: savedFolders } = useFolders();
 
   if (isPending) return <StatusScreen message="Loading recipe..." />;
   if (isError || !recipe) return <StatusScreen message="Recipe not found." />;
@@ -165,6 +170,11 @@ export default function RecipeDetailScreen() {
                 </ThemedText>
               </Pressable>
             )}
+            <Pressable style={styles.folderChip} onPress={() => folderSheetRef.current?.present()} accessibilityRole="button" accessibilityLabel="Change recipe folder">
+              <Ionicons name="folder-outline" size={16} color={yuzuColors.leaf} />
+              <ThemedText style={styles.folderChipLabel}>{recipe.folder_name || "All recipes"}</ThemedText>
+              <Ionicons name="chevron-down" size={15} color={yuzuColors.muted} />
+            </Pressable>
             <View style={styles.metadata}>
               {recipe.process_minutes > 0 && (
                 <Meta
@@ -316,6 +326,23 @@ export default function RecipeDetailScreen() {
                 Add ingredients to groceries
               </ThemedText>
             </Pressable>
+          </BottomSheetView>
+        </BottomSheet>
+        <BottomSheet ref={folderSheetRef} index={-1} enableDynamicSizing enablePanDownToClose backgroundStyle={styles.menuSheet}>
+          <BottomSheetView style={[styles.folderSheetView, { width: windowWidth }]}>
+            <ThemedText style={styles.menuSheetTitle}>Move recipe to</ThemedText>
+            {[{ id: "", name: "All recipes" }, ...savedFolders].map((folder) => (
+              <Pressable
+                key={folder.id || "all"}
+                style={styles.menuItem}
+                disabled={moveRecipe.isPending}
+                onPress={() => moveRecipe.mutate(folder.id || null, { onSuccess: () => folderSheetRef.current?.close(), onError: (error) => toast.error(error.message) })}
+              >
+                <Ionicons name="folder-outline" size={19} color={yuzuColors.leaf} />
+                <ThemedText style={styles.groceryMenuLabel}>{folder.name}</ThemedText>
+                {recipe.folder_id === folder.id && <Ionicons name="checkmark" size={18} color={yuzuColors.leaf} />}
+              </Pressable>
+            ))}
           </BottomSheetView>
         </BottomSheet>
         <Modal
@@ -703,6 +730,8 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   sourceLinkLabel: { color: yuzuColors.leaf, fontSize: 13, fontWeight: "800" },
+  folderChip: { alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 6, marginTop: 10, paddingHorizontal: 11, paddingVertical: 7, borderRadius: 12, backgroundColor: yuzuColors.sage },
+  folderChipLabel: { color: yuzuColors.leaf, fontSize: 13, fontWeight: "800" },
   ratingBackdrop: {
     flex: 1,
     backgroundColor: "#14231A66",
@@ -830,6 +859,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
   },
   menuSheetView: { alignSelf: "stretch", padding: 20, paddingBottom: 28, gap: 14 },
+  folderSheetView: { alignSelf: "stretch", padding: 20, paddingBottom: 28, gap: 8 },
   menuSheetTitle: {
     color: yuzuColors.ink,
     fontSize: 19,

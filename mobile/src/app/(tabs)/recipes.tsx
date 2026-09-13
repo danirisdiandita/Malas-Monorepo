@@ -56,13 +56,14 @@ export default function Tab1Screen() {
   const folderSheetRef = useRef<BottomSheetMethods>(null);
   const [createFolderOpen, setCreateFolderOpen] = useState(false);
   const [folderID, setFolderID] = useState("");
+  const [folderSearch, setFolderSearch] = useState("");
   const [editingFolder, setEditingFolder] = useState<Folder | null>(null);
   const [deleteFolderTarget, setDeleteFolderTarget] = useState<Folder | null>(null);
   const { viewMode, setViewMode } = useRecipePreferences();
   const [newFolder, setNewFolder] = useState("");
   const { width: windowWidth } = useWindowDimensions();
   const { data: user } = useCurrentUser();
-  const { data: savedFolders = [], isPending: foldersPending, isError: foldersError } = useFolders();
+  const { folders: savedFolders, isPending: foldersPending, isError: foldersError, fetchNextPage: fetchNextFolders, hasNextPage: hasMoreFolders, isFetchingNextPage: isFetchingMoreFolders } = useFolders(folderSearch);
   const createFolder = useCreateFolder();
   const updateFolder = useUpdateFolder();
   const deleteFolder = useDeleteFolder();
@@ -193,9 +194,25 @@ export default function Tab1Screen() {
                         <Ionicons name="close" size={22} color={colors.ink} />
                       </Pressable>
                     </View>
+                    <View style={styles.folderSearch}>
+                      <Ionicons name="search-outline" size={17} color={colors.muted} />
+                      <TextInput
+                        accessibilityLabel="Search folders"
+                        placeholder="Search folders"
+                        placeholderTextColor={colors.muted}
+                        value={folderSearch}
+                        onChangeText={setFolderSearch}
+                        style={styles.folderSearchInput}
+                      />
+                    </View>
                     <BottomSheetScrollView
                       style={styles.folderList}
                       contentContainerStyle={styles.sheetContent}
+                      onScroll={({ nativeEvent }) => {
+                        const nearBottom = nativeEvent.layoutMeasurement.height + nativeEvent.contentOffset.y >= nativeEvent.contentSize.height - 80;
+                        if (nearBottom && hasMoreFolders && !isFetchingMoreFolders) fetchNextFolders();
+                      }}
+                      scrollEventThrottle={100}
                     >
                       {foldersPending ? (
                         <ThemedText style={styles.statusText}>Loading folders...</ThemedText>
@@ -268,6 +285,7 @@ export default function Tab1Screen() {
                           New folder
                         </ThemedText>
                       </Pressable>
+                      {isFetchingMoreFolders && <ThemedText style={styles.statusText}>Loading more folders...</ThemedText>}
                     </BottomSheetScrollView>
               </BottomSheetView>
             </BottomSheet>
@@ -617,6 +635,8 @@ const styles = StyleSheet.create({
   },
   folderList: { width: "100%", maxHeight: 360 },
   sheetContent: { gap: 8, width: "100%" },
+  folderSearch: { width: "100%", minHeight: 44, borderWidth: 1, borderColor: colors.line, borderRadius: 12, backgroundColor: "#FFFFFF", flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 12 },
+  folderSearchInput: { flex: 1, color: colors.ink, fontSize: 15, paddingVertical: 0 },
   folderDialog: {
     width: "100%",
     maxWidth: 360,

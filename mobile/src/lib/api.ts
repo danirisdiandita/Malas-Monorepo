@@ -26,6 +26,8 @@ export interface Recipe {
   servings: number;
   difficulty: string;
   source: string;
+  folder_id?: string;
+  folder_name?: string;
   tags: string[];
   ingredients: string[];
   instructions: string[];
@@ -54,6 +56,11 @@ export interface RecipePage {
 export interface Folder {
   id: string;
   name: string;
+}
+
+export interface FolderPage {
+  items: Folder[];
+  next_page: number;
 }
 
 export interface Grocery {
@@ -157,12 +164,16 @@ function isFolder(value: unknown): value is Folder {
   return typeof folder.id === 'string' && typeof folder.name === 'string';
 }
 
-export async function getFolders(): Promise<Folder[]> {
-  const response = await authenticatedFetch('/folders');
+export async function getFolders(page = 1, search = ''): Promise<FolderPage> {
+  const params = new URLSearchParams({ page: String(page), page_size: '20' });
+  if (search.trim()) params.set('q', search.trim());
+  const response = await authenticatedFetch(`/folders?${params.toString()}`);
   if (!response.ok) throw new Error('Unable to load folders.');
   const body: unknown = await response.json();
-  if (!Array.isArray(body) || !body.every(isFolder)) throw new Error('Invalid folders response.');
-  return body;
+  if (!body || typeof body !== 'object') throw new Error('Invalid folders response.');
+  const pageBody = body as Record<string, unknown>;
+  if (!Array.isArray(pageBody.items) || !pageBody.items.every(isFolder) || typeof pageBody.next_page !== 'number') throw new Error('Invalid folders response.');
+  return pageBody as unknown as FolderPage;
 }
 
 export async function createFolder(name: string): Promise<Folder> {
@@ -205,6 +216,14 @@ export async function rateRecipe(id: string, rating: number): Promise<void> {
     body: JSON.stringify({ rating }),
   });
   if (!response.ok) throw new Error((await response.text()) || 'Unable to save rating.');
+}
+
+export async function moveRecipeToFolder(id: string, folderID: string | null): Promise<void> {
+  const response = await authenticatedFetch(`/recipes/${encodeURIComponent(id)}/folder`, {
+    method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ folder_id: folderID }),
+  });
+  if (!response.ok) throw new Error((await response.text()) || 'Unable to move recipe.');
 }
 
 export async function deleteRecipe(id: string, deleteGroceries = false): Promise<void> {

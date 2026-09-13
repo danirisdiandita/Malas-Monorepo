@@ -57,6 +57,7 @@ func NewRouter(deps Dependencies) http.Handler {
 		r.Get("/me", handlers.HandleMe(deps.DB))
 		r.Get("/recipes", recipes.StoredList(deps.DB, deps.Imports.Storage))
 		r.Get("/recipes/{id}", recipes.StoredGet(deps.DB, deps.Imports.Storage))
+		r.Patch("/recipes/{id}/folder", recipes.MoveFolder(deps.DB))
 		r.Delete("/recipes/{id}", recipes.Delete(deps.DB, deps.Imports.Storage))
 		r.Post("/recipes/{id}/rating", recipes.Rate(deps.DB))
 		r.Get("/folders", folders.List(deps.DB))

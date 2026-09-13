@@ -47,8 +47,9 @@ export default function GroceriesScreen() {
               <ThemedText style={styles.title}>Grocery list</ThemedText>
             </View>
             <View style={styles.headerActions}>
-              <Pressable onPress={() => manualSheetRef.current?.present()} accessibilityRole="button">
-                <ThemedText style={styles.addItem}>+ Add item</ThemedText>
+              <Pressable style={styles.addItemButton} onPress={() => manualSheetRef.current?.present()} accessibilityRole="button">
+                <Ionicons name="add" size={16} color="#FFFFFF" />
+                <ThemedText style={styles.addItem}>Add item</ThemedText>
               </Pressable>
               {items.length > 0 && <Pressable onPress={() => setClearConfirmOpen(true)} disabled={clearGroceries.isPending} accessibilityRole="button" accessibilityLabel="Clear all groceries">
                 <ThemedText style={styles.clearAll}>Clear all</ThemedText>
@@ -202,7 +203,8 @@ const styles = StyleSheet.create({
     letterSpacing: 1.1,
   },
   title: { color: colors.ink, fontSize: 28, fontWeight: "800", marginTop: 3 },
-  addItem: { color: colors.leaf, fontSize: 13, fontWeight: "800" },
+  addItemButton: { minHeight: 34, borderRadius: 11, paddingHorizontal: 11, backgroundColor: colors.tomato, flexDirection: "row", alignItems: "center", gap: 4 },
+  addItem: { color: "#FFFFFF", fontSize: 12, fontWeight: "800" },
   clearAll: { color: colors.tomato, fontSize: 13, fontWeight: "800" },
   progressCard: {
     backgroundColor: colors.sage,

@@ -1,9 +1,22 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
 
 import { createFolder, deleteFolder, getFolders, updateFolder } from '@/lib/api';
 
-export function useFolders() {
-  return useQuery({ queryKey: ['folders'], queryFn: getFolders, staleTime: 30_000 });
+export function useFolders(search = '') {
+  const [debouncedSearch, setDebouncedSearch] = useState(search);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+  const result = useInfiniteQuery({
+    queryKey: ['folders', debouncedSearch],
+    queryFn: ({ pageParam }) => getFolders(pageParam, debouncedSearch),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => lastPage.next_page || undefined,
+    staleTime: 30_000,
+  });
+  return { ...result, folders: result.data?.pages.flatMap((page) => page.items) ?? [] };
 }
 
 export function useCreateFolder() {
