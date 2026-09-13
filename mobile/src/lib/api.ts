@@ -45,7 +45,14 @@ export interface ImportStatus {
   run_id: string;
   status: 'looking' | 'making' | 'done' | 'failed';
   recipe_id: string;
- error: string;
+  error: string;
+  recipes?: ImportedRecipe[];
+}
+
+export interface ImportedRecipe {
+  id: string;
+  name: string;
+  image_url?: string;
 }
 
 export interface RecipePage {
@@ -156,7 +163,7 @@ export function getCurrentUser(): Promise<User> {
 }
 
 export async function getRecipes(page = 1, search = '', folderID = ''): Promise<RecipePage> {
-  const params = new URLSearchParams({ page: String(page), page_size: '20' });
+  const params = new URLSearchParams({ page: String(page), page_size: '5' });
   if (search.trim()) params.set('q', search.trim());
   if (folderID.trim()) params.set('folder_id', folderID.trim());
   const response = await authenticatedFetch(`/recipes?${params.toString()}`);

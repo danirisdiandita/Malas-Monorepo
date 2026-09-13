@@ -13,6 +13,7 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { RecipeImage } from "@/components/recipe-image";
 import { useImportStatus, useRetryImport } from "@/hooks/use-import-status";
 
 const colors = {
@@ -34,6 +35,8 @@ export default function RecipeProcessingScreen() {
   const failed = data?.status === "failed";
   const done = data?.status === "done";
   const making = data?.status === "making";
+  const importedRecipes = data?.recipes ?? [];
+  const hasMultipleRecipes = importedRecipes.length > 1;
 
   return (
     <ThemedView style={styles.screen}>
@@ -93,6 +96,45 @@ export default function RecipeProcessingScreen() {
             </View>
             <ThemedText style={styles.check}>✓</ThemedText>
           </View>
+          {done && hasMultipleRecipes && (
+            <View style={styles.results}>
+              <ThemedText style={styles.resultsTitle}>
+                {importedRecipes.length} recipes found
+              </ThemedText>
+              {importedRecipes.map((item) => (
+                <Pressable
+                  key={item.id}
+                  style={styles.resultRow}
+                  onPress={() =>
+                    router.replace({
+                      pathname: "/recipe/[id]",
+                      params: { id: item.id },
+                    })
+                  }
+                >
+                  <View style={styles.resultImage}>
+                    {item.image_url ? (
+                      <RecipeImage url={item.image_url} />
+                    ) : (
+                      <Ionicons
+                        name="restaurant-outline"
+                        size={18}
+                        color={colors.leaf}
+                      />
+                    )}
+                  </View>
+                  <ThemedText style={styles.resultName} numberOfLines={1}>
+                    {item.name}
+                  </ThemedText>
+                  <Ionicons
+                    name="chevron-forward"
+                    size={18}
+                    color={colors.muted}
+                  />
+                </Pressable>
+              ))}
+            </View>
+          )}
           <View style={styles.steps}>
             <Step
               done={making || done}
@@ -140,6 +182,11 @@ export default function RecipeProcessingScreen() {
               accessibilityRole="button"
               style={styles.button}
               onPress={() => {
+                if (hasMultipleRecipes) {
+                  void queryClient.invalidateQueries({ queryKey: ["recipes"] });
+                  router.replace("/recipes");
+                  return;
+                }
                 void queryClient.invalidateQueries({ queryKey: ["recipes"] });
                 router.replace({
                   pathname: "/recipe/[id]",
@@ -147,7 +194,9 @@ export default function RecipeProcessingScreen() {
                 });
               }}
             >
-              <ThemedText style={styles.buttonLabel}>View recipe</ThemedText>
+              <ThemedText style={styles.buttonLabel}>
+                {hasMultipleRecipes ? "View all recipes" : "View recipe"}
+              </ThemedText>
               <Ionicons
                 name="arrow-forward-circle-outline"
                 size={20}
@@ -307,4 +356,33 @@ const styles = StyleSheet.create({
   },
   buttonLabel: { color: "#fff", fontSize: 15, fontWeight: "900" },
   footer: { paddingTop: 12, paddingBottom: 8 },
+  results: {
+    gap: 10,
+    padding: 14,
+    marginTop: 18,
+    borderRadius: 18,
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: colors.line,
+  },
+  resultsTitle: { color: colors.ink, fontSize: 17, fontWeight: "800" },
+  resultRow: {
+    minHeight: 54,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    borderTopWidth: 1,
+    borderTopColor: colors.line,
+    paddingTop: 10,
+  },
+  resultImage: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    overflow: "hidden",
+    backgroundColor: colors.sage,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  resultName: { flex: 1, color: colors.ink, fontSize: 14, fontWeight: "700" },
 });

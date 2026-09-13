@@ -465,7 +465,7 @@ export default function Tab1Screen() {
           onEndReached={() => {
             if (hasMore && !isFetchingNextPage) fetchNextPage();
           }}
-          onEndReachedThreshold={0.5}
+          onEndReachedThreshold={0.2}
           ListFooterComponent={
             isFetchingNextPage ? (
               <ThemedText style={styles.statusText}>Loading more...</ThemedText>

@@ -119,8 +119,8 @@ func (p *Pipeline) Status(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "unauthorized", 401)
 		return
 	}
-	row, err := p.DB.Recipe.Query().Where(recipe.UserID(owner), recipe.WebhookID(chi.URLParam(r, "runID"))).Only(r.Context())
-	if ent.IsNotFound(err) {
+	rows, err := p.DB.Recipe.Query().Where(recipe.UserID(owner), recipe.WebhookID(chi.URLParam(r, "runID"))).Order(ent.Asc(recipe.FieldCreatedAt)).All(r.Context())
+	if ent.IsNotFound(err) || len(rows) == 0 {
 		http.NotFound(w, r)
 		return
 	}
@@ -130,8 +130,26 @@ func (p *Pipeline) Status(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Cache-Control", "no-store")
-	_ = json.NewEncoder(w).Encode(map[string]any{"run_id": row.WebhookID, "recipe_id": row.ID,
-		"status": row.ImportStatus, "error": row.ImportError})
+	status, importError := string(rows[0].ImportStatus), rows[0].ImportError
+	recipes := make([]map[string]any, 0, len(rows))
+	for _, row := range rows {
+		if row.ImportStatus == recipe.ImportStatusFailed {
+			status, importError = "failed", row.ImportError
+		} else if row.ImportStatus != recipe.ImportStatusDone && status != "failed" {
+			status = "making"
+		}
+		if row.ImportStatus == recipe.ImportStatusDone {
+			item := map[string]any{"id": row.ID.String(), "name": row.Name}
+			if row.ImageS3Key != "" && p.Storage != nil {
+				if imageURL, signErr := p.Storage.ImageURL(r.Context(), row.ImageS3Key); signErr == nil {
+					item["image_url"] = imageURL
+				}
+			}
+			recipes = append(recipes, item)
+		}
+	}
+	_ = json.NewEncoder(w).Encode(map[string]any{"run_id": rows[0].WebhookID, "recipe_id": rows[0].ID,
+		"status": status, "error": importError, "recipes": recipes})
 }
 
 func (p *Pipeline) Retry(w http.ResponseWriter, r *http.Request) {
@@ -304,19 +322,40 @@ func (p *Pipeline) process(ctx context.Context, row *ent.Recipe) error {
 	if p.Storage == nil {
 		return fmt.Errorf("image storage is not configured")
 	}
-	key := fmt.Sprintf("recipes/%d/%s/cover.webp", row.UserID, row.ID)
-	if err = p.Storage.Upload(ctx, key, bytes.NewReader(compressed), int64(len(compressed)), "image/webp"); err != nil {
-		return fmt.Errorf("upload cover: %w", err)
+	for index, extractedRecipe := range extracted {
+		target := row
+		if index > 0 {
+			target, err = p.DB.Recipe.Create().SetUserID(row.UserID).
+				SetName("Importing recipe").SetServings(0).SetProcessMinutes(0).
+				SetIngredients(json.RawMessage("[]")).SetInstructions(pq.StringArray{}).
+				SetTags(pq.StringArray{}).SetURL(row.URL).SetSource(row.Source).
+				SetWebhookID(hook.Resource.ID).SetImportWebhook(row.ImportWebhook).
+				SetRawSourcePayload(dataset).SetImportStatus(recipe.ImportStatusDone).Save(ctx)
+			if err != nil {
+				return fmt.Errorf("create recipe %d: %w", index+1, err)
+			}
+		}
+		ingredients, err := json.Marshal(extractedRecipe.Ingredients)
+		if err != nil {
+			return err
+		}
+		key := fmt.Sprintf("recipes/%d/%s/cover.webp", target.UserID, target.ID)
+		if err = p.Storage.Upload(ctx, key, bytes.NewReader(compressed), int64(len(compressed)), "image/webp"); err != nil {
+			return fmt.Errorf("upload cover: %w", err)
+		}
+		update := p.DB.Recipe.UpdateOneID(target.ID).SetName(strings.TrimSpace(extractedRecipe.Name)).
+			SetServings(extractedRecipe.Servings).SetProcessMinutes(extractedRecipe.ProcessMinutes).
+			SetIngredients(ingredients).SetInstructions(pq.StringArray(extractedRecipe.Instructions)).
+			SetTags(pq.StringArray(extractedRecipe.Tags)).SetNotes(extractedRecipe.Notes).
+			SetImageS3Key(key).SetImportStatus(recipe.ImportStatusDone).ClearImportError()
+		if index == 0 {
+			update.ClearProcessingAt()
+		}
+		if err = update.Exec(ctx); err != nil {
+			return fmt.Errorf("save recipe %d: %w", index+1, err)
+		}
 	}
-	ingredients, err := json.Marshal(extracted.Ingredients)
-	if err != nil {
-		return err
-	}
-	return p.DB.Recipe.UpdateOneID(row.ID).SetName(strings.TrimSpace(extracted.Name)).
-		SetServings(extracted.Servings).SetProcessMinutes(extracted.ProcessMinutes).
-		SetIngredients(ingredients).SetInstructions(pq.StringArray(extracted.Instructions)).
-		SetTags(pq.StringArray(extracted.Tags)).SetNotes(extracted.Notes).SetImageS3Key(key).
-		SetImportStatus(recipe.ImportStatusDone).ClearImportError().ClearProcessingAt().Exec(ctx)
+	return nil
 }
 
 func compressImage(input []byte) ([]byte, error) {
