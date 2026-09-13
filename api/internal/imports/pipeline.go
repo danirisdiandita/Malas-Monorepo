@@ -277,6 +277,7 @@ func (p *Pipeline) process(ctx context.Context, row *ent.Recipe) error {
 	}
 	isYouTube := strings.EqualFold(hook.ContentType, string(YouTubeVideo)) || strings.EqualFold(hook.ContentType, string(YouTubeShort))
 	isInstagramReel := strings.EqualFold(hook.ContentType, string(InstagramReel))
+	isPinterestPin := strings.EqualFold(hook.ContentType, string(PinterestPin))
 	isVideo := strings.EqualFold(hook.ContentType, string(TikTokVideo)) || isFacebookReelContentType(hook.ContentType)
 	assets := collectImagePostAssetURLs(items)
 	if isVideo {
@@ -287,6 +288,14 @@ func (p *Pipeline) process(ctx context.Context, row *ent.Recipe) error {
 		assets = collectFacebookPostAssetURLs(items)
 	} else if strings.EqualFold(hook.ContentType, string(InstagramPost)) {
 		assets = collectInstagramAssetURLs(items)
+	} else if isPinterestPin {
+		assets = collectPinterestAssetURLs(items)
+		for index := range assets {
+			if isVideoAsset(assets[index].URL) {
+				assets = []asset{assets[index]}
+				break
+			}
+		}
 	}
 	if isYouTube {
 		assets = nil
@@ -353,6 +362,16 @@ func (p *Pipeline) process(ctx context.Context, row *ent.Recipe) error {
 		}
 		// Instagram Reel extraction intentionally sends only text to GPT Luna.
 		extractionImage = nil
+	} else if isPinterestPin && len(assets) > 0 && isVideoAsset(assets[0].URL) {
+		videoData, err = compressVideo(ctx, paths[0])
+		if err != nil {
+			return fmt.Errorf("prepare Pinterest video for extraction: %w", err)
+		}
+		extractionImage, err = firstVideoFrame(ctx, paths[0])
+		if err != nil {
+			return err
+		}
+		coverSource = extractionImage
 	} else {
 		extractionImage, err = stackPhotos(paths)
 		if err != nil {

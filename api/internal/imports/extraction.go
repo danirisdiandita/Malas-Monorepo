@@ -12,9 +12,11 @@ import (
 	"image/jpeg"
 	_ "image/png"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	_ "golang.org/x/image/webp"
@@ -101,7 +103,7 @@ func stackPhotos(paths []string) ([]byte, error) {
 func validateExtraction(v extractedRecipe) error {
 	if strings.TrimSpace(v.Name) == "" || len(v.Name) > 500 || v.Servings < 0 || v.Servings > 10000 ||
 		v.ProcessMinutes < 0 || v.ProcessMinutes > 100000 || len(v.Ingredients) == 0 || len(v.Ingredients) > 200 ||
-		len(v.Instructions) == 0 || len(v.Instructions) > 200 || v.Tags == nil {
+		len(v.Instructions) > 200 || v.Tags == nil {
 		return fmt.Errorf("incomplete recipe extraction")
 	}
 	for _, i := range v.Ingredients {
@@ -207,24 +209,60 @@ func (p *Pipeline) extract(ctx context.Context, final map[string]any, photo, vid
 	if err = os.WriteFile(promptPath, append(debugData, '\n'), 0600); err != nil {
 		return nil, fmt.Errorf("save OpenRouter prompt: %w", err)
 	}
-	data, err := json.Marshal(payload)
+	call := func(payload map[string]any) (*http.Response, []byte, error) {
+		data, err := json.Marshal(payload)
+		if err != nil {
+			return nil, nil, err
+		}
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, p.Config.OpenRouterURL, bytes.NewReader(data))
+		if err != nil {
+			return nil, nil, err
+		}
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", "Bearer "+p.Config.OpenRouterKey)
+		resp, err := p.Client.Do(req)
+		if err != nil {
+			return nil, nil, fmt.Errorf("OpenRouter request failed")
+		}
+		body, err := io.ReadAll(io.LimitReader(resp.Body, 2<<20))
+		resp.Body.Close()
+		return resp, body, err
+	}
+	resp, data, err := call(payload)
 	if err != nil {
 		return nil, err
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, p.Config.OpenRouterURL, bytes.NewReader(data))
-	if err != nil {
-		return nil, err
+	responsePath := filepath.Join(filepath.Dir(promptPath), "response.json")
+	if writeErr := os.WriteFile(responsePath, append(data, '\n'), 0600); writeErr != nil {
+		log.Printf("OpenRouter response debug save failed: %v", writeErr)
 	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+p.Config.OpenRouterKey)
-	resp, err := p.Client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("OpenRouter request failed")
-	}
-	defer resp.Body.Close()
-	data, err = io.ReadAll(io.LimitReader(resp.Body, 2<<20))
-	if err != nil {
-		return nil, err
+	log.Printf("OpenRouter debug: model=%s status=%s request=%s response=%s", model, resp.Status, promptPath, responsePath)
+	if resp.StatusCode == http.StatusBadRequest && len(video) > 0 {
+		model = p.Config.OpenRouterModel
+		payload["model"] = model
+		payload["reasoning"] = map[string]bool{"enabled": true}
+		payload["provider"] = map[string]bool{"require_parameters": true}
+		retryContent := []any{content[0]}
+		if len(photo) > 0 {
+			retryContent = append(retryContent, map[string]any{"type": "image_url", "image_url": map[string]string{
+				"url": "data:image/jpeg;base64," + base64.StdEncoding.EncodeToString(photo),
+			}})
+		}
+		payload["messages"].([]any)[1].(map[string]any)["content"] = retryContent
+		retryPromptPath := filepath.Join(filepath.Dir(promptPath), "prompt.retry.json")
+		retryDebug, _ := json.MarshalIndent(redactDataURLs(payload), "", "  ")
+		if writeErr := os.WriteFile(retryPromptPath, append(retryDebug, '\n'), 0600); writeErr != nil {
+			log.Printf("OpenRouter retry request debug save failed: %v", writeErr)
+		}
+		resp, data, err = call(payload)
+		if err != nil {
+			return nil, err
+		}
+		retryResponsePath := filepath.Join(filepath.Dir(promptPath), "response.retry.json")
+		if writeErr := os.WriteFile(retryResponsePath, append(data, '\n'), 0600); writeErr != nil {
+			log.Printf("OpenRouter retry response debug save failed: %v", writeErr)
+		}
+		log.Printf("OpenRouter retry debug: model=%s status=%s request=%s response=%s", model, resp.Status, retryPromptPath, retryResponsePath)
 	}
 	if resp.StatusCode != 200 {
 		if len(data) > 1024 {

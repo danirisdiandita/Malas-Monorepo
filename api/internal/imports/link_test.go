@@ -80,6 +80,48 @@ func TestInstagramReel(t *testing.T) {
 	}
 }
 
+func TestPinterestPin(t *testing.T) {
+	got, err := ParseLinkContentType("https://www.pinterest.com/pin/28006828930752858/")
+	if err != nil || got != PinterestPin {
+		t.Fatalf("ParseLinkContentType() = %q, %v", got, err)
+	}
+	input := pinterestActorInput("https://www.pinterest.com/pin/28006828930752858/")
+	urls, ok := input["startUrls"].([]string)
+	if !ok || len(urls) != 1 || urls[0] == "" || input["content_analysis"] != false || input["sentinent_analysis"] != false {
+		t.Fatalf("unexpected Pinterest actor input: %#v", input)
+	}
+}
+
+func TestCollectPinterestAssetURLsUsesCanonicalPinImage(t *testing.T) {
+	storyImage := map[string]any{"images": map[string]any{
+		"originals": map[string]any{"url": "https://i.pinimg.com/originals/story.jpg"},
+	}}
+	item := map[string]any{
+		"media": map[string]any{"images": map[string]any{
+			"thumb":    map[string]any{"url": "https://i.pinimg.com/236x/pin.jpg"},
+			"original": map[string]any{"url": "https://i.pinimg.com/originals/pin.png"},
+		}},
+		"creator": map[string]any{"image_medium_url": "https://i.pinimg.com/75x/profile.jpg"},
+		"pin":     map[string]any{"story": map[string]any{"pages": []any{map[string]any{"image": storyImage}}}},
+	}
+	assets := collectPinterestAssetURLs([]any{item})
+	if len(assets) != 1 || assets[0].URL != "https://i.pinimg.com/originals/pin.png" {
+		t.Fatalf("unexpected Pinterest assets: %#v", assets)
+	}
+}
+
+func TestCollectPinterestAssetURLsPrefersVideo(t *testing.T) {
+	assets := collectPinterestAssetURLs([]any{map[string]any{
+		"media": map[string]any{
+			"images": map[string]any{"original": map[string]any{"url": "https://i.pinimg.com/originals/cover.jpg"}},
+			"video":  map[string]any{"hls_url": "https://v1.pinimg.com/video.m3u8"},
+		},
+	}})
+	if len(assets) != 1 || assets[0].URL != "https://v1.pinimg.com/video.m3u8" || !isVideoAsset(assets[0].URL) {
+		t.Fatalf("unexpected Pinterest video assets: %#v", assets)
+	}
+}
+
 func TestParseYouTubeContentType(t *testing.T) {
 	short, err := ParseLinkContentType("https://www.youtube.com/shorts/abc123")
 	if err != nil || short != YouTubeShort {

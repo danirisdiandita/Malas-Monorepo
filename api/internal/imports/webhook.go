@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -122,6 +123,8 @@ func HandleImportWebhook(token, debugDir, secret string) http.HandlerFunc {
 			assets = collectInstagramAssetURLs(items)
 		} else if strings.EqualFold(webhook.ContentType, string(InstagramReel)) {
 			assets = collectInstagramReelAssetURLs(items)
+		} else if strings.EqualFold(webhook.ContentType, string(PinterestPin)) {
+			assets = collectPinterestAssetURLs(items)
 		} else if strings.EqualFold(webhook.ContentType, "youtube:video") || strings.EqualFold(webhook.ContentType, "youtube:short") {
 			// YouTube media is processed from its metadata and thumbnail in the
 			// recipe worker; do not download the platform video here.
@@ -223,7 +226,7 @@ func collectVideoAssetURLs(value any) []asset {
 		}
 		switch typed := current.(type) {
 		case map[string]any:
-			for _, key := range []string{"video_url_hd", "video_url_sd"} {
+			for _, key := range []string{"video_url_hd", "video_url_sd", "hls_url"} {
 				if rawURL, ok := typed[key].(string); ok && strings.HasPrefix(rawURL, "https://") {
 					result = []asset{{URL: rawURL}}
 					return
@@ -289,7 +292,8 @@ func buildFinalJSON(items []any, contentType string, assets []asset) map[string]
 		"description":     "",
 		"image_post_info": []string{},
 	}
-	if strings.EqualFold(contentType, "tiktok:video") || isFacebookReelContentType(contentType) || strings.EqualFold(contentType, string(InstagramReel)) {
+	pinterestVideo := strings.EqualFold(contentType, string(PinterestPin)) && len(assets) > 0 && isVideoAsset(assets[0].URL)
+	if strings.EqualFold(contentType, "tiktok:video") || isFacebookReelContentType(contentType) || strings.EqualFold(contentType, string(InstagramReel)) || pinterestVideo {
 		delete(result, "image_post_info")
 		result["video"] = ""
 	}
@@ -306,6 +310,17 @@ func buildFinalJSON(items []any, contentType string, assets []asset) map[string]
 			result["title"] = firstString(item, "caption", "title", "name")
 			result["description"] = firstString(item, "caption", "description", "alt")
 			result["source_url"] = firstString(item, "url", "inputUrl")
+		} else if strings.EqualFold(contentType, string(PinterestPin)) {
+			pin, _ := item["pin"].(map[string]any)
+			result["title"] = firstString(item, "title", "name")
+			if result["title"] == "" {
+				result["title"] = firstString(pin, "title", "name")
+			}
+			result["description"] = firstString(item, "description", "alt", "closeup_description")
+			if result["description"] == "" {
+				result["description"] = firstString(pin, "description", "closeup_unified_description", "closeup_user_note", "alt_text")
+			}
+			result["source_url"] = firstString(item, "url", "pinUrl", "inputUrl")
 		} else if strings.EqualFold(contentType, "youtube:video") || strings.EqualFold(contentType, "youtube:short") {
 			result["title"] = firstString(item, "title", "name")
 			result["description"] = firstString(item, "description", "text")
@@ -324,7 +339,7 @@ func buildFinalJSON(items []any, contentType string, assets []asset) map[string]
 			}
 		}
 	}
-	if strings.EqualFold(contentType, "tiktok:video") || isFacebookReelContentType(contentType) || strings.EqualFold(contentType, string(InstagramReel)) {
+	if strings.EqualFold(contentType, "tiktok:video") || isFacebookReelContentType(contentType) || strings.EqualFold(contentType, string(InstagramReel)) || pinterestVideo {
 		if len(assets) > 0 && assets[0].File != "" && assets[0].Error == "" {
 			result["video"] = assets[0].File
 		}
@@ -430,6 +445,86 @@ func collectInstagramURLs(value any, videoOnly bool) []asset {
 	return assets
 }
 
+func collectPinterestAssetURLs(value any) []asset {
+	seen := map[string]bool{}
+	assets := make([]asset, 0)
+	add := func(raw string) {
+		if strings.HasPrefix(raw, "https://") && !seen[raw] && len(assets) < maxAssetCount {
+			seen[raw] = true
+			assets = append(assets, asset{URL: raw})
+		}
+	}
+	var addImageSet func(any) bool
+	addImageSet = func(value any) bool {
+		images, ok := value.(map[string]any)
+		if !ok {
+			return false
+		}
+		for _, key := range []string{"original", "originals", "orig", "large"} {
+			if image, ok := images[key].(map[string]any); ok {
+				if raw, ok := image["url"].(string); ok {
+					add(raw)
+					return true
+				}
+			}
+		}
+		return false
+	}
+	for _, rawItem := range []any{value} {
+		items, ok := rawItem.([]any)
+		if !ok {
+			items = []any{rawItem}
+		}
+		for _, raw := range items {
+			item, ok := raw.(map[string]any)
+			if !ok {
+				continue
+			}
+			media, _ := item["media"].(map[string]any)
+			selectedVideo := false
+			for _, key := range []string{"videos", "video"} {
+				videos, ok := media[key]
+				if !ok {
+					continue
+				}
+				if video := collectVideoAssetURLs(videos); len(video) > 0 {
+					add(video[0].URL)
+					selectedVideo = true
+					break
+				}
+			}
+			if selectedVideo {
+				continue
+			}
+			selectedMediaImage := false
+			if images, ok := media["images"]; ok {
+				selectedMediaImage = addImageSet(images)
+			}
+			if selectedMediaImage {
+				continue
+			}
+			pin, _ := item["pin"].(map[string]any)
+			story, _ := pin["story"].(map[string]any)
+			pages, _ := story["pages"].([]any)
+			for _, rawPage := range pages {
+				page, _ := rawPage.(map[string]any)
+				image, _ := page["image"].(map[string]any)
+				addImageSet(image["images"])
+			}
+		}
+	}
+	return assets
+}
+
+func isVideoAsset(raw string) bool {
+	parsed, err := url.Parse(raw)
+	if err != nil {
+		return false
+	}
+	path := strings.ToLower(parsed.Path)
+	return strings.HasSuffix(path, ".mp4") || strings.HasSuffix(path, ".mov") || strings.HasSuffix(path, ".webm") || strings.HasSuffix(path, ".m3u8")
+}
+
 func stringValue(object map[string]any, key string) string {
 	value, _ := object[key].(string)
 	return value
@@ -523,6 +618,19 @@ func isAssetURL(path, raw string) bool {
 }
 
 func downloadAsset(ctx context.Context, client *http.Client, rawURL, directory string, index int) (string, string) {
+	if isHLSAsset(rawURL) {
+		filename := fmt.Sprintf("%03d.mp4", index+1)
+		output := filepath.Join(directory, filename)
+		cmd := exec.CommandContext(ctx, "ffmpeg", "-y", "-v", "error", "-i", rawURL, "-c", "copy", "-bsf:a", "aac_adtstoasc", output)
+		if outputData, err := cmd.CombinedOutput(); err != nil {
+			return "", fmt.Sprintf("download HLS video: %v: %s", err, strings.TrimSpace(string(outputData)))
+		}
+		info, err := os.Stat(output)
+		if err != nil || info.Size() > maxAssetBytes {
+			return "", "downloaded HLS video is missing or exceeds 200 MB"
+		}
+		return filepath.Join("assets", filename), ""
+	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rawURL, nil)
 	if err != nil {
 		return "", err.Error()
@@ -561,4 +669,9 @@ func downloadAsset(ctx context.Context, client *http.Client, rawURL, directory s
 		return "", err.Error()
 	}
 	return filepath.Join("assets", filename), ""
+}
+
+func isHLSAsset(raw string) bool {
+	parsed, err := url.Parse(raw)
+	return err == nil && strings.HasSuffix(strings.ToLower(parsed.Path), ".m3u8")
 }
