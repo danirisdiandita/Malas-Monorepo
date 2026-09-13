@@ -288,7 +288,7 @@ export default function PlannerScreen() {
           </Modal>
 
           <ThemedText style={styles.today}>{selectedDateLabel}{selectedDateIsToday ? " (Today)" : ""}</ThemedText>
-          {mealsPending ? <ThemedText style={styles.status}>Loading meals...</ThemedText> : mealsError ? <ThemedText style={styles.status}>Unable to load meals.</ThemedText> : <FlashList data={meals} scrollEnabled={false} ItemSeparatorComponent={() => <View style={styles.mealGap} />} ListEmptyComponent={<ThemedText style={styles.status}>No meals planned for this day.</ThemedText>} renderItem={({ item }) => <View style={styles.mealRow}><ThemedText style={styles.mealLabel} numberOfLines={1} ellipsizeMode="tail">{item.meal_slot.replaceAll("_", " ").toUpperCase()}</ThemedText><View style={styles.mealCard}><View style={styles.mealImage}>{item.image_url ? <RecipeImage url={item.image_url} /> : <Ionicons name="restaurant-outline" size={20} color={colors.leaf} />}</View><View style={styles.mealDetails}><ThemedText style={styles.mealName} numberOfLines={1} ellipsizeMode="tail">{item.recipe_name || "Meal planned"}</ThemedText></View></View></View>} />}
+          {mealsPending ? <ThemedText style={styles.status}>Loading meals...</ThemedText> : mealsError ? <ThemedText style={styles.status}>Unable to load meals.</ThemedText> : <FlashList data={meals} scrollEnabled={false} ItemSeparatorComponent={() => <View style={styles.mealGap} />} ListEmptyComponent={<View style={styles.emptyPlans}><ThemedText style={styles.status}>No meals planned for this day.</ThemedText><Pressable style={styles.addPlanButton} onPress={() => planSheetRef.current?.present()}><Ionicons name="add" size={17} color="#FFFFFF" /><ThemedText style={styles.addPlanLabel}>Add plan</ThemedText></Pressable></View>} renderItem={({ item }) => <View style={styles.mealRow}><ThemedText style={styles.mealLabel} numberOfLines={1} ellipsizeMode="tail">{item.meal_slot.replaceAll("_", " ").toUpperCase()}</ThemedText><View style={styles.mealCard}><View style={styles.mealImage}>{item.image_url ? <RecipeImage url={item.image_url} /> : <Ionicons name="restaurant-outline" size={20} color={colors.leaf} />}</View><View style={styles.mealDetails}><ThemedText style={styles.mealName} numberOfLines={1} ellipsizeMode="tail">{item.recipe_name || "Meal planned"}</ThemedText></View></View></View>} />}
           <BottomSheet ref={planSheetRef} index={-1} enableDynamicSizing enablePanDownToClose backgroundStyle={styles.sheet}>
             <BottomSheetView style={[styles.planSheet, { width: windowWidth }]}>
               <View style={styles.dialogHeader}><ThemedText style={styles.dialogTitle}>Add meal plan</ThemedText><Pressable onPress={() => planSheetRef.current?.close()}><Ionicons name="close" size={22} color={colors.ink} /></Pressable></View>
@@ -361,6 +361,7 @@ const styles = StyleSheet.create({
   },
   todayButtonLabel: { color: colors.leaf, fontSize: 14, fontWeight: "800" },
   status: { color: colors.muted, fontSize: 15, textAlign: "center", paddingVertical: 24 },
+  emptyPlans: { alignItems: "center", gap: 4 },
   modalTodayButton: { minHeight: 44, borderRadius: 12, backgroundColor: colors.sage, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6 },
   calendarButton: {
     minHeight: 40,

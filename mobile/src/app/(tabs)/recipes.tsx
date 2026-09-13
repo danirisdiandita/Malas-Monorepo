@@ -537,14 +537,6 @@ function RecipeCard({
         <ThemedText style={styles.cardTitle}>{title}</ThemedText>
         <ThemedText style={styles.cardMeta}>{meta}</ThemedText>
       </View>
-      {list && (
-        <Ionicons
-          name="ellipsis-horizontal"
-          size={20}
-          color={colors.muted}
-          style={styles.cardMore}
-        />
-      )}
     </Pressable>
   );
 }
@@ -774,7 +766,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   gridCard: { marginHorizontal: 6 },
-  cardImage: { height: 112, alignItems: "center", justifyContent: "center" },
+  cardImage: { height: 112, borderRadius: 17, overflow: "hidden", alignItems: "center", justifyContent: "center" },
   listCard: {
     width: "100%",
     minHeight: 74,
@@ -846,7 +838,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   quickLabel: { color: "#68736B", fontSize: 10, fontWeight: "800" },
-  cardMore: { marginRight: 2 },
   cardTitle: {
     color: colors.ink,
     fontSize: 15,

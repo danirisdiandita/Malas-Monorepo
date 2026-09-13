@@ -640,8 +640,7 @@ const styles = StyleSheet.create({
   hero: {
     height: 190,
     backgroundColor: "#FCE6B4",
-    borderBottomLeftRadius: 28,
-    borderBottomRightRadius: 28,
+    borderRadius: 28,
     overflow: "hidden",
     alignItems: "center",
     justifyContent: "center",

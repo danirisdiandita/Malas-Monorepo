@@ -114,7 +114,7 @@ func HandleImportWebhook(token, debugDir, secret string) http.HandlerFunc {
 		assets := collectImagePostAssetURLs(items)
 		if strings.EqualFold(webhook.ContentType, "tiktok:video") {
 			assets = collectVideoAssetURLs(items)
-		} else if strings.EqualFold(webhook.ContentType, "facebook:reels") {
+		} else if isFacebookReelContentType(webhook.ContentType) {
 			assets = collectAssetURLs(items)
 		}
 		for index := range assets {
@@ -180,6 +180,12 @@ func collectVideoAssetURLs(value any) []asset {
 		}
 		switch typed := current.(type) {
 		case map[string]any:
+			for _, key := range []string{"video_url_hd", "video_url_sd"} {
+				if rawURL, ok := typed[key].(string); ok && strings.HasPrefix(rawURL, "https://") {
+					result = []asset{{URL: rawURL}}
+					return
+				}
+			}
 			if video, ok := typed["video"].(map[string]any); ok {
 				for _, key := range []string{"download_no_watermark_addr", "play_addr", "download_addr"} {
 					if rawURL := firstURL(video[key]); rawURL != "" {
@@ -240,19 +246,24 @@ func buildFinalJSON(items []any, contentType string, assets []asset) map[string]
 		"description":     "",
 		"image_post_info": []string{},
 	}
-	if strings.EqualFold(contentType, "tiktok:video") || strings.EqualFold(contentType, "facebook:reels") {
+	if strings.EqualFold(contentType, "tiktok:video") || isFacebookReelContentType(contentType) {
 		delete(result, "image_post_info")
 		result["video"] = ""
 	}
 	if len(items) > 0 {
-		if detail, ok := items[0].(map[string]any)["aweme_detail"].(map[string]any); ok {
+		item, _ := items[0].(map[string]any)
+		if isFacebookReelContentType(contentType) {
+			result["title"] = stringValue(item, "text")
+			result["description"] = stringValue(item, "text")
+		}
+		if detail, ok := item["aweme_detail"].(map[string]any); ok {
 			result["title"] = stringValue(detail, "desc")
 			if original, ok := detail["original_client_text"].(map[string]any); ok {
 				result["description"] = stringValue(original, "markup_text")
 			}
 		}
 	}
-	if strings.EqualFold(contentType, "tiktok:video") || strings.EqualFold(contentType, "facebook:reels") {
+	if strings.EqualFold(contentType, "tiktok:video") || isFacebookReelContentType(contentType) {
 		if len(assets) > 0 && assets[0].File != "" && assets[0].Error == "" {
 			result["video"] = assets[0].File
 		}

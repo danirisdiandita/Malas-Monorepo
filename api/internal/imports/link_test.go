@@ -36,7 +36,8 @@ func TestParseFacebookReelsContentType(t *testing.T) {
 
 func TestFacebookActorInput(t *testing.T) {
 	input := facebookActorInput("https://www.facebook.com/reel/123456789")
-	if len(input["startUrls"].([]string)) != 1 || input["resultsLimit"] != 1 {
+	urls, ok := input["individual_reel_url"].([]map[string]string)
+	if !ok || len(urls) != 1 || urls[0]["url"] != "https://www.facebook.com/reel/123456789" || input["reels_count"] != 1 {
 		t.Fatalf("unexpected Facebook actor input: %#v", input)
 	}
 }
@@ -76,6 +77,17 @@ func TestCollectVideoAssetURLsPrefersNoWatermark(t *testing.T) {
 	})
 	if len(assets) != 1 || assets[0].URL != "https://cdn.example/video.mp4" {
 		t.Fatalf("unexpected video asset: %#v", assets)
+	}
+}
+
+func TestCollectVideoAssetURLsSupportsFacebookReel(t *testing.T) {
+	assets := collectVideoAssetURLs([]any{map[string]any{
+		"thumbnail_url": "https://scontent.fbcdn.net/thumb.jpg",
+		"video_url_hd":  "https://video.fbcdn.net/reel.mp4",
+		"video_url_sd":  "https://video.fbcdn.net/reel-sd.mp4",
+	}})
+	if len(assets) != 1 || assets[0].URL != "https://video.fbcdn.net/reel.mp4" {
+		t.Fatalf("unexpected Facebook video assets: %#v", assets)
 	}
 }
 

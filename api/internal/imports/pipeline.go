@@ -240,7 +240,7 @@ func (p *Pipeline) process(ctx context.Context, row *ent.Recipe) error {
 			return err
 		}
 	}
-	isVideo := strings.EqualFold(hook.ContentType, string(TikTokVideo)) || strings.EqualFold(hook.ContentType, "facebook:reels")
+	isVideo := strings.EqualFold(hook.ContentType, string(TikTokVideo)) || isFacebookReelContentType(hook.ContentType)
 	assets := collectImagePostAssetURLs(items)
 	if isVideo {
 		assets = collectVideoAssetURLs(items)

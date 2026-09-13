@@ -23,7 +23,7 @@ type TikTokContentType = LinkContentType
 const (
 	TikTokPhoto   LinkContentType = "tiktok:photo"
 	TikTokVideo   LinkContentType = "tiktok:video"
-	FacebookReels LinkContentType = "facebook:reels"
+	FacebookReels LinkContentType = "facebook:reel"
 )
 
 var awemeIDPattern = regexp.MustCompile(`(?:^|/)((?:\d){10,})(?:/|$)`)
@@ -190,6 +190,10 @@ func HandleImport(token, debugDir, authURL, webhookSecret, tikTokActorURL, faceb
 			http.Error(w, "failed to save Apify payload", http.StatusInternalServerError)
 			return
 		}
+		if err := os.WriteFile(filepath.Join(folder, "webhook_spec.json"), webhookSpec, 0o600); err != nil {
+			http.Error(w, "failed to save Apify webhook", http.StatusInternalServerError)
+			return
+		}
 		encoded, _ := json.MarshalIndent(output, "", "  ")
 		filename := filepath.Join(folder, "run.json")
 		if err := os.WriteFile(filename, encoded, 0o600); err != nil {
@@ -268,7 +272,14 @@ func isFacebookHost(host string) bool {
 }
 
 func facebookActorInput(url string) map[string]any {
-	return map[string]any{"startUrls": []string{url}, "resultsLimit": 1}
+	return map[string]any{
+		"individual_reel_url": []map[string]string{{"url": url}},
+		"reels_count":         1,
+	}
+}
+
+func isFacebookReelContentType(value string) bool {
+	return strings.EqualFold(value, string(FacebookReels)) || strings.EqualFold(value, "facebook:reels")
 }
 
 func extractAwemeID(path string) string {

@@ -63,7 +63,7 @@ func LoadConfig() *Config {
 			APIToken:              getEnv("APIFY_API_TOKEN", ""),
 			DebugDir:              getEnv("APIFY_DEBUG_DIR", "./debug/apify"),
 			TikTokActorURL:        getEnv("APIFY_TIKTOK_ACTOR_URL", "https://api.apify.com/v2/acts/scraptik~tiktok-api/runs"),
-			FacebookReelsActorURL: getEnv("APIFY_FACEBOOK_REELS_ACTOR_URL", "https://api.apify.com/v2/actors/dami_studio~facebook-posts-scraper/runs"),
+			FacebookReelsActorURL: getEnv("APIFY_FACEBOOK_REELS_ACTOR_URL", "https://api.apify.com/v2/actors/scraperdataworld~facebook-reels-scraper/runs"),
 		},
 		ImportWebhookSecret:  getEnv("IMPORT_WEBHOOK_SECRET", getEnv("TIKTOK_WEBHOOK_SECRET", "")),
 		OpenRouterKey:        getEnv("OPENROUTER_API_KEY", ""),
