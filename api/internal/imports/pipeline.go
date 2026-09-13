@@ -258,6 +258,7 @@ func (p *Pipeline) process(ctx context.Context, row *ent.Recipe) error {
 			return err
 		}
 	}
+	isYouTube := strings.EqualFold(hook.ContentType, string(YouTubeVideo))
 	isVideo := strings.EqualFold(hook.ContentType, string(TikTokVideo)) || isFacebookReelContentType(hook.ContentType)
 	assets := collectImagePostAssetURLs(items)
 	if isVideo {
@@ -265,7 +266,10 @@ func (p *Pipeline) process(ctx context.Context, row *ent.Recipe) error {
 	} else if strings.EqualFold(hook.ContentType, "facebook:post") {
 		assets = collectFacebookPostAssetURLs(items)
 	}
-	if len(assets) == 0 {
+	if isYouTube {
+		assets = nil
+	}
+	if len(assets) == 0 && !isYouTube {
 		return fmt.Errorf("post contains no downloadable media")
 	}
 	for i := range assets {
@@ -290,7 +294,17 @@ func (p *Pipeline) process(ctx context.Context, row *ent.Recipe) error {
 	}
 	var extractionImage, coverSource, videoData []byte
 	var err error
-	if isVideo {
+	if isYouTube {
+		thumbnail := stringValue(items[0].(map[string]any), "thumbnailUrl")
+		if thumbnail == "" {
+			return fmt.Errorf("YouTube result contains no thumbnail")
+		}
+		extractionImage, err = fetchBytes(ctx, p.Client, thumbnail, 20<<20)
+		if err != nil {
+			return fmt.Errorf("fetch YouTube thumbnail: %w", err)
+		}
+		coverSource = extractionImage
+	} else if isVideo {
 		videoData, err = compressVideo(ctx, paths[0])
 		if err != nil {
 			return fmt.Errorf("prepare video for extraction: %w", err)
@@ -358,6 +372,22 @@ func (p *Pipeline) process(ctx context.Context, row *ent.Recipe) error {
 		}
 	}
 	return nil
+}
+
+func fetchBytes(ctx context.Context, client *http.Client, rawURL string, maxBytes int64) ([]byte, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rawURL, nil)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, fmt.Errorf("HTTP %s", resp.Status)
+	}
+	return io.ReadAll(io.LimitReader(resp.Body, maxBytes))
 }
 
 func compressImage(input []byte) ([]byte, error) {

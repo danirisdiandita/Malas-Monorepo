@@ -72,7 +72,7 @@ func NewRouter(deps Dependencies) http.Handler {
 		r.Delete("/groceries", groceries.Clear(deps.DB))
 		r.Patch("/groceries/{id}/checked", groceries.UpdateChecked(deps.DB))
 		r.Post("/recipes/{id}/groceries", groceries.AddFromRecipe(deps.DB))
-		r.Post("/imports/link", imports.HandleImport(deps.Config.Apify.APIToken, deps.Config.Apify.DebugDir, deps.Config.AuthURL, deps.Config.ImportWebhookSecret, deps.Config.Apify.TikTokActorURL, deps.Config.Apify.FacebookReelsActorURL, deps.Config.Apify.FacebookPostsActorURL, deps.Imports))
+		r.Post("/imports/link", imports.HandleImport(deps.Config.Apify.APIToken, deps.Config.Apify.DebugDir, deps.Config.AuthURL, deps.Config.ImportWebhookSecret, deps.Config.Apify.TikTokActorURL, deps.Config.Apify.FacebookReelsActorURL, deps.Config.Apify.FacebookPostsActorURL, deps.Config.Apify.YouTubeActorURL, deps.Imports))
 		r.Get("/imports/{runID}", deps.Imports.Status)
 		r.Post("/imports/{runID}/retry", deps.Imports.Retry)
 	})

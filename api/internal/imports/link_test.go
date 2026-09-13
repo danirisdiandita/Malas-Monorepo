@@ -57,6 +57,27 @@ func TestFacebookPostsActorInput(t *testing.T) {
 	}
 }
 
+func TestParseYouTubeContentType(t *testing.T) {
+	for _, raw := range []string{
+		"https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+		"https://www.youtube.com/shorts/abc123",
+		"https://youtu.be/dQw4w9WgXcQ",
+	} {
+		got, err := ParseLinkContentType(raw)
+		if err != nil || got != YouTubeVideo {
+			t.Fatalf("ParseLinkContentType(%q) = %q, %v", raw, got, err)
+		}
+	}
+}
+
+func TestYouTubeActorInput(t *testing.T) {
+	input := youtubeActorInput("https://www.youtube.com/watch?v=dQw4w9WgXcQ")
+	urls, ok := input["startUrls"].([]map[string]string)
+	if !ok || len(urls) != 1 || urls[0]["url"] != "https://www.youtube.com/watch?v=dQw4w9WgXcQ" || input["maxResults"] != 1 || input["subtitlesFormat"] != "plaintext" || input["subtitlesLanguage"] != "any" || input["transcriptionAndSubtitle"] != "ALWAYS_SUBTITLES" {
+		t.Fatalf("unexpected YouTube actor input: %#v", input)
+	}
+}
+
 func TestCollectAssetURLs(t *testing.T) {
 	assets := collectAssetURLs(map[string]any{
 		"cover":  "https://p16.tiktokcdn.com/cover.webp",

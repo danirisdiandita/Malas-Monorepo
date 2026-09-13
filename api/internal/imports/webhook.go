@@ -118,6 +118,10 @@ func HandleImportWebhook(token, debugDir, secret string) http.HandlerFunc {
 			assets = collectAssetURLs(items)
 		} else if strings.EqualFold(webhook.ContentType, "facebook:post") {
 			assets = collectFacebookPostAssetURLs(items)
+		} else if strings.EqualFold(webhook.ContentType, "youtube:video") {
+			// YouTube media is processed from its metadata and thumbnail in the
+			// recipe worker; do not download the platform video here.
+			assets = nil
 		}
 		for index := range assets {
 			assets[index].File, assets[index].Error = downloadAsset(r.Context(), client, assets[index].URL, filepath.Join(folder, "assets"), index)
@@ -290,6 +294,11 @@ func buildFinalJSON(items []any, contentType string, assets []asset) map[string]
 		if isFacebookReelContentType(contentType) || strings.EqualFold(contentType, "facebook:post") {
 			result["title"] = stringValue(item, "text")
 			result["description"] = stringValue(item, "text")
+		} else if strings.EqualFold(contentType, "youtube:video") {
+			result["title"] = stringValue(item, "title")
+			result["description"] = stringValue(item, "text")
+			result["thumbnail_url"] = stringValue(item, "thumbnailUrl")
+			result["subtitles"] = youtubeSubtitleText(item)
 		}
 		if detail, ok := item["aweme_detail"].(map[string]any); ok {
 			result["title"] = stringValue(detail, "desc")
@@ -312,6 +321,20 @@ func buildFinalJSON(items []any, contentType string, assets []asset) map[string]
 	}
 	result["image_post_info"] = images
 	return result
+}
+
+func youtubeSubtitleText(item map[string]any) string {
+	subtitles, _ := item["subtitles"].([]any)
+	for _, raw := range subtitles {
+		subtitle, ok := raw.(map[string]any)
+		if !ok {
+			continue
+		}
+		if text, ok := subtitle["plaintext"].(string); ok && strings.TrimSpace(text) != "" {
+			return text
+		}
+	}
+	return ""
 }
 
 func stringValue(object map[string]any, key string) string {

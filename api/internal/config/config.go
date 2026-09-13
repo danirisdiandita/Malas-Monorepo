@@ -40,6 +40,7 @@ type ApifyConfig struct {
 	TikTokActorURL        string
 	FacebookReelsActorURL string
 	FacebookPostsActorURL string
+	YouTubeActorURL       string
 }
 
 func LoadConfig() *Config {
@@ -66,6 +67,7 @@ func LoadConfig() *Config {
 			TikTokActorURL:        getEnv("APIFY_TIKTOK_ACTOR_URL", "https://api.apify.com/v2/acts/scraptik~tiktok-api/runs"),
 			FacebookReelsActorURL: getEnv("APIFY_FACEBOOK_REELS_ACTOR_URL", "https://api.apify.com/v2/actors/scraperdataworld~facebook-reels-scraper/runs"),
 			FacebookPostsActorURL: getEnv("APIFY_FACEBOOK_POSTS_ACTOR_URL", "https://api.apify.com/v2/actors/apify~facebook-posts-scraper/runs"),
+			YouTubeActorURL:       getEnv("APIFY_YOUTUBE_ACTOR_URL", "https://api.apify.com/v2/actors/streamers~youtube-scraper/runs"),
 		},
 		ImportWebhookSecret:  getEnv("IMPORT_WEBHOOK_SECRET", getEnv("TIKTOK_WEBHOOK_SECRET", "")),
 		OpenRouterKey:        getEnv("OPENROUTER_API_KEY", ""),
