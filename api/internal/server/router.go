@@ -64,6 +64,7 @@ func NewRouter(deps Dependencies) http.Handler {
 		r.Patch("/folders/{id}", folders.Update(deps.DB))
 		r.Delete("/folders/{id}", folders.Delete(deps.DB))
 		r.Get("/groceries", groceries.List(deps.DB, deps.Imports.Storage))
+		r.Post("/groceries", groceries.AddManual(deps.DB))
 		r.Delete("/groceries", groceries.Clear(deps.DB))
 		r.Patch("/groceries/{id}/checked", groceries.UpdateChecked(deps.DB))
 		r.Post("/recipes/{id}/groceries", groceries.AddFromRecipe(deps.DB))

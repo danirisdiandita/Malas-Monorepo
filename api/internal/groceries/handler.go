@@ -25,6 +25,40 @@ type Item struct {
 	Checked        bool     `json:"checked"`
 }
 
+func AddManual(db *ent.Client) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		owner, err := recipes.OwnerID(db, r)
+		if err != nil {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+		var input struct {
+			Name     string   `json:"name"`
+			Quantity *float64 `json:"quantity"`
+			Unit     string   `json:"unit"`
+		}
+		if json.NewDecoder(http.MaxBytesReader(w, r.Body, 1024)).Decode(&input) != nil || strings.TrimSpace(input.Name) == "" {
+			http.Error(w, "name is required", http.StatusBadRequest)
+			return
+		}
+		create := db.Grocery.Create().SetUserID(owner).SetName(strings.TrimSpace(input.Name)).SetUnit(strings.TrimSpace(input.Unit))
+		if input.Quantity != nil {
+			if *input.Quantity < 0 {
+				http.Error(w, "quantity cannot be negative", http.StatusBadRequest)
+				return
+			}
+			create.SetQuantity(*input.Quantity)
+		}
+		row, err := create.Save(r.Context())
+		if err != nil {
+			http.Error(w, "unable to add grocery", http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(Item{ID: row.ID.String(), Name: row.Name, Unit: row.Unit, Quantity: row.Quantity, Checked: row.Checked})
+	}
+}
+
 func List(db *ent.Client, storage *recipes.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		owner, err := recipes.OwnerID(db, r)

@@ -1,6 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { clearGroceries, getGroceries, updateGroceryChecked } from '@/lib/api';
+import { addGrocery, clearGroceries, getGroceries, updateGroceryChecked } from '@/lib/api';
+
+export function useAddGrocery() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: addGrocery,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['groceries'] }),
+  });
+}
 
 export function useGroceries() {
   return useQuery({ queryKey: ['groceries'], queryFn: getGroceries, staleTime: 30_000 });

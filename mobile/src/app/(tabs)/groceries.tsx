@@ -1,11 +1,13 @@
 import { Ionicons } from "@react-native-vector-icons/ionicons";
+import BottomSheet, { BottomSheetView, type BottomSheetMethods } from "@expo/ui/community/bottom-sheet";
+import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
-import { useState } from "react";
+import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, TextInput, View, useWindowDimensions } from "react-native";
+import { useRef, useState } from "react";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { useClearGroceries, useGroceries, useUpdateGroceryChecked } from "@/hooks/use-groceries";
+import { useAddGrocery, useClearGroceries, useGroceries, useUpdateGroceryChecked } from "@/hooks/use-groceries";
 import { toast } from "sonner-native";
 import type { Grocery } from "@/lib/api";
 import { decimalAsFraction } from "@/lib/fractions";
@@ -23,6 +25,12 @@ export default function GroceriesScreen() {
   const { data: groceries, isPending, isError } = useGroceries();
   const clearGroceries = useClearGroceries();
   const updateChecked = useUpdateGroceryChecked();
+  const addGrocery = useAddGrocery();
+  const manualSheetRef = useRef<BottomSheetMethods>(null);
+  const { width: windowWidth } = useWindowDimensions();
+  const [manualName, setManualName] = useState("");
+  const [manualQuantity, setManualQuantity] = useState("");
+  const [manualUnit, setManualUnit] = useState("");
   const [checked, setChecked] = useState<Record<string, boolean>>({});
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
   const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
@@ -38,18 +46,16 @@ export default function GroceriesScreen() {
             <View>
               <ThemedText style={styles.title}>Grocery list</ThemedText>
             </View>
-            {items.length > 0 && (
-              <Pressable
-                onPress={() => setClearConfirmOpen(true)}
-                disabled={clearGroceries.isPending}
-                accessibilityRole="button"
-                accessibilityLabel="Clear all groceries"
-              >
-                <ThemedText style={styles.clearAll}>Clear all</ThemedText>
+            <View style={styles.headerActions}>
+              <Pressable onPress={() => manualSheetRef.current?.present()} accessibilityRole="button">
+                <ThemedText style={styles.addItem}>+ Add item</ThemedText>
               </Pressable>
-            )}
+              {items.length > 0 && <Pressable onPress={() => setClearConfirmOpen(true)} disabled={clearGroceries.isPending} accessibilityRole="button" accessibilityLabel="Clear all groceries">
+                <ThemedText style={styles.clearAll}>Clear all</ThemedText>
+              </Pressable>}
+            </View>
           </View>
-          {isPending ? <ThemedText style={styles.status}>Loading groceries...</ThemedText> : isError ? <ThemedText style={styles.status}>Unable to load groceries.</ThemedText> : items.length === 0 ? <EmptyGroceries /> : <>
+          {isPending ? <ThemedText style={styles.status}>Loading groceries...</ThemedText> : isError ? <ThemedText style={styles.status}>Unable to load groceries.</ThemedText> : items.length === 0 ? <EmptyGroceries onAddManual={() => manualSheetRef.current?.present()} /> : <>
           <View style={styles.progressCard}>
             <View style={styles.progressTop}>
               <ThemedText style={styles.progressLabel}>{checkedCount} of {items.length} items</ThemedText>
@@ -106,22 +112,66 @@ export default function GroceriesScreen() {
             </Pressable>
           </Pressable>
         </Modal>
+        <BottomSheet ref={manualSheetRef} index={-1} enableDynamicSizing enablePanDownToClose backgroundStyle={styles.sheet}>
+          <BottomSheetView style={[styles.manualSheet, { width: windowWidth }]}>
+            <View style={styles.sheetHeader}>
+              <ThemedText style={styles.sheetTitle}>Add grocery item</ThemedText>
+              <Pressable onPress={() => manualSheetRef.current?.close()} accessibilityLabel="Close add grocery item">
+                <Ionicons name="close" size={22} color={colors.ink} />
+              </Pressable>
+            </View>
+            <TextInput autoFocus value={manualName} onChangeText={setManualName} placeholder="Name" placeholderTextColor={colors.muted} style={styles.input} />
+            <View style={styles.inputRow}>
+              <TextInput value={manualQuantity} onChangeText={setManualQuantity} placeholder="Quantity" placeholderTextColor={colors.muted} keyboardType="decimal-pad" style={[styles.input, styles.quantityInput]} />
+              <TextInput value={manualUnit} onChangeText={setManualUnit} placeholder="Unit (optional)" placeholderTextColor={colors.muted} style={[styles.input, styles.unitInput]} />
+            </View>
+            <Pressable
+              style={[styles.saveButton, addGrocery.isPending && styles.disabled]}
+              disabled={addGrocery.isPending}
+              onPress={() => {
+                const name = manualName.trim();
+                const quantity = manualQuantity.trim() ? Number(manualQuantity) : undefined;
+                if (!name || (quantity !== undefined && (!Number.isFinite(quantity) || quantity < 0))) {
+                  toast.error("Enter a name and a valid quantity.");
+                  return;
+                }
+                addGrocery.mutate({ name, quantity, unit: manualUnit.trim() }, {
+                  onSuccess: () => {
+                    setManualName(""); setManualQuantity(""); setManualUnit(""); manualSheetRef.current?.close(); toast.success("Grocery item added");
+                  },
+                  onError: (error) => toast.error(error.message),
+                });
+              }}
+            >
+              {addGrocery.isPending ? <ActivityIndicator color="#FFFFFF" /> : <ThemedText style={styles.saveButtonLabel}>Add item</ThemedText>}
+            </Pressable>
+          </BottomSheetView>
+        </BottomSheet>
       </SafeAreaView>
     </ThemedView>
   );
 }
 
-function EmptyGroceries() {
+function EmptyGroceries({ onAddManual }: { onAddManual: () => void }) {
   return (
     <View style={styles.emptyState}>
       <View style={styles.emptyIcon}><Ionicons name="cart-outline" size={42} color={colors.leaf} /></View>
       <ThemedText style={styles.emptyTitle}>Your grocery list is empty</ThemedText>
       <ThemedText style={styles.emptyBody}>Add ingredients from a saved recipe and we’ll organize your shopping trip for you.</ThemedText>
-      <Pressable disabled style={styles.emptyButton} accessibilityRole="button" accessibilityLabel="Add ingredients from a recipe">
-        <Ionicons name="add" size={19} color="#FFFFFF" />
-        <ThemedText style={styles.emptyButtonLabel}>Add from a recipe</ThemedText>
+      <Pressable style={styles.emptyManualButton} onPress={() => router.push("/recipes")} accessibilityRole="button" accessibilityLabel="Add ingredients from a recipe">
+        <Ionicons name="add" size={19} color={colors.leaf} />
+        <ThemedText style={styles.emptyManualLabel}>Add from a recipe</ThemedText>
+        <Ionicons name="arrow-forward-outline" size={17} color={colors.leaf} />
       </Pressable>
-      <ThemedText style={styles.emptyHint}>Recipe linking will be available soon.</ThemedText>
+      <View style={styles.orRow}>
+        <View style={styles.orLine} />
+        <ThemedText style={styles.orLabel}>or</ThemedText>
+        <View style={styles.orLine} />
+      </View>
+      <Pressable style={styles.emptyButton} onPress={onAddManual} accessibilityRole="button" accessibilityLabel="Add grocery item manually">
+        <Ionicons name="create-outline" size={17} color="#FFFFFF" />
+        <ThemedText style={styles.emptyButtonLabel}>Add manually</ThemedText>
+      </Pressable>
     </View>
   );
 }
@@ -144,6 +194,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
+  headerActions: { flexDirection: "row", alignItems: "center", gap: 14 },
   eyebrow: {
     color: colors.leaf,
     fontSize: 11,
@@ -151,6 +202,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1.1,
   },
   title: { color: colors.ink, fontSize: 28, fontWeight: "800", marginTop: 3 },
+  addItem: { color: colors.leaf, fontSize: 13, fontWeight: "800" },
   clearAll: { color: colors.tomato, fontSize: 13, fontWeight: "800" },
   progressCard: {
     backgroundColor: colors.sage,
@@ -204,9 +256,13 @@ const styles = StyleSheet.create({
   emptyIcon: { width: 120, height: 120, borderRadius: 60, backgroundColor: "#EAF5DE", borderWidth: 2, borderColor: "#D7EBC4", alignItems: "center", justifyContent: "center", marginBottom: 8 },
   emptyTitle: { color: colors.ink, fontSize: 23, fontWeight: "900", textAlign: "center" },
   emptyBody: { color: colors.muted, fontSize: 13, lineHeight: 19, textAlign: "center", maxWidth: 306 },
-  emptyButton: { width: 242, height: 52, borderRadius: 16, backgroundColor: colors.tomato, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 9, marginTop: 8, opacity: 0.55 },
+  emptyButton: { width: 242, height: 52, borderRadius: 16, backgroundColor: colors.tomato, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 9, marginTop: 8 },
   emptyButtonLabel: { color: "#FFFFFF", fontSize: 13, fontWeight: "900" },
-  emptyHint: { color: "#9AA79F", fontSize: 11, fontWeight: "700", textAlign: "center" },
+  emptyManualButton: { width: 242, height: 48, borderRadius: 15, borderWidth: 1, borderColor: colors.leaf, backgroundColor: "#FFFFFF", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7 },
+  emptyManualLabel: { color: colors.leaf, fontSize: 13, fontWeight: "800" },
+  orRow: { width: 242, flexDirection: "row", alignItems: "center", gap: 10 },
+  orLine: { flex: 1, height: 1, backgroundColor: colors.line },
+  orLabel: { color: colors.muted, fontSize: 12, fontWeight: "700" },
   confirmBackdrop: { flex: 1, backgroundColor: "#14231A66", alignItems: "center", justifyContent: "center", padding: 20 },
   confirmModal: { width: "100%", maxWidth: 360, borderRadius: 24, backgroundColor: "#FCFBF8", padding: 22, alignItems: "center", gap: 9 },
   confirmIcon: { width: 52, height: 52, borderRadius: 26, backgroundColor: "#FCE2D8", alignItems: "center", justifyContent: "center", marginBottom: 2 },
@@ -218,4 +274,14 @@ const styles = StyleSheet.create({
   clearConfirmButton: { flex: 1, height: 46, borderRadius: 14, backgroundColor: colors.tomato, alignItems: "center", justifyContent: "center" },
   confirmDeleteLabel: { color: "#FFFFFF", fontSize: 14, fontWeight: "800" },
   disabled: { opacity: 0.45 },
+  sheet: { backgroundColor: "#FCFBF8", borderTopLeftRadius: 24, borderTopRightRadius: 24 },
+  manualSheet: { alignSelf: "stretch", padding: 20, paddingBottom: 28, gap: 12 },
+  sheetHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  sheetTitle: { color: colors.ink, fontSize: 20, fontWeight: "900" },
+  inputRow: { flexDirection: "row", gap: 9 },
+  input: { minHeight: 46, borderWidth: 1, borderColor: colors.line, borderRadius: 13, paddingHorizontal: 13, color: colors.ink, fontSize: 15, backgroundColor: "#FFFFFF" },
+  quantityInput: { flex: 1 },
+  unitInput: { flex: 1.4 },
+  saveButton: { minHeight: 50, borderRadius: 16, backgroundColor: colors.ink, alignItems: "center", justifyContent: "center" },
+  saveButtonLabel: { color: "#FFFFFF", fontSize: 14, fontWeight: "800" },
 });

@@ -223,6 +223,16 @@ export async function getGroceries(): Promise<Grocery[]> {
   return body;
 }
 
+export async function addGrocery(input: { name: string; quantity?: number; unit?: string }): Promise<Grocery> {
+  const response = await authenticatedFetch('/groceries', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(input),
+  });
+  if (!response.ok) throw new Error((await response.text()) || 'Unable to add grocery.');
+  const body: unknown = await response.json();
+  if (!isGrocery(body)) throw new Error('Invalid grocery response.');
+  return body;
+}
+
 export async function clearGroceries(): Promise<void> {
   const response = await authenticatedFetch('/groceries', { method: 'DELETE' });
   if (!response.ok) throw new Error((await response.text()) || 'Unable to clear groceries.');
