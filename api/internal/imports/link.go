@@ -25,6 +25,7 @@ const (
 	TikTokVideo   LinkContentType = "tiktok:video"
 	FacebookReels LinkContentType = "facebook:reel"
 	FacebookPost  LinkContentType = "facebook:post"
+	InstagramPost LinkContentType = "instagram:post"
 	YouTubeVideo  LinkContentType = "youtube:video"
 	YouTubeShort  LinkContentType = "youtube:short"
 )
@@ -54,7 +55,7 @@ type apifyRun struct {
 	} `json:"data"`
 }
 
-func HandleImport(token, debugDir, authURL, webhookSecret, tikTokActorURL, facebookReelsActorURL, facebookPostsActorURL, youtubeActorURL, youtubeTranscriptActorURL string, pipeline *Pipeline) http.HandlerFunc {
+func HandleImport(token, debugDir, authURL, webhookSecret, tikTokActorURL, facebookReelsActorURL, facebookPostsActorURL, instagramActorURL, youtubeActorURL, youtubeTranscriptActorURL string, pipeline *Pipeline) http.HandlerFunc {
 	client := &http.Client{Timeout: 25 * time.Second, CheckRedirect: func(req *http.Request, via []*http.Request) error {
 		if _, err := validateLinkURL(req.URL.String()); err != nil {
 			return err
@@ -111,6 +112,9 @@ func HandleImport(token, debugDir, authURL, webhookSecret, tikTokActorURL, faceb
 		} else if contentType == FacebookPost {
 			source, actorURL = "facebook", facebookPostsActorURL
 			actorInput = facebookPostsActorInput(redirected.String())
+		} else if contentType == InstagramPost {
+			source, actorURL = "instagram", instagramActorURL
+			actorInput = instagramActorInput(redirected.String())
 		} else if contentType == YouTubeVideo || contentType == YouTubeShort {
 			source, actorURL = "youtube", youtubeActorURL
 			actorInput = youtubeActorInput(redirected.String())
@@ -126,7 +130,7 @@ func HandleImport(token, debugDir, authURL, webhookSecret, tikTokActorURL, faceb
 			return
 		}
 		recipeID := ""
-		if contentType == TikTokPhoto || contentType == TikTokVideo || contentType == FacebookReels || contentType == FacebookPost || contentType == YouTubeVideo || contentType == YouTubeShort {
+		if contentType == TikTokPhoto || contentType == TikTokVideo || contentType == FacebookReels || contentType == FacebookPost || contentType == InstagramPost || contentType == YouTubeVideo || contentType == YouTubeShort {
 			if pipeline == nil || pipeline.Config.OpenRouterKey == "" || pipeline.Storage == nil {
 				http.Error(w, "Recipe extraction requires OPENROUTER_API_KEY and S3 configuration", 503)
 				return
@@ -247,6 +251,11 @@ func ParseLinkContentType(raw string) (LinkContentType, error) {
 		}
 		return FacebookPost, nil
 	}
+	if isInstagramHost(u.Hostname()) {
+		if strings.HasPrefix(strings.ToLower(u.Path), "/p/") {
+			return InstagramPost, nil
+		}
+	}
 	if isYouTubeHost(u.Hostname()) {
 		if strings.HasPrefix(strings.ToLower(u.Path), "/shorts/") {
 			return YouTubeShort, nil
@@ -255,13 +264,13 @@ func ParseLinkContentType(raw string) (LinkContentType, error) {
 			return YouTubeVideo, nil
 		}
 	}
-	return "", fmt.Errorf("URL must be a TikTok photo/video, Facebook post/reel, or YouTube video/Short")
+	return "", fmt.Errorf("URL must be a TikTok photo/video, Facebook post/reel, Instagram post, or YouTube video/Short")
 }
 
 func validateLinkURL(raw string) (*url.URL, error) {
 	u, err := url.Parse(strings.TrimSpace(raw))
-	if err != nil || u.Scheme != "https" || u.Host == "" || u.User != nil || (u.Port() != "" && u.Port() != "443") || (!isTikTokHost(u.Hostname()) && !isFacebookHost(u.Hostname()) && !isYouTubeHost(u.Hostname())) {
-		return nil, fmt.Errorf("url must be an HTTPS TikTok, Facebook, or YouTube URL")
+	if err != nil || u.Scheme != "https" || u.Host == "" || u.User != nil || (u.Port() != "" && u.Port() != "443") || (!isTikTokHost(u.Hostname()) && !isFacebookHost(u.Hostname()) && !isInstagramHost(u.Hostname()) && !isYouTubeHost(u.Hostname())) {
+		return nil, fmt.Errorf("url must be an HTTPS TikTok, Facebook, Instagram, or YouTube URL")
 	}
 	return u, nil
 }
@@ -277,8 +286,8 @@ func resolve(ctx context.Context, client *http.Client, input *url.URL) (*url.URL
 	}
 	defer resp.Body.Close()
 	io.Copy(io.Discard, io.LimitReader(resp.Body, 1024))
-	if resp.Request == nil || resp.Request.URL == nil || (!isTikTokHost(resp.Request.URL.Hostname()) && !isFacebookHost(resp.Request.URL.Hostname()) && !isYouTubeHost(resp.Request.URL.Hostname())) {
-		return nil, fmt.Errorf("redirected outside TikTok, Facebook, or YouTube")
+	if resp.Request == nil || resp.Request.URL == nil || (!isTikTokHost(resp.Request.URL.Hostname()) && !isFacebookHost(resp.Request.URL.Hostname()) && !isInstagramHost(resp.Request.URL.Hostname()) && !isYouTubeHost(resp.Request.URL.Hostname())) {
+		return nil, fmt.Errorf("redirected outside TikTok, Facebook, Instagram, or YouTube")
 	}
 	return resp.Request.URL, nil
 }
@@ -291,6 +300,11 @@ func isTikTokHost(host string) bool {
 func isFacebookHost(host string) bool {
 	host = strings.ToLower(strings.TrimSuffix(host, "."))
 	return host == "facebook.com" || strings.HasSuffix(host, ".facebook.com")
+}
+
+func isInstagramHost(host string) bool {
+	host = strings.ToLower(strings.TrimSuffix(host, "."))
+	return host == "instagram.com" || strings.HasSuffix(host, ".instagram.com")
 }
 
 func isYouTubeHost(host string) bool {
@@ -308,6 +322,17 @@ func facebookActorInput(url string) map[string]any {
 func facebookPostsActorInput(url string) map[string]any {
 	return map[string]any{
 		"startUrls": []map[string]string{{"url": url}},
+	}
+}
+
+func instagramActorInput(url string) map[string]any {
+	return map[string]any{
+		"addParentData": false,
+		"directUrls":    []string{url},
+		"resultsLimit":  1,
+		"resultsType":   "posts",
+		"searchLimit":   10,
+		"searchType":    "hashtag",
 	}
 }
 

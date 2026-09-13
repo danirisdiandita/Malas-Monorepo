@@ -265,6 +265,8 @@ func (p *Pipeline) process(ctx context.Context, row *ent.Recipe) error {
 		assets = collectVideoAssetURLs(items)
 	} else if strings.EqualFold(hook.ContentType, "facebook:post") {
 		assets = collectFacebookPostAssetURLs(items)
+	} else if strings.EqualFold(hook.ContentType, string(InstagramPost)) {
+		assets = collectInstagramAssetURLs(items)
 	}
 	if isYouTube {
 		assets = nil

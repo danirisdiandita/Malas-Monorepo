@@ -57,6 +57,17 @@ func TestFacebookPostsActorInput(t *testing.T) {
 	}
 }
 
+func TestInstagramPost(t *testing.T) {
+	got, err := ParseLinkContentType("https://www.instagram.com/p/Dcth41Zgnz5/?img_index=8")
+	if err != nil || got != InstagramPost {
+		t.Fatalf("ParseLinkContentType() = %q, %v", got, err)
+	}
+	input := instagramActorInput("https://www.instagram.com/p/Dcth41Zgnz5/")
+	if input["addParentData"] != false || input["resultsLimit"] != 1 || input["resultsType"] != "posts" {
+		t.Fatalf("unexpected Instagram actor input: %#v", input)
+	}
+}
+
 func TestParseYouTubeContentType(t *testing.T) {
 	short, err := ParseLinkContentType("https://www.youtube.com/shorts/abc123")
 	if err != nil || short != YouTubeShort {

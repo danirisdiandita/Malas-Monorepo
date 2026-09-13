@@ -118,6 +118,8 @@ func HandleImportWebhook(token, debugDir, secret string) http.HandlerFunc {
 			assets = collectAssetURLs(items)
 		} else if strings.EqualFold(webhook.ContentType, "facebook:post") {
 			assets = collectFacebookPostAssetURLs(items)
+		} else if strings.EqualFold(webhook.ContentType, string(InstagramPost)) {
+			assets = collectInstagramAssetURLs(items)
 		} else if strings.EqualFold(webhook.ContentType, "youtube:video") || strings.EqualFold(webhook.ContentType, "youtube:short") {
 			// YouTube media is processed from its metadata and thumbnail in the
 			// recipe worker; do not download the platform video here.
@@ -294,6 +296,10 @@ func buildFinalJSON(items []any, contentType string, assets []asset) map[string]
 		if isFacebookReelContentType(contentType) || strings.EqualFold(contentType, "facebook:post") {
 			result["title"] = stringValue(item, "text")
 			result["description"] = stringValue(item, "text")
+		} else if strings.EqualFold(contentType, string(InstagramPost)) {
+			result["title"] = firstString(item, "caption", "title", "name")
+			result["description"] = firstString(item, "caption", "description", "alt")
+			result["source_url"] = firstString(item, "url", "inputUrl")
 		} else if strings.EqualFold(contentType, "youtube:video") || strings.EqualFold(contentType, "youtube:short") {
 			result["title"] = firstString(item, "title", "name")
 			result["description"] = firstString(item, "description", "text")
@@ -352,6 +358,33 @@ func firstString(object map[string]any, keys ...string) string {
 		}
 	}
 	return ""
+}
+
+func collectInstagramAssetURLs(value any) []asset {
+	seen := map[string]bool{}
+	assets := make([]asset, 0)
+	var walk func(any, bool)
+	walk = func(current any, imageContext bool) {
+		switch typed := current.(type) {
+		case map[string]any:
+			for key, child := range typed {
+				keyName := strings.ToLower(key)
+				childIsImage := imageContext || strings.Contains(keyName, "image") || strings.Contains(keyName, "displayurl") || strings.Contains(keyName, "thumbnail")
+				walk(child, childIsImage)
+			}
+		case []any:
+			for _, child := range typed {
+				walk(child, imageContext)
+			}
+		case string:
+			if imageContext && strings.HasPrefix(typed, "https://") && !seen[typed] && len(assets) < maxAssetCount {
+				seen[typed] = true
+				assets = append(assets, asset{URL: typed})
+			}
+		}
+	}
+	walk(value, false)
+	return assets
 }
 
 func stringValue(object map[string]any, key string) string {
