@@ -18,6 +18,7 @@ const colors = {
   line: "#D9E1D7",
 };
 type OnboardingStep = {
+  index: number;
   eyebrow: string;
   title: string[];
   description: string;
@@ -27,13 +28,15 @@ type OnboardingStep = {
 
 const steps: OnboardingStep[] = [
   {
+    index: 0,
     eyebrow: "RECIPES EVERYWHERE",
     title: ["Found a great recipe?", "Don’t lose it again."],
     description:
       "TikTok, YouTube, and endless links make cooking inspiration easy to find — but hard to track. yuzu saves it in one tap.",
-    button: "Save my first recipe",
+    button: "Continue",
   },
   {
+    index: 1,
     eyebrow: "ONE TAP TO SHOP",
     title: ["Recipe in.", "Grocery list ready."],
     description:
@@ -41,6 +44,7 @@ const steps: OnboardingStep[] = [
     button: "Make my grocery list",
   },
   {
+    index: 2,
     eyebrow: "SHOP WITH EASE",
     title: ["Your list is ready.", "Shopping feels simple."],
     description:
@@ -48,6 +52,7 @@ const steps: OnboardingStep[] = [
     button: "Take me shopping",
   },
   {
+    index: 3,
     eyebrow: "COOK WITH CONFIDENCE",
     title: ["From saved", "to served."],
     description:
@@ -55,6 +60,7 @@ const steps: OnboardingStep[] = [
     button: "Start cooking",
   },
   {
+    index: 4,
     eyebrow: "PLAN WITHOUT THE PRESSURE",
     title: ["Know what to cook", "next."],
     description:
@@ -62,6 +68,7 @@ const steps: OnboardingStep[] = [
     button: "Plan my week",
   },
   {
+    index: 5,
     eyebrow: "A LIST THAT FITS YOUR LIFE",
     title: ["Only buy what", "you need."],
     description:
@@ -69,6 +76,7 @@ const steps: OnboardingStep[] = [
     button: "Keep it simple",
   },
   {
+    index: 6,
     eyebrow: "YUZU",
     title: ["Every recipe.", "Right where you left it."],
     description:
@@ -103,6 +111,9 @@ export default function OnboardingScreen() {
           </ThemedText>
           <OnboardingVisual step={step} />
           <View style={styles.footer}>
+            <ThemedText style={styles.stepIndex}>
+              {current.index + 1} / {steps.length}
+            </ThemedText>
             <View style={styles.progress}>
               {steps.map((_, index) => (
                 <View
@@ -342,6 +353,7 @@ const styles = StyleSheet.create({
     paddingTop: 24,
   },
   progress: { flexDirection: "row", gap: 6, marginBottom: 16 },
+  stepIndex: { color: colors.muted, fontSize: 12, fontWeight: "700", marginBottom: 8 },
   dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.line },
   activeDot: { width: 24, backgroundColor: colors.leaf },
   primaryButton: {

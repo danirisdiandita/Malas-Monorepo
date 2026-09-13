@@ -21,7 +21,7 @@ export function AuthProviderButton({ provider }: AuthProviderButtonProps) {
   return (
     <Pressable
       disabled={signIn.isPending}
-      style={({ pressed }) => [styles.button, provider === 'apple' && styles.appleButton, pressed && styles.pressed, signIn.isPending && styles.disabled]}
+      style={({ pressed }) => [styles.button, provider === 'google' && styles.googleButton, provider === 'apple' && styles.appleButton, pressed && styles.pressed, signIn.isPending && styles.disabled]}
       onPress={handlePress}
     >
       <Ionicons name={provider === 'google' ? 'logo-google' : 'logo-apple'} size={20} color={provider === 'google' ? '#4285F4' : '#FFFFFF'} />
@@ -32,6 +32,7 @@ export function AuthProviderButton({ provider }: AuthProviderButtonProps) {
 
 const styles = StyleSheet.create({
   button: { minHeight: 54, borderRadius: 16, borderWidth: StyleSheet.hairlineWidth, borderColor: '#D9E1D7', backgroundColor: '#FFFFFF', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12 },
+  googleButton: { backgroundColor: '#FFFFFF', shadowColor: '#14231A', shadowOpacity: 0.1, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
   appleButton: { backgroundColor: '#14231A', borderColor: '#14231A' },
   pressed: { opacity: 0.7 },
   disabled: { opacity: 0.5 },
