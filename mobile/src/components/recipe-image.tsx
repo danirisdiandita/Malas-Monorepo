@@ -4,7 +4,12 @@ import { StyleSheet } from 'react-native';
 
 export function RecipeImage({ url }: { url?: string }) {
  const [failedURL, setFailedURL] = useState<string>();
- if (!url || failedURL === url) return null;
- return <Image source={{uri:url}} style={StyleSheet.absoluteFill}
-  contentFit="cover" accessibilityLabel="Recipe cover" onError={() => setFailedURL(url)} />;
+ const hasImage = Boolean(url) && failedURL !== url;
+ return <Image
+  source={hasImage ? {uri: url} : require('@/assets/images/yuzu-logo-transparent.png')}
+  style={StyleSheet.absoluteFill}
+  contentFit={hasImage ? "cover" : "contain"}
+  accessibilityLabel={hasImage ? "Recipe cover" : "Yuzu recipe placeholder"}
+  onError={url ? () => setFailedURL(url) : undefined}
+ />;
 }

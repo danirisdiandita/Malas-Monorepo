@@ -278,6 +278,7 @@ func (p *Pipeline) process(ctx context.Context, row *ent.Recipe) error {
 	isYouTube := strings.EqualFold(hook.ContentType, string(YouTubeVideo)) || strings.EqualFold(hook.ContentType, string(YouTubeShort))
 	isInstagramReel := strings.EqualFold(hook.ContentType, string(InstagramReel))
 	isPinterestPin := strings.EqualFold(hook.ContentType, string(PinterestPin))
+	isWebPage := strings.EqualFold(hook.ContentType, string(WebPage))
 	isVideo := strings.EqualFold(hook.ContentType, string(TikTokVideo)) || isFacebookReelContentType(hook.ContentType)
 	assets := collectImagePostAssetURLs(items)
 	if isVideo {
@@ -300,7 +301,7 @@ func (p *Pipeline) process(ctx context.Context, row *ent.Recipe) error {
 	if isYouTube {
 		assets = nil
 	}
-	if len(assets) == 0 && !isYouTube {
+	if len(assets) == 0 && !isYouTube && !isWebPage {
 		return fmt.Errorf("post contains no downloadable media")
 	}
 	for i := range assets {
@@ -372,6 +373,8 @@ func (p *Pipeline) process(ctx context.Context, row *ent.Recipe) error {
 			return err
 		}
 		coverSource = extractionImage
+	} else if isWebPage {
+		// Website imports use crawler text/markdown and may have no image.
 	} else {
 		extractionImage, err = stackPhotos(paths)
 		if err != nil {
@@ -386,11 +389,14 @@ func (p *Pipeline) process(ctx context.Context, row *ent.Recipe) error {
 	if err != nil {
 		return err
 	}
-	compressed, err := compressImage(coverSource)
-	if err != nil {
-		return fmt.Errorf("compress cover: %w", err)
+	var compressed []byte
+	if len(coverSource) > 0 {
+		compressed, err = compressImage(coverSource)
+		if err != nil {
+			return fmt.Errorf("compress cover: %w", err)
+		}
 	}
-	if p.Storage == nil {
+	if p.Storage == nil && len(compressed) > 0 {
 		return fmt.Errorf("image storage is not configured")
 	}
 	for index, extractedRecipe := range extracted {
@@ -411,19 +417,29 @@ func (p *Pipeline) process(ctx context.Context, row *ent.Recipe) error {
 			return err
 		}
 		key := fmt.Sprintf("recipes/%d/%s/cover.webp", target.UserID, target.ID)
-		if err = p.Storage.Upload(ctx, key, bytes.NewReader(compressed), int64(len(compressed)), "image/webp"); err != nil {
-			return fmt.Errorf("upload cover: %w", err)
+		if len(compressed) > 0 {
+			if err = p.Storage.Upload(ctx, key, bytes.NewReader(compressed), int64(len(compressed)), "image/webp"); err != nil {
+				return fmt.Errorf("upload cover: %w", err)
+			}
 		}
 		update := p.DB.Recipe.UpdateOneID(target.ID).SetName(strings.TrimSpace(extractedRecipe.Name)).
 			SetServings(extractedRecipe.Servings).SetProcessMinutes(extractedRecipe.ProcessMinutes).
 			SetIngredients(ingredients).SetInstructions(pq.StringArray(extractedRecipe.Instructions)).
 			SetTags(pq.StringArray(extractedRecipe.Tags)).SetNotes(extractedRecipe.Notes).
-			SetImageS3Key(key).SetImportStatus(recipe.ImportStatusDone).ClearImportError()
+			SetImportStatus(recipe.ImportStatusDone).ClearImportError()
+		if len(compressed) > 0 {
+			update.SetImageS3Key(key)
+		}
 		if index == 0 {
 			update.ClearProcessingAt()
 		}
 		if err = update.Exec(ctx); err != nil {
 			return fmt.Errorf("save recipe %d: %w", index+1, err)
+		}
+	}
+	if strings.EqualFold(p.Config.Environment, "production") {
+		if err := os.RemoveAll(folder); err != nil {
+			log.Printf("remove import debug folder %s: %v", folder, err)
 		}
 	}
 	return nil

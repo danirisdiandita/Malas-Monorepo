@@ -92,6 +92,28 @@ func TestPinterestPin(t *testing.T) {
 	}
 }
 
+func TestWebLink(t *testing.T) {
+	got, err := ParseLinkContentType("https://cookpad.com/eng/recipes/25803559?ref=search")
+	if err != nil || got != WebPage {
+		t.Fatalf("ParseLinkContentType() = %q, %v", got, err)
+	}
+	input := webActorInput("https://cookpad.com/eng/recipes/25803559")
+	urls, ok := input["startUrls"].([]map[string]string)
+	if !ok || len(urls) != 1 || urls[0]["url"] == "" || input["saveMarkdown"] != true || input["blockMedia"] != true {
+		t.Fatalf("unexpected web actor input: %#v", input)
+	}
+}
+
+func TestWebFinalJSONUsesMarkdown(t *testing.T) {
+	final := buildFinalJSON([]any{map[string]any{
+		"metadata": map[string]any{"title": "Main recipe"},
+		"crawl":    map[string]any{"markdown": "# Main recipe\n\nIngredients..."},
+	}}, string(WebPage), nil)
+	if final["title"] != "Main recipe" || final["markdown"] != "# Main recipe\n\nIngredients..." {
+		t.Fatalf("unexpected web final JSON: %#v", final)
+	}
+}
+
 func TestCollectPinterestAssetURLsUsesCanonicalPinImage(t *testing.T) {
 	storyImage := map[string]any{"images": map[string]any{
 		"originals": map[string]any{"url": "https://i.pinimg.com/originals/story.jpg"},

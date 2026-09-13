@@ -331,6 +331,24 @@ func buildFinalJSON(items []any, contentType string, assets []asset) map[string]
 					result["youtube_"+key] = value
 				}
 			}
+		} else if strings.EqualFold(contentType, string(WebPage)) {
+			result["title"] = firstString(item, "title", "name")
+			result["description"] = firstString(item, "description", "text", "markdown", "content")
+			result["source_url"] = firstString(item, "url", "inputUrl", "canonicalUrl")
+			if metadata, ok := item["metadata"].(map[string]any); ok {
+				if result["title"] == "" {
+					result["title"] = firstString(metadata, "title", "name")
+				}
+				if result["description"] == "" {
+					result["description"] = firstString(metadata, "description")
+				}
+				if result["source_url"] == "" {
+					result["source_url"] = firstString(metadata, "canonicalUrl", "url")
+				}
+			}
+			if markdown := webMarkdown(item); markdown != "" {
+				result["markdown"] = markdown
+			}
 		}
 		if detail, ok := item["aweme_detail"].(map[string]any); ok {
 			result["title"] = stringValue(detail, "desc")
@@ -353,6 +371,14 @@ func buildFinalJSON(items []any, contentType string, assets []asset) map[string]
 	}
 	result["image_post_info"] = images
 	return result
+}
+
+func webMarkdown(item map[string]any) string {
+	if markdown := firstString(item, "markdown", "text", "content"); markdown != "" {
+		return markdown
+	}
+	crawl, _ := item["crawl"].(map[string]any)
+	return firstString(crawl, "markdown", "text", "content")
 }
 
 func youtubeSubtitleText(item map[string]any) string {

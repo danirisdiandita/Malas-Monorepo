@@ -30,6 +30,7 @@ const (
 	PinterestPin  LinkContentType = "pinterest:pin"
 	YouTubeVideo  LinkContentType = "youtube:video"
 	YouTubeShort  LinkContentType = "youtube:short"
+	WebPage       LinkContentType = "web"
 )
 
 var awemeIDPattern = regexp.MustCompile(`(?:^|/)((?:\d){10,})(?:/|$)`)
@@ -57,7 +58,7 @@ type apifyRun struct {
 	} `json:"data"`
 }
 
-func HandleImport(token, debugDir, authURL, webhookSecret, tikTokActorURL, facebookReelsActorURL, facebookPostsActorURL, instagramActorURL, instagramReelsActorURL, pinterestActorURL, youtubeActorURL, youtubeTranscriptActorURL string, pipeline *Pipeline) http.HandlerFunc {
+func HandleImport(token, debugDir, authURL, webhookSecret, tikTokActorURL, facebookReelsActorURL, facebookPostsActorURL, instagramActorURL, instagramReelsActorURL, pinterestActorURL, youtubeActorURL, youtubeTranscriptActorURL, webActorURL string, pipeline *Pipeline) http.HandlerFunc {
 	client := &http.Client{Timeout: 25 * time.Second, CheckRedirect: func(req *http.Request, via []*http.Request) error {
 		if _, err := validateLinkURL(req.URL.String()); err != nil {
 			return err
@@ -130,6 +131,9 @@ func HandleImport(token, debugDir, authURL, webhookSecret, tikTokActorURL, faceb
 				actorURL = youtubeTranscriptActorURL
 				actorInput = youtubeTranscriptActorInput(redirected.String())
 			}
+		} else if contentType == WebPage {
+			source, actorURL = "web", webActorURL
+			actorInput = webActorInput(redirected.String())
 		}
 		payload, _ := json.Marshal(actorInput)
 		webhook, err := url.Parse(strings.TrimRight(authURL, "/") + "/webhooks/import")
@@ -138,7 +142,7 @@ func HandleImport(token, debugDir, authURL, webhookSecret, tikTokActorURL, faceb
 			return
 		}
 		recipeID := ""
-		if contentType == TikTokPhoto || contentType == TikTokVideo || contentType == FacebookReels || contentType == FacebookPost || contentType == InstagramPost || contentType == InstagramReel || contentType == PinterestPin || contentType == YouTubeVideo || contentType == YouTubeShort {
+		if contentType == TikTokPhoto || contentType == TikTokVideo || contentType == FacebookReels || contentType == FacebookPost || contentType == InstagramPost || contentType == InstagramReel || contentType == PinterestPin || contentType == YouTubeVideo || contentType == YouTubeShort || contentType == WebPage {
 			if pipeline == nil || pipeline.Config.OpenRouterKey == "" || pipeline.Storage == nil {
 				http.Error(w, "Recipe extraction requires OPENROUTER_API_KEY and S3 configuration", 503)
 				return
@@ -278,13 +282,13 @@ func ParseLinkContentType(raw string) (LinkContentType, error) {
 			return YouTubeVideo, nil
 		}
 	}
-	return "", fmt.Errorf("URL must be a TikTok photo/video, Facebook post/reel, Instagram post/reel, or YouTube video/Short")
+	return WebPage, nil
 }
 
 func validateLinkURL(raw string) (*url.URL, error) {
 	u, err := url.Parse(strings.TrimSpace(raw))
-	if err != nil || u.Scheme != "https" || u.Host == "" || u.User != nil || (u.Port() != "" && u.Port() != "443") || (!isTikTokHost(u.Hostname()) && !isFacebookHost(u.Hostname()) && !isInstagramHost(u.Hostname()) && !isPinterestHost(u.Hostname()) && !isYouTubeHost(u.Hostname())) {
-		return nil, fmt.Errorf("url must be an HTTPS TikTok, Facebook, Instagram, Pinterest, or YouTube URL")
+	if err != nil || u.Scheme != "https" || u.Host == "" || u.User != nil || (u.Port() != "" && u.Port() != "443") {
+		return nil, fmt.Errorf("url must be an HTTPS URL")
 	}
 	return u, nil
 }
@@ -300,8 +304,8 @@ func resolve(ctx context.Context, client *http.Client, input *url.URL) (*url.URL
 	}
 	defer resp.Body.Close()
 	io.Copy(io.Discard, io.LimitReader(resp.Body, 1024))
-	if resp.Request == nil || resp.Request.URL == nil || (!isTikTokHost(resp.Request.URL.Hostname()) && !isFacebookHost(resp.Request.URL.Hostname()) && !isInstagramHost(resp.Request.URL.Hostname()) && !isPinterestHost(resp.Request.URL.Hostname()) && !isYouTubeHost(resp.Request.URL.Hostname())) {
-		return nil, fmt.Errorf("redirected outside TikTok, Facebook, Instagram, Pinterest, or YouTube")
+	if resp.Request == nil || resp.Request.URL == nil || resp.Request.URL.Scheme != "https" {
+		return nil, fmt.Errorf("redirected outside HTTPS")
 	}
 	return resp.Request.URL, nil
 }
@@ -396,6 +400,24 @@ func youtubeTranscriptActorInput(url string) map[string]any {
 		"list_only":           false,
 		"preserve_formatting": false,
 		"youtube_url":         url,
+	}
+}
+
+func webActorInput(url string) map[string]any {
+	return map[string]any{
+		"aggressivePrune": false, "blockMedia": true,
+		"clickElementsCssSelector":      "[aria-expanded=\"false\"]",
+		"clientSideMinChangePercentage": 15, "crawlerType": "playwright:adaptive",
+		"debugLog": false, "debugMode": false, "expandIframes": true,
+		"ignoreCanonicalUrl": false, "ignoreHttpsErrors": false, "keepUrlFragments": false,
+		"readableTextCharThreshold": 100, "removeCookieWarnings": true,
+		"removeElementsCssSelector":        "nav, footer, script, style, noscript, svg, img[src^='data:'],\n[role=\"alert\"],\n[role=\"banner\"],\n[role=\"dialog\"],\n[role=\"alertdialog\"],\n[role=\"region\"][aria-label*=\"skip\" i],\n[aria-modal=\"true\"]",
+		"renderingTypeDetectionPercentage": 10, "respectRobotsTxtFile": true,
+		"reuseStoredDetectionResults": false, "saveFiles": false, "saveHtml": false,
+		"saveHtmlAsFile": false, "saveMarkdown": true, "saveScreenshots": false,
+		"signHttpRequests": false, "startUrls": []map[string]string{{"url": url}},
+		"storeSkippedUrls": false, "summarize": false, "useLlmsTxt": false,
+		"useSitemaps": false,
 	}
 }
 

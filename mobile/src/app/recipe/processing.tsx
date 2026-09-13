@@ -84,7 +84,7 @@ export default function RecipeProcessingScreen() {
           </ThemedText>
           <View style={styles.card}>
             <View style={styles.icon}>
-              <ThemedText style={styles.music}>♪</ThemedText>
+              <Ionicons name="link-outline" size={17} color={colors.leaf} />
             </View>
             <View style={styles.cardCopy}>
               <ThemedText style={styles.cardTitle}>
@@ -295,11 +295,12 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 15,
-    backgroundColor: "#17221D",
+    backgroundColor: colors.sage,
+    borderWidth: 1,
+    borderColor: colors.line,
     alignItems: "center",
     justifyContent: "center",
   },
-  music: { color: "#fff", fontSize: 16 },
   cardCopy: { flex: 1 },
   cardTitle: { color: colors.ink, fontSize: 12, fontWeight: "900" },
   cardUrl: { color: "#9AA79F", fontSize: 11, marginTop: 2 },

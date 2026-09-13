@@ -8,6 +8,7 @@ import (
 )
 
 type Config struct {
+	Environment          string
 	Port                 string
 	DatabaseURL          string
 	GoogleClientID       string
@@ -45,6 +46,7 @@ type ApifyConfig struct {
 	PinterestActorURL         string
 	YouTubeActorURL           string
 	YouTubeTranscriptActorURL string
+	WebActorURL               string
 }
 
 func LoadConfig() *Config {
@@ -53,6 +55,7 @@ func LoadConfig() *Config {
 	}
 
 	return &Config{
+		Environment:         getEnv("ENV", "development"),
 		Port:                getEnv("PORT", "8080"),
 		DatabaseURL:         getEnv("DATABASE_URL", ""),
 		GoogleClientID:      getEnv("GOOGLE_CLIENT_ID", ""),
@@ -76,6 +79,7 @@ func LoadConfig() *Config {
 			PinterestActorURL:         getEnv("APIFY_PINTEREST_ACTOR_URL", "https://api.apify.com/v2/actors/fatihtahta~pinterest-scraper-search/runs"),
 			YouTubeActorURL:           getEnv("APIFY_YOUTUBE_ACTOR_URL", "https://api.apify.com/v2/actors/streamers~youtube-scraper/runs"),
 			YouTubeTranscriptActorURL: getEnv("APIFY_YOUTUBE_TRANSCRIPT_ACTOR_URL", "https://api.apify.com/v2/actors/johnvc~youtubetranscripts/runs"),
+			WebActorURL:               getEnv("APIFY_WEB_ACTOR_URL", "https://api.apify.com/v2/actors/apify~website-content-crawler/runs"),
 		},
 		ImportWebhookSecret:  getEnv("IMPORT_WEBHOOK_SECRET", getEnv("TIKTOK_WEBHOOK_SECRET", "")),
 		OpenRouterKey:        getEnv("OPENROUTER_API_KEY", ""),

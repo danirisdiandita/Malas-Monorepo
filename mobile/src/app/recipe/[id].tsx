@@ -4,7 +4,7 @@ import BottomSheet, {
   type BottomSheetMethods,
 } from "@expo/ui/community/bottom-sheet";
 import { router, useLocalSearchParams } from "expo-router";
-import { Fragment, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import {
   ActivityIndicator,
   Linking,
@@ -72,9 +72,18 @@ export default function RecipeDetailScreen() {
           contentContainerStyle={styles.scrollContent}
         >
           <View style={styles.hero}>
-            {recipe.image_url ? (
-              <Fragment>
-                <RecipeImage url={recipe.image_url} />
+            <View
+              style={
+                recipe.image_url ? StyleSheet.absoluteFill : styles.smallPlaceholder
+              }
+            >
+              <RecipeImage url={recipe.image_url} />
+            </View>
+            {!recipe.image_url && (
+              <View style={styles.imagePlaceholderText} pointerEvents="none">
+                <ThemedText style={styles.placeholderLabel}>no image available</ThemedText>
+              </View>
+            )}
                 {/*<View style={styles.imageURLDebug}>
                   <Text style={styles.imageURLText} selectable numberOfLines={2}>
                     {recipe.image_url}
@@ -95,18 +104,6 @@ export default function RecipeDetailScreen() {
                     />
                   </Pressable>
                 </View>*/}
-              </Fragment>
-            ) : (
-              <View
-                style={styles.imagePlaceholder}
-                accessibilityLabel="Recipe image placeholder"
-              >
-                <ThemedText style={styles.heroEmoji}>🍋</ThemedText>
-                <ThemedText style={styles.placeholderLabel}>
-                  Recipe image
-                </ThemedText>
-              </View>
-            )}
             <Pressable
               style={[styles.circleButton, styles.backButton]}
               onPress={() => router.replace("/recipes")}
@@ -646,6 +643,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  smallPlaceholder: {
+    width: 110,
+    height: 110,
+  },
   imageURLDebug: {
     position: "absolute",
     left: 12,
@@ -665,6 +666,13 @@ const styles = StyleSheet.create({
     lineHeight: 13,
   },
   imagePlaceholder: { alignItems: "center", justifyContent: "center" },
+  imagePlaceholderText: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 14,
+    alignItems: "center",
+  },
   heroEmoji: { fontSize: 82, lineHeight: 94 },
   placeholderLabel: {
     color: "#9D804A",
