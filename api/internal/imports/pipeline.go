@@ -263,7 +263,7 @@ func (p *Pipeline) process(ctx context.Context, row *ent.Recipe) error {
 	if isVideo {
 		assets = collectVideoAssetURLs(items)
 	} else if strings.EqualFold(hook.ContentType, "facebook:post") {
-		assets = collectAssetURLs(items)
+		assets = collectFacebookPostAssetURLs(items)
 	}
 	if len(assets) == 0 {
 		return fmt.Errorf("post contains no downloadable media")

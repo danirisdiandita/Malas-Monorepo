@@ -114,8 +114,10 @@ func HandleImportWebhook(token, debugDir, secret string) http.HandlerFunc {
 		assets := collectImagePostAssetURLs(items)
 		if strings.EqualFold(webhook.ContentType, "tiktok:video") {
 			assets = collectVideoAssetURLs(items)
-		} else if isFacebookReelContentType(webhook.ContentType) || strings.EqualFold(webhook.ContentType, "facebook:post") {
+		} else if isFacebookReelContentType(webhook.ContentType) {
 			assets = collectAssetURLs(items)
+		} else if strings.EqualFold(webhook.ContentType, "facebook:post") {
+			assets = collectFacebookPostAssetURLs(items)
 		}
 		for index := range assets {
 			assets[index].File, assets[index].Error = downloadAsset(r.Context(), client, assets[index].URL, filepath.Join(folder, "assets"), index)
@@ -168,6 +170,39 @@ func collectImagePostAssetURLs(value any) []asset {
 		}
 	}
 	walk(value)
+	return assets
+}
+
+func collectFacebookPostAssetURLs(value []any) []asset {
+	seen := map[string]bool{}
+	assets := make([]asset, 0)
+	add := func(raw string) {
+		if strings.HasPrefix(raw, "https://") && !seen[raw] && len(assets) < maxAssetCount {
+			seen[raw] = true
+			assets = append(assets, asset{URL: raw})
+		}
+	}
+	for _, rawItem := range value {
+		item, ok := rawItem.(map[string]any)
+		if !ok {
+			continue
+		}
+		media, _ := item["media"].([]any)
+		for _, rawMedia := range media {
+			mediaItem, ok := rawMedia.(map[string]any)
+			if !ok {
+				continue
+			}
+			if thumbnail, ok := mediaItem["thumbnail"].(string); ok {
+				add(thumbnail)
+			}
+			if photo, ok := mediaItem["photo_image"].(map[string]any); ok {
+				if uri, ok := photo["uri"].(string); ok {
+					add(uri)
+				}
+			}
+		}
+	}
 	return assets
 }
 

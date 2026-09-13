@@ -107,13 +107,14 @@ func TestCollectVideoAssetURLsSupportsFacebookReel(t *testing.T) {
 }
 
 func TestCollectAssetURLsSupportsFacebookPostMedia(t *testing.T) {
-	assets := collectAssetURLs([]any{map[string]any{
+	assets := collectFacebookPostAssetURLs([]any{map[string]any{
+		"user": map[string]any{"profilePic": "https://scontent.fbcdn.net/profile.jpg"},
 		"media": []any{map[string]any{
 			"thumbnail":   "https://scontent.fbcdn.net/post.jpg",
 			"photo_image": map[string]any{"uri": "https://scontent.fbcdn.net/post-full.jpg"},
 		}},
 	}})
-	if len(assets) != 2 {
+	if len(assets) != 2 || assets[0].URL != "https://scontent.fbcdn.net/post.jpg" {
 		t.Fatalf("expected 2 Facebook post assets, got %#v", assets)
 	}
 }
