@@ -37,6 +37,7 @@ func (Recipe) Fields() []ent.Field {
 		field.String("image_s3_key").Optional(),
 		field.String("url").Optional(),
 		field.String("source").Optional(),
+		field.String("language_code").Optional().Nillable(),
 		field.String("webhook_id").Optional(),
 		field.JSON("raw_source_payload", json.RawMessage{}).Optional(),
 	}

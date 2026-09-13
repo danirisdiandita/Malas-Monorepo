@@ -52,6 +52,8 @@ const (
 	FieldURL = "url"
 	// FieldSource holds the string denoting the source field in the database.
 	FieldSource = "source"
+	// FieldLanguageCode holds the string denoting the language_code field in the database.
+	FieldLanguageCode = "language_code"
 	// FieldWebhookID holds the string denoting the webhook_id field in the database.
 	FieldWebhookID = "webhook_id"
 	// FieldRawSourcePayload holds the string denoting the raw_source_payload field in the database.
@@ -117,6 +119,7 @@ var Columns = []string{
 	FieldImageS3Key,
 	FieldURL,
 	FieldSource,
+	FieldLanguageCode,
 	FieldWebhookID,
 	FieldRawSourcePayload,
 }
@@ -252,6 +255,11 @@ func ByURL(opts ...sql.OrderTermOption) OrderOption {
 // BySource orders the results by the source field.
 func BySource(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldSource, opts...).ToFunc()
+}
+
+// ByLanguageCode orders the results by the language_code field.
+func ByLanguageCode(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLanguageCode, opts...).ToFunc()
 }
 
 // ByWebhookID orders the results by the webhook_id field.

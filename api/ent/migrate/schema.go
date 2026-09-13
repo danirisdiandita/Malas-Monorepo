@@ -161,6 +161,7 @@ var (
 		{Name: "image_s3_key", Type: field.TypeString, Nullable: true},
 		{Name: "url", Type: field.TypeString, Nullable: true},
 		{Name: "source", Type: field.TypeString, Nullable: true},
+		{Name: "language_code", Type: field.TypeString, Nullable: true},
 		{Name: "webhook_id", Type: field.TypeString, Nullable: true},
 		{Name: "raw_source_payload", Type: field.TypeJSON, Nullable: true},
 		{Name: "folder_id", Type: field.TypeUUID, Nullable: true},
@@ -174,13 +175,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "recipes_folders_recipes",
-				Columns:    []*schema.Column{RecipesColumns[19]},
+				Columns:    []*schema.Column{RecipesColumns[20]},
 				RefColumns: []*schema.Column{FoldersColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "recipes_users_recipes",
-				Columns:    []*schema.Column{RecipesColumns[20]},
+				Columns:    []*schema.Column{RecipesColumns[21]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -189,17 +190,17 @@ var (
 			{
 				Name:    "recipe_user_id",
 				Unique:  false,
-				Columns: []*schema.Column{RecipesColumns[20]},
+				Columns: []*schema.Column{RecipesColumns[21]},
 			},
 			{
 				Name:    "recipe_folder_id",
 				Unique:  false,
-				Columns: []*schema.Column{RecipesColumns[19]},
+				Columns: []*schema.Column{RecipesColumns[20]},
 			},
 			{
 				Name:    "recipe_webhook_id",
 				Unique:  false,
-				Columns: []*schema.Column{RecipesColumns[17]},
+				Columns: []*schema.Column{RecipesColumns[18]},
 			},
 		},
 	}

@@ -349,6 +349,26 @@ func (_u *RecipeUpdate) ClearSource() *RecipeUpdate {
 	return _u
 }
 
+// SetLanguageCode sets the "language_code" field.
+func (_u *RecipeUpdate) SetLanguageCode(v string) *RecipeUpdate {
+	_u.mutation.SetLanguageCode(v)
+	return _u
+}
+
+// SetNillableLanguageCode sets the "language_code" field if the given value is not nil.
+func (_u *RecipeUpdate) SetNillableLanguageCode(v *string) *RecipeUpdate {
+	if v != nil {
+		_u.SetLanguageCode(*v)
+	}
+	return _u
+}
+
+// ClearLanguageCode clears the value of the "language_code" field.
+func (_u *RecipeUpdate) ClearLanguageCode() *RecipeUpdate {
+	_u.mutation.ClearLanguageCode()
+	return _u
+}
+
 // SetWebhookID sets the "webhook_id" field.
 func (_u *RecipeUpdate) SetWebhookID(v string) *RecipeUpdate {
 	_u.mutation.SetWebhookID(v)
@@ -631,6 +651,12 @@ func (_u *RecipeUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.SourceCleared() {
 		_spec.ClearField(recipe.FieldSource, field.TypeString)
+	}
+	if value, ok := _u.mutation.LanguageCode(); ok {
+		_spec.SetField(recipe.FieldLanguageCode, field.TypeString, value)
+	}
+	if _u.mutation.LanguageCodeCleared() {
+		_spec.ClearField(recipe.FieldLanguageCode, field.TypeString)
 	}
 	if value, ok := _u.mutation.WebhookID(); ok {
 		_spec.SetField(recipe.FieldWebhookID, field.TypeString, value)
@@ -1130,6 +1156,26 @@ func (_u *RecipeUpdateOne) ClearSource() *RecipeUpdateOne {
 	return _u
 }
 
+// SetLanguageCode sets the "language_code" field.
+func (_u *RecipeUpdateOne) SetLanguageCode(v string) *RecipeUpdateOne {
+	_u.mutation.SetLanguageCode(v)
+	return _u
+}
+
+// SetNillableLanguageCode sets the "language_code" field if the given value is not nil.
+func (_u *RecipeUpdateOne) SetNillableLanguageCode(v *string) *RecipeUpdateOne {
+	if v != nil {
+		_u.SetLanguageCode(*v)
+	}
+	return _u
+}
+
+// ClearLanguageCode clears the value of the "language_code" field.
+func (_u *RecipeUpdateOne) ClearLanguageCode() *RecipeUpdateOne {
+	_u.mutation.ClearLanguageCode()
+	return _u
+}
+
 // SetWebhookID sets the "webhook_id" field.
 func (_u *RecipeUpdateOne) SetWebhookID(v string) *RecipeUpdateOne {
 	_u.mutation.SetWebhookID(v)
@@ -1442,6 +1488,12 @@ func (_u *RecipeUpdateOne) sqlSave(ctx context.Context) (_node *Recipe, err erro
 	}
 	if _u.mutation.SourceCleared() {
 		_spec.ClearField(recipe.FieldSource, field.TypeString)
+	}
+	if value, ok := _u.mutation.LanguageCode(); ok {
+		_spec.SetField(recipe.FieldLanguageCode, field.TypeString, value)
+	}
+	if _u.mutation.LanguageCodeCleared() {
+		_spec.ClearField(recipe.FieldLanguageCode, field.TypeString)
 	}
 	if value, ok := _u.mutation.WebhookID(); ok {
 		_spec.SetField(recipe.FieldWebhookID, field.TypeString, value)

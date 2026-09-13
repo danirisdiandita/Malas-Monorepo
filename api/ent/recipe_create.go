@@ -215,6 +215,20 @@ func (_c *RecipeCreate) SetNillableSource(v *string) *RecipeCreate {
 	return _c
 }
 
+// SetLanguageCode sets the "language_code" field.
+func (_c *RecipeCreate) SetLanguageCode(v string) *RecipeCreate {
+	_c.mutation.SetLanguageCode(v)
+	return _c
+}
+
+// SetNillableLanguageCode sets the "language_code" field if the given value is not nil.
+func (_c *RecipeCreate) SetNillableLanguageCode(v *string) *RecipeCreate {
+	if v != nil {
+		_c.SetLanguageCode(*v)
+	}
+	return _c
+}
+
 // SetWebhookID sets the "webhook_id" field.
 func (_c *RecipeCreate) SetWebhookID(v string) *RecipeCreate {
 	_c.mutation.SetWebhookID(v)
@@ -470,6 +484,10 @@ func (_c *RecipeCreate) createSpec() (*Recipe, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Source(); ok {
 		_spec.SetField(recipe.FieldSource, field.TypeString, value)
 		_node.Source = value
+	}
+	if value, ok := _c.mutation.LanguageCode(); ok {
+		_spec.SetField(recipe.FieldLanguageCode, field.TypeString, value)
+		_node.LanguageCode = &value
 	}
 	if value, ok := _c.mutation.WebhookID(); ok {
 		_spec.SetField(recipe.FieldWebhookID, field.TypeString, value)

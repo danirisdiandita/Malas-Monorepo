@@ -58,6 +58,8 @@ type Recipe struct {
 	URL string `json:"url,omitempty"`
 	// Source holds the value of the "source" field.
 	Source string `json:"source,omitempty"`
+	// LanguageCode holds the value of the "language_code" field.
+	LanguageCode *string `json:"language_code,omitempty"`
 	// WebhookID holds the value of the "webhook_id" field.
 	WebhookID string `json:"webhook_id,omitempty"`
 	// RawSourcePayload holds the value of the "raw_source_payload" field.
@@ -138,7 +140,7 @@ func (*Recipe) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullFloat64)
 		case recipe.FieldUserID, recipe.FieldServings, recipe.FieldProcessMinutes:
 			values[i] = new(sql.NullInt64)
-		case recipe.FieldName, recipe.FieldImportStatus, recipe.FieldImportError, recipe.FieldNotes, recipe.FieldImageS3Key, recipe.FieldURL, recipe.FieldSource, recipe.FieldWebhookID:
+		case recipe.FieldName, recipe.FieldImportStatus, recipe.FieldImportError, recipe.FieldNotes, recipe.FieldImageS3Key, recipe.FieldURL, recipe.FieldSource, recipe.FieldLanguageCode, recipe.FieldWebhookID:
 			values[i] = new(sql.NullString)
 		case recipe.FieldProcessingAt, recipe.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
@@ -280,6 +282,13 @@ func (_m *Recipe) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.Source = value.String
 			}
+		case recipe.FieldLanguageCode:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field language_code", values[i])
+			} else if value.Valid {
+				_m.LanguageCode = new(string)
+				*_m.LanguageCode = value.String
+			}
 		case recipe.FieldWebhookID:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field webhook_id", values[i])
@@ -408,6 +417,11 @@ func (_m *Recipe) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("source=")
 	builder.WriteString(_m.Source)
+	builder.WriteString(", ")
+	if v := _m.LanguageCode; v != nil {
+		builder.WriteString("language_code=")
+		builder.WriteString(*v)
+	}
 	builder.WriteString(", ")
 	builder.WriteString("webhook_id=")
 	builder.WriteString(_m.WebhookID)

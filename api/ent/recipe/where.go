@@ -132,6 +132,11 @@ func Source(v string) predicate.Recipe {
 	return predicate.Recipe(sql.FieldEQ(FieldSource, v))
 }
 
+// LanguageCode applies equality check predicate on the "language_code" field. It's identical to LanguageCodeEQ.
+func LanguageCode(v string) predicate.Recipe {
+	return predicate.Recipe(sql.FieldEQ(FieldLanguageCode, v))
+}
+
 // WebhookID applies equality check predicate on the "webhook_id" field. It's identical to WebhookIDEQ.
 func WebhookID(v string) predicate.Recipe {
 	return predicate.Recipe(sql.FieldEQ(FieldWebhookID, v))
@@ -965,6 +970,81 @@ func SourceEqualFold(v string) predicate.Recipe {
 // SourceContainsFold applies the ContainsFold predicate on the "source" field.
 func SourceContainsFold(v string) predicate.Recipe {
 	return predicate.Recipe(sql.FieldContainsFold(FieldSource, v))
+}
+
+// LanguageCodeEQ applies the EQ predicate on the "language_code" field.
+func LanguageCodeEQ(v string) predicate.Recipe {
+	return predicate.Recipe(sql.FieldEQ(FieldLanguageCode, v))
+}
+
+// LanguageCodeNEQ applies the NEQ predicate on the "language_code" field.
+func LanguageCodeNEQ(v string) predicate.Recipe {
+	return predicate.Recipe(sql.FieldNEQ(FieldLanguageCode, v))
+}
+
+// LanguageCodeIn applies the In predicate on the "language_code" field.
+func LanguageCodeIn(vs ...string) predicate.Recipe {
+	return predicate.Recipe(sql.FieldIn(FieldLanguageCode, vs...))
+}
+
+// LanguageCodeNotIn applies the NotIn predicate on the "language_code" field.
+func LanguageCodeNotIn(vs ...string) predicate.Recipe {
+	return predicate.Recipe(sql.FieldNotIn(FieldLanguageCode, vs...))
+}
+
+// LanguageCodeGT applies the GT predicate on the "language_code" field.
+func LanguageCodeGT(v string) predicate.Recipe {
+	return predicate.Recipe(sql.FieldGT(FieldLanguageCode, v))
+}
+
+// LanguageCodeGTE applies the GTE predicate on the "language_code" field.
+func LanguageCodeGTE(v string) predicate.Recipe {
+	return predicate.Recipe(sql.FieldGTE(FieldLanguageCode, v))
+}
+
+// LanguageCodeLT applies the LT predicate on the "language_code" field.
+func LanguageCodeLT(v string) predicate.Recipe {
+	return predicate.Recipe(sql.FieldLT(FieldLanguageCode, v))
+}
+
+// LanguageCodeLTE applies the LTE predicate on the "language_code" field.
+func LanguageCodeLTE(v string) predicate.Recipe {
+	return predicate.Recipe(sql.FieldLTE(FieldLanguageCode, v))
+}
+
+// LanguageCodeContains applies the Contains predicate on the "language_code" field.
+func LanguageCodeContains(v string) predicate.Recipe {
+	return predicate.Recipe(sql.FieldContains(FieldLanguageCode, v))
+}
+
+// LanguageCodeHasPrefix applies the HasPrefix predicate on the "language_code" field.
+func LanguageCodeHasPrefix(v string) predicate.Recipe {
+	return predicate.Recipe(sql.FieldHasPrefix(FieldLanguageCode, v))
+}
+
+// LanguageCodeHasSuffix applies the HasSuffix predicate on the "language_code" field.
+func LanguageCodeHasSuffix(v string) predicate.Recipe {
+	return predicate.Recipe(sql.FieldHasSuffix(FieldLanguageCode, v))
+}
+
+// LanguageCodeIsNil applies the IsNil predicate on the "language_code" field.
+func LanguageCodeIsNil() predicate.Recipe {
+	return predicate.Recipe(sql.FieldIsNull(FieldLanguageCode))
+}
+
+// LanguageCodeNotNil applies the NotNil predicate on the "language_code" field.
+func LanguageCodeNotNil() predicate.Recipe {
+	return predicate.Recipe(sql.FieldNotNull(FieldLanguageCode))
+}
+
+// LanguageCodeEqualFold applies the EqualFold predicate on the "language_code" field.
+func LanguageCodeEqualFold(v string) predicate.Recipe {
+	return predicate.Recipe(sql.FieldEqualFold(FieldLanguageCode, v))
+}
+
+// LanguageCodeContainsFold applies the ContainsFold predicate on the "language_code" field.
+func LanguageCodeContainsFold(v string) predicate.Recipe {
+	return predicate.Recipe(sql.FieldContainsFold(FieldLanguageCode, v))
 }
 
 // WebhookIDEQ applies the EQ predicate on the "webhook_id" field.

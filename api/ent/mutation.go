@@ -2940,6 +2940,7 @@ type RecipeMutation struct {
 	image_s3_key                 *string
 	url                          *string
 	source                       *string
+	language_code                *string
 	webhook_id                   *string
 	raw_source_payload           *json.RawMessage
 	appendraw_source_payload     json.RawMessage
@@ -3933,6 +3934,55 @@ func (m *RecipeMutation) ResetSource() {
 	delete(m.clearedFields, recipe.FieldSource)
 }
 
+// SetLanguageCode sets the "language_code" field.
+func (m *RecipeMutation) SetLanguageCode(s string) {
+	m.language_code = &s
+}
+
+// LanguageCode returns the value of the "language_code" field in the mutation.
+func (m *RecipeMutation) LanguageCode() (r string, exists bool) {
+	v := m.language_code
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLanguageCode returns the old "language_code" field's value of the Recipe entity.
+// If the Recipe object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RecipeMutation) OldLanguageCode(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLanguageCode is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLanguageCode requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLanguageCode: %w", err)
+	}
+	return oldValue.LanguageCode, nil
+}
+
+// ClearLanguageCode clears the value of the "language_code" field.
+func (m *RecipeMutation) ClearLanguageCode() {
+	m.language_code = nil
+	m.clearedFields[recipe.FieldLanguageCode] = struct{}{}
+}
+
+// LanguageCodeCleared returns if the "language_code" field was cleared in this mutation.
+func (m *RecipeMutation) LanguageCodeCleared() bool {
+	_, ok := m.clearedFields[recipe.FieldLanguageCode]
+	return ok
+}
+
+// ResetLanguageCode resets all changes to the "language_code" field.
+func (m *RecipeMutation) ResetLanguageCode() {
+	m.language_code = nil
+	delete(m.clearedFields, recipe.FieldLanguageCode)
+}
+
 // SetWebhookID sets the "webhook_id" field.
 func (m *RecipeMutation) SetWebhookID(s string) {
 	m.webhook_id = &s
@@ -4243,7 +4293,7 @@ func (m *RecipeMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RecipeMutation) Fields() []string {
-	fields := make([]string, 0, 20)
+	fields := make([]string, 0, 21)
 	if m.user != nil {
 		fields = append(fields, recipe.FieldUserID)
 	}
@@ -4298,6 +4348,9 @@ func (m *RecipeMutation) Fields() []string {
 	if m.source != nil {
 		fields = append(fields, recipe.FieldSource)
 	}
+	if m.language_code != nil {
+		fields = append(fields, recipe.FieldLanguageCode)
+	}
 	if m.webhook_id != nil {
 		fields = append(fields, recipe.FieldWebhookID)
 	}
@@ -4348,6 +4401,8 @@ func (m *RecipeMutation) Field(name string) (ent.Value, bool) {
 		return m.URL()
 	case recipe.FieldSource:
 		return m.Source()
+	case recipe.FieldLanguageCode:
+		return m.LanguageCode()
 	case recipe.FieldWebhookID:
 		return m.WebhookID()
 	case recipe.FieldRawSourcePayload:
@@ -4397,6 +4452,8 @@ func (m *RecipeMutation) OldField(ctx context.Context, name string) (ent.Value, 
 		return m.OldURL(ctx)
 	case recipe.FieldSource:
 		return m.OldSource(ctx)
+	case recipe.FieldLanguageCode:
+		return m.OldLanguageCode(ctx)
 	case recipe.FieldWebhookID:
 		return m.OldWebhookID(ctx)
 	case recipe.FieldRawSourcePayload:
@@ -4536,6 +4593,13 @@ func (m *RecipeMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetSource(v)
 		return nil
+	case recipe.FieldLanguageCode:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLanguageCode(v)
+		return nil
 	case recipe.FieldWebhookID:
 		v, ok := value.(string)
 		if !ok {
@@ -4649,6 +4713,9 @@ func (m *RecipeMutation) ClearedFields() []string {
 	if m.FieldCleared(recipe.FieldSource) {
 		fields = append(fields, recipe.FieldSource)
 	}
+	if m.FieldCleared(recipe.FieldLanguageCode) {
+		fields = append(fields, recipe.FieldLanguageCode)
+	}
 	if m.FieldCleared(recipe.FieldWebhookID) {
 		fields = append(fields, recipe.FieldWebhookID)
 	}
@@ -4698,6 +4765,9 @@ func (m *RecipeMutation) ClearField(name string) error {
 		return nil
 	case recipe.FieldSource:
 		m.ClearSource()
+		return nil
+	case recipe.FieldLanguageCode:
+		m.ClearLanguageCode()
 		return nil
 	case recipe.FieldWebhookID:
 		m.ClearWebhookID()
@@ -4766,6 +4836,9 @@ func (m *RecipeMutation) ResetField(name string) error {
 		return nil
 	case recipe.FieldSource:
 		m.ResetSource()
+		return nil
+	case recipe.FieldLanguageCode:
+		m.ResetLanguageCode()
 		return nil
 	case recipe.FieldWebhookID:
 		m.ResetWebhookID()
