@@ -38,6 +38,12 @@ the existing package until splitting them improves ownership or testability.
 - If a safe implementation is blocked, report that directly. Do not guess,
   hide the limitation, or ship an unverified workaround.
 
+## Mobile list pagination
+
+- Endpoints consumed by the mobile app must support pagination with a maximum
+  page size of 5 items. The mobile client must load additional pages with
+  infinite scroll.
+
 ## Adding a new service or feature
 
 1. Add the domain under `internal/<domain>`; do not add another generic

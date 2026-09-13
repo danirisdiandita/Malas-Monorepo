@@ -24,6 +24,8 @@ Read the exact versioned Expo docs at https://docs.expo.dev/versions/v57.0.0/ be
 - Handle loading, empty, success, and error states explicitly.
 - Validate external API data at the boundary when the response is complex or security-sensitive.
 - Keep client-only state separate from server/API state.
+- Paginated lists must request at most 5 items per page and use TanStack Query
+  infinite queries with infinite scroll to load subsequent pages.
 
 ## Project structure
 

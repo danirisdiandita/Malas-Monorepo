@@ -35,3 +35,8 @@ Do not store OAuth tokens or credentials in this repository.
   batching, or bulk operations; verify query behavior when adding related data.
 - If blocked or unable to complete a requested change safely, say so clearly
   instead of guessing or silently shipping an incomplete workaround.
+
+## Mobile pagination
+
+- Mobile list endpoints must paginate with a maximum of 5 items per request and
+  use infinite scroll to load the next page.
