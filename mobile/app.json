@@ -7,6 +7,9 @@
     "icon": "./assets/images/icon.png",
     "scheme": "mobile",
     "userInterfaceStyle": "automatic",
+    "ios": {
+      "bundleIdentifier": "com.yuzu.gitu"
+    },
     "android": {
       "predictiveBackGestureEnabled": false,
       "package": "com.normadani.mobile"
@@ -32,6 +35,7 @@
           "imageWidth": 220
         }
       ],
+      "expo-share-intent",
       "expo-secure-store"
     ],
     "experiments": {
