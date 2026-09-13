@@ -271,9 +271,9 @@ func (p *Pipeline) process(ctx context.Context, row *ent.Recipe) error {
 	var extractionImage, coverSource, videoData []byte
 	var err error
 	if isVideo {
-		videoData, err = os.ReadFile(paths[0])
+		videoData, err = compressVideo(ctx, paths[0])
 		if err != nil {
-			return fmt.Errorf("read downloaded video: %w", err)
+			return fmt.Errorf("prepare video for extraction: %w", err)
 		}
 		extractionImage, err = firstVideoFrame(ctx, paths[0])
 		if err != nil {

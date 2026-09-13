@@ -77,7 +77,7 @@ export default function RecipeProcessingScreen() {
                 ? data.error
                 : isError
                   ? "We could not check the import yet. Check your connection or sign in again."
-                  : "We’re turning that TikTok into something delicious and easy to follow.")}
+                  : "We’re turning that social video into something delicious and easy to follow.")}
           </ThemedText>
           <View style={styles.card}>
             <View style={styles.icon}>
@@ -97,7 +97,7 @@ export default function RecipeProcessingScreen() {
             <Step
               done={making || done}
               active={!making && !done && !failed}
-              title="Looking at your TikTok"
+                title="Looking at your social video"
               subtitle="Finding ingredients and steps"
             />
             <Step

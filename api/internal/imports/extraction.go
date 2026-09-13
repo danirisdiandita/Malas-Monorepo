@@ -131,6 +131,40 @@ func firstVideoFrame(ctx context.Context, path string) ([]byte, error) {
 	return data, nil
 }
 
+func compressVideo(ctx context.Context, path string) ([]byte, error) {
+	temporary, err := os.CreateTemp("", "malas-recipe-*.mp4")
+	if err != nil {
+		return nil, err
+	}
+	temporary.Close()
+	defer os.Remove(temporary.Name())
+
+	encode := func(filter, quality, audio string) error {
+		cmd := exec.CommandContext(ctx, "ffmpeg", "-y", "-v", "error", "-i", path,
+			"-map", "0:v:0", "-map", "0:a?", "-vf", filter,
+			"-c:v", "libx264", "-preset", "veryfast", "-crf", quality,
+			"-c:a", "aac", "-b:a", audio, "-movflags", "+faststart", temporary.Name())
+		if output, err := cmd.CombinedOutput(); err != nil {
+			return fmt.Errorf("compress video: %w: %s", err, strings.TrimSpace(string(output)))
+		}
+		return nil
+	}
+	if err := encode("scale=720:-2,fps=24", "31", "48k"); err != nil {
+		return nil, err
+	}
+	data, err := os.ReadFile(temporary.Name())
+	if err != nil {
+		return nil, err
+	}
+	if len(data) <= 14<<20 {
+		return data, nil
+	}
+	if err := encode("scale=480:-2,fps=18", "34", "32k"); err != nil {
+		return nil, err
+	}
+	return os.ReadFile(temporary.Name())
+}
+
 func (p *Pipeline) extract(ctx context.Context, final map[string]any, photo, video []byte) (extractedRecipe, error) {
 	var result extractedRecipe
 	text, _ := json.Marshal(final)

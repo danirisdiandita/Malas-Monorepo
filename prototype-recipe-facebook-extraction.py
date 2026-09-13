@@ -6,6 +6,8 @@ import base64
 import importlib.util
 import json
 import os
+import subprocess
+import tempfile
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -61,17 +63,45 @@ def first_item(dataset):
     raise SystemExit("Facebook dataset does not contain a result")
 
 
+def preprocess_video(path):
+    temporary = tempfile.NamedTemporaryFile(suffix=".mp4", delete=False)
+    temporary.close()
+    command = [
+        "ffmpeg", "-y", "-i", str(path), "-map", "0:v:0", "-map", "0:a?",
+        "-vf", "scale=720:-2,fps=24",
+        "-c:v", "libx264", "-preset", "veryfast", "-crf", "31",
+        "-c:a", "aac", "-b:a", "48k", "-movflags", "+faststart", temporary.name,
+    ]
+    result = subprocess.run(command, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, check=False)
+    if result.returncode != 0 or not Path(temporary.name).is_file():
+        Path(temporary.name).unlink(missing_ok=True)
+        raise SystemExit(f"Unable to preprocess video: {result.stderr.decode(errors='replace')[-500:]}")
+    if Path(temporary.name).stat().st_size > 14 * 1024 * 1024:
+        compact_command = [
+            "ffmpeg", "-y", "-i", str(path), "-map", "0:v:0", "-map", "0:a?",
+            "-vf", "scale=480:-2,fps=18", "-c:v", "libx264", "-preset", "veryfast",
+            "-crf", "34", "-c:a", "aac", "-b:a", "32k", "-movflags", "+faststart", temporary.name,
+        ]
+        result = subprocess.run(compact_command, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, check=False)
+        if result.returncode != 0:
+            Path(temporary.name).unlink(missing_ok=True)
+            raise SystemExit(f"Unable to compact video: {result.stderr.decode(errors='replace')[-500:]}")
+    return Path(temporary.name)
+
+
 def media_part(folder, item):
     videos = sorted((folder / "assets").glob("*.mp4"))
     if videos:
-        path = videos[0]
-        encoded = base64.b64encode(path.read_bytes()).decode("ascii")
-        return {"type": "video_url", "video_url": {"url": f"data:video/mp4;base64,{encoded}"}}, path
+        original = videos[0]
+        compressed = preprocess_video(original)
+        encoded = base64.b64encode(compressed.read_bytes()).decode("ascii")
+        return {"type": "video_url", "video_url": {"url": f"data:video/mp4;base64,{encoded}"}}, original, compressed
 
     video_url = item.get("video_url_hd") or item.get("video_url_sd")
-    if not isinstance(video_url, str) or not video_url:
-        raise SystemExit("No local MP4 or Facebook video_url_hd/video_url_sd found")
-    return {"type": "video_url", "video_url": {"url": video_url}}, None
+    if isinstance(video_url, str) and video_url:
+        return {"type": "video_url", "video_url": {"url": video_url}}, None, None
+
+    raise SystemExit("No local MP4 or Facebook video_url_hd/video_url_sd found")
 
 
 def call_openrouter(api_key, prompt, video):
@@ -124,7 +154,7 @@ def main():
     collect_text(dataset, text)
     url = run.get("redirected_url") or run.get("requested_url") or item.get("topLevelReelUrl")
     webhook_id = webhook.get("resource", {}).get("id") or folder.name.rsplit("_", 1)[-1]
-    video, local_video = media_part(folder, item)
+    video, local_video, compressed_video = media_part(folder, item)
     prompt = f"""Extract a recipe from this Facebook Reel. Inspect the video frames and audio/transcript when available.
 Do not invent ingredients, quantities, timings, or instructions. If the Reel is not a recipe,
 return an honest minimal recipe with empty ingredients and instructions where the schema permits.
@@ -149,7 +179,11 @@ Useful text found in the Apify payload:
         + "\n",
         encoding="utf-8",
     )
-    recipe = call_openrouter(api_key, prompt, video)
+    try:
+        recipe = call_openrouter(api_key, prompt, video)
+    finally:
+        if compressed_video:
+            compressed_video.unlink(missing_ok=True)
     recipe.update(
         {
             "image_s3_key": None,
