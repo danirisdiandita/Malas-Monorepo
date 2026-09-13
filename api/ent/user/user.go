@@ -38,6 +38,8 @@ const (
 	EdgeRecipes = "recipes"
 	// EdgeGroceries holds the string denoting the groceries edge name in mutations.
 	EdgeGroceries = "groceries"
+	// EdgeMealCalendarEntries holds the string denoting the meal_calendar_entries edge name in mutations.
+	EdgeMealCalendarEntries = "meal_calendar_entries"
 	// Table holds the table name of the user in the database.
 	Table = "users"
 	// AccountsTable is the table that holds the accounts relation/edge.
@@ -82,6 +84,13 @@ const (
 	GroceriesInverseTable = "groceries"
 	// GroceriesColumn is the table column denoting the groceries relation/edge.
 	GroceriesColumn = "user_id"
+	// MealCalendarEntriesTable is the table that holds the meal_calendar_entries relation/edge.
+	MealCalendarEntriesTable = "meal_calendar_entries"
+	// MealCalendarEntriesInverseTable is the table name for the MealCalendarEntry entity.
+	// It exists in this package in order to avoid circular dependency with the "mealcalendarentry" package.
+	MealCalendarEntriesInverseTable = "meal_calendar_entries"
+	// MealCalendarEntriesColumn is the table column denoting the meal_calendar_entries relation/edge.
+	MealCalendarEntriesColumn = "user_id"
 )
 
 // Columns holds all SQL columns for user fields.
@@ -237,6 +246,20 @@ func ByGroceries(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newGroceriesStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByMealCalendarEntriesCount orders the results by meal_calendar_entries count.
+func ByMealCalendarEntriesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newMealCalendarEntriesStep(), opts...)
+	}
+}
+
+// ByMealCalendarEntries orders the results by meal_calendar_entries terms.
+func ByMealCalendarEntries(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newMealCalendarEntriesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newAccountsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -277,5 +300,12 @@ func newGroceriesStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(GroceriesInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, GroceriesTable, GroceriesColumn),
+	)
+}
+func newMealCalendarEntriesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(MealCalendarEntriesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, MealCalendarEntriesTable, MealCalendarEntriesColumn),
 	)
 }

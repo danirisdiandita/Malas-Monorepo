@@ -1,10 +1,16 @@
 import { Ionicons } from "@react-native-vector-icons/ionicons";
+import { FlashList } from "@shopify/flash-list";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
-import { useState } from "react";
+import { Modal, Pressable, ScrollView, StyleSheet, TextInput, useWindowDimensions, View } from "react-native";
+import { useRef, useState } from "react";
+import BottomSheet, { BottomSheetView, type BottomSheetMethods } from "@expo/ui/community/bottom-sheet";
+import { toast } from "sonner-native";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { RecipeImage } from "@/components/recipe-image";
+import { useCreateMealPlan, usePlanner } from "@/hooks/use-planner";
+import { useRecipes } from "@/hooks/use-recipes";
 
 const colors = {
   ink: "#14231A",
@@ -67,6 +73,9 @@ export default function PlannerScreen() {
   const [selectedDate, setSelectedDate] = useState(() => new Date());
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [calendarMonth, setCalendarMonth] = useState(() => new Date());
+  const planSheetRef = useRef<BottomSheetMethods>(null);
+  const [recipeSearch, setRecipeSearch] = useState("");
+  const [mealSlot, setMealSlot] = useState("dinner");
   const days = getWeekDays(weekStart);
   const today = new Date();
   const moveWeek = (amount: number) => {
@@ -97,12 +106,23 @@ export default function PlannerScreen() {
     month: "short",
     day: "numeric",
   });
+  const selectedDateIsToday = sameDay(selectedDate, today);
+  const selectedDateValue = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, "0")}-${String(selectedDate.getDate()).padStart(2, "0")}`;
+  const { data: meals = [], isPending: mealsPending, isError: mealsError } = usePlanner(selectedDateValue);
+  const createPlan = useCreateMealPlan();
+  const {
+    recipes,
+    fetchNextPage: fetchNextRecipes,
+    hasMore: hasMoreRecipes,
+    isFetchingNextPage: isFetchingMoreRecipes,
+  } = useRecipes(recipeSearch);
+  const { width: windowWidth } = useWindowDimensions();
   return (
     <ThemedView style={styles.screen}>
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.content}>
           <ThemedText style={styles.eyebrow}>YOUR WEEK</ThemedText>
-          <View style={styles.titleRow}><ThemedText style={styles.title}>Daily planner</ThemedText><Pressable style={styles.calendarButton} onPress={() => setCalendarOpen(true)}><Ionicons name="calendar-outline" size={16} color={colors.ink} /><ThemedText style={styles.calendarButtonLabel}>Pick a date</ThemedText></Pressable></View>
+          <View style={styles.titleRow}><ThemedText style={styles.title}>Daily planner</ThemedText><View style={styles.titleActions}><Pressable style={styles.addPlanButton} onPress={() => planSheetRef.current?.present()}><Ionicons name="add" size={17} color="#FFFFFF" /><ThemedText style={styles.addPlanLabel}>Add plan</ThemedText></Pressable><Pressable style={styles.calendarButton} onPress={() => setCalendarOpen(true)}><Ionicons name="calendar-outline" size={16} color={colors.ink} /><ThemedText style={styles.calendarButtonLabel}>Pick a date</ThemedText></Pressable></View></View>
           <View style={styles.weekHeader}>
             <Pressable
               accessibilityLabel="Previous week"
@@ -267,34 +287,23 @@ export default function PlannerScreen() {
             </Pressable>
           </Modal>
 
-          <ThemedText style={styles.today}>{selectedDateLabel}</ThemedText>
-          {[
-            ["BREAKFAST", "Greek yogurt bowl", "20 min", "cafe-outline"],
-            ["LUNCH", "Green goddess bowl", "Fresh · 25 min", "leaf-outline"],
-            [
-              "DINNER",
-              "Miso butter salmon",
-              "Tonight · 30 min",
-              "fish-outline",
-            ],
-          ].map(([meal, name, meta, icon]) => (
-            <View key={meal} style={styles.mealRow}>
-              <ThemedText style={styles.mealLabel}>{meal}</ThemedText>
-              <View style={styles.mealCard}>
-                <View style={styles.mealIcon}>
-                  <Ionicons
-                    name={icon as never}
-                    size={20}
-                    color={colors.leaf}
-                  />
-                </View>
+          <ThemedText style={styles.today}>{selectedDateLabel}{selectedDateIsToday ? " (Today)" : ""}</ThemedText>
+          {mealsPending ? <ThemedText style={styles.status}>Loading meals...</ThemedText> : mealsError ? <ThemedText style={styles.status}>Unable to load meals.</ThemedText> : <FlashList data={meals} scrollEnabled={false} ItemSeparatorComponent={() => <View style={styles.mealGap} />} ListEmptyComponent={<ThemedText style={styles.status}>No meals planned for this day.</ThemedText>} renderItem={({ item }) => <View style={styles.mealRow}><ThemedText style={styles.mealLabel} numberOfLines={1} ellipsizeMode="tail">{item.meal_slot.replaceAll("_", " ").toUpperCase()}</ThemedText><View style={styles.mealCard}><View style={styles.mealImage}>{item.image_url ? <RecipeImage url={item.image_url} /> : <Ionicons name="restaurant-outline" size={20} color={colors.leaf} />}</View><View style={styles.mealDetails}><ThemedText style={styles.mealName} numberOfLines={1} ellipsizeMode="tail">{item.recipe_name || "Meal planned"}</ThemedText></View></View></View>} />}
+          <BottomSheet ref={planSheetRef} index={-1} enableDynamicSizing enablePanDownToClose backgroundStyle={styles.sheet}>
+            <BottomSheetView style={[styles.planSheet, { width: windowWidth }]}>
+              <View style={styles.dialogHeader}><ThemedText style={styles.dialogTitle}>Add meal plan</ThemedText><Pressable onPress={() => planSheetRef.current?.close()}><Ionicons name="close" size={22} color={colors.ink} /></Pressable></View>
+              <Pressable style={styles.planDateButton} onPress={() => setCalendarOpen(true)}>
                 <View>
-                  <ThemedText style={styles.mealName}>{name}</ThemedText>
-                  <ThemedText style={styles.mealMeta}>{meta}</ThemedText>
+                  <ThemedText style={styles.planDateLabel}>PLAN FOR</ThemedText>
+                  <ThemedText style={styles.planDateValue}>{selectedDateLabel}</ThemedText>
                 </View>
-              </View>
-            </View>
-          ))}
+                <Ionicons name="calendar-outline" size={20} color={colors.leaf} />
+              </Pressable>
+              <TextInput value={recipeSearch} onChangeText={setRecipeSearch} placeholder="Search recipes" placeholderTextColor={colors.muted} style={styles.recipeSearch} />
+              <View style={styles.slotRow}>{["breakfast", "lunch", "dinner"].map((slot) => <Pressable key={slot} style={[styles.slot, mealSlot === slot && styles.selectedSlot]} onPress={() => setMealSlot(slot)}><ThemedText style={[styles.slotLabel, mealSlot === slot && styles.selectedSlotLabel]}>{slot}</ThemedText></Pressable>)}</View>
+              <FlashList data={recipes} keyboardShouldPersistTaps="handled" onEndReached={() => { if (hasMoreRecipes && !isFetchingMoreRecipes) fetchNextRecipes(); }} onEndReachedThreshold={0.5} renderItem={({ item }) => <Pressable style={styles.recipeOption} disabled={createPlan.isPending} onPress={() => createPlan.mutate({ planned_date: selectedDateValue, meal_slot: mealSlot, scheduled_time: new Date().toTimeString().slice(0, 5), timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC", recipe_id: item.id }, { onSuccess: () => { planSheetRef.current?.close(); setRecipeSearch(""); toast.success("Meal plan added"); }, onError: (error) => toast.error(error.message) })}><View style={styles.recipeOptionIcon}>{item.image_url ? <RecipeImage url={item.image_url} /> : <Ionicons name="restaurant-outline" size={18} color={colors.leaf} />}</View><ThemedText style={styles.recipeOptionName}>{item.name}</ThemedText><Ionicons name="chevron-forward" size={17} color={colors.muted} /></Pressable>} ListEmptyComponent={<ThemedText style={styles.status}>No recipes found.</ThemedText>} ListFooterComponent={isFetchingMoreRecipes ? <ThemedText style={styles.loadingMore}>Loading more recipes...</ThemedText> : null} />
+            </BottomSheetView>
+          </BottomSheet>
         </ScrollView>
       </SafeAreaView>
     </ThemedView>
@@ -312,7 +321,10 @@ const styles = StyleSheet.create({
     letterSpacing: 1.1,
   },
   titleRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 },
+  titleActions: { flexDirection: "row", alignItems: "center", gap: 8 },
   title: { color: colors.ink, fontSize: 28, fontWeight: "800", marginTop: -8, flex: 1 },
+  addPlanButton: { minHeight: 40, borderRadius: 12, paddingHorizontal: 11, backgroundColor: colors.tomato, flexDirection: "row", alignItems: "center", gap: 4 },
+  addPlanLabel: { color: "#fff", fontSize: 12, fontWeight: "800" },
   weekHeader: {
     minHeight: 44,
     flexDirection: "row",
@@ -348,6 +360,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   todayButtonLabel: { color: colors.leaf, fontSize: 14, fontWeight: "800" },
+  status: { color: colors.muted, fontSize: 15, textAlign: "center", paddingVertical: 24 },
   modalTodayButton: { minHeight: 44, borderRadius: 12, backgroundColor: colors.sage, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6 },
   calendarButton: {
     minHeight: 40,
@@ -459,6 +472,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   mealRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  mealGap: { height: 10 },
   mealLabel: {
     color: colors.muted,
     width: 52,
@@ -470,10 +484,17 @@ const styles = StyleSheet.create({
     minHeight: 64,
     borderRadius: 13,
     backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: colors.line,
+    shadowColor: colors.ink,
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 2,
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    paddingHorizontal: 9,
+    padding: 10,
   },
   mealIcon: {
     width: 38,
@@ -483,6 +504,22 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  mealImage: { width: 54, height: 54, borderRadius: 13, overflow: "hidden", backgroundColor: colors.sage, alignItems: "center", justifyContent: "center" },
+  mealDetails: { flex: 1 },
   mealName: { color: colors.ink, fontSize: 15, fontWeight: "800" },
-  mealMeta: { color: colors.muted, fontSize: 13, marginTop: 3 },
+  sheet: { backgroundColor: "#FCFBF8", borderTopLeftRadius: 24, borderTopRightRadius: 24 },
+  planSheet: { alignSelf: "stretch", padding: 20, paddingBottom: 28, gap: 12 },
+  planDateButton: { minHeight: 58, borderWidth: 1, borderColor: colors.line, borderRadius: 14, backgroundColor: "#fff", paddingHorizontal: 13, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  planDateLabel: { color: colors.muted, fontSize: 10, fontWeight: "900", letterSpacing: 1 },
+  planDateValue: { color: colors.ink, fontSize: 14, fontWeight: "800", marginTop: 4 },
+  recipeSearch: { minHeight: 44, borderWidth: 1, borderColor: colors.line, borderRadius: 12, backgroundColor: "#fff", paddingHorizontal: 12, color: colors.ink, fontSize: 14 },
+  slotRow: { flexDirection: "row", gap: 8 },
+  slot: { flex: 1, minHeight: 38, borderWidth: 1, borderColor: colors.line, borderRadius: 11, alignItems: "center", justifyContent: "center", backgroundColor: "#fff" },
+  selectedSlot: { backgroundColor: colors.sage, borderColor: colors.leaf },
+  slotLabel: { color: colors.muted, fontSize: 12, fontWeight: "700" },
+  selectedSlotLabel: { color: colors.leaf },
+  recipeOption: { minHeight: 56, flexDirection: "row", alignItems: "center", gap: 10, borderBottomWidth: 1, borderBottomColor: colors.line },
+  recipeOptionIcon: { width: 36, height: 36, borderRadius: 12, overflow: "hidden", backgroundColor: colors.sage, alignItems: "center", justifyContent: "center" },
+  recipeOptionName: { flex: 1, color: colors.ink, fontSize: 14, fontWeight: "700" },
+  loadingMore: { color: colors.muted, fontSize: 12, textAlign: "center", paddingVertical: 12 },
 });

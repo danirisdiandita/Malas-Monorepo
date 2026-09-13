@@ -15,6 +15,7 @@ import (
 	"github.com/danirisdiandita/malas-monorepo/api/ent/account"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/folder"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/grocery"
+	"github.com/danirisdiandita/malas-monorepo/api/ent/mealcalendarentry"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/recipe"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/refreshtoken"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/session"
@@ -79,13 +80,14 @@ var (
 func checkColumn(t, c string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
-			account.Table:      account.ValidColumn,
-			folder.Table:       folder.ValidColumn,
-			grocery.Table:      grocery.ValidColumn,
-			recipe.Table:       recipe.ValidColumn,
-			refreshtoken.Table: refreshtoken.ValidColumn,
-			session.Table:      session.ValidColumn,
-			user.Table:         user.ValidColumn,
+			account.Table:           account.ValidColumn,
+			folder.Table:            folder.ValidColumn,
+			grocery.Table:           grocery.ValidColumn,
+			mealcalendarentry.Table: mealcalendarentry.ValidColumn,
+			recipe.Table:            recipe.ValidColumn,
+			refreshtoken.Table:      refreshtoken.ValidColumn,
+			session.Table:           session.ValidColumn,
+			user.Table:              user.ValidColumn,
 		})
 	})
 	return columnCheck(t, c)

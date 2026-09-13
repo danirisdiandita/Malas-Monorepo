@@ -49,9 +49,11 @@ type UserEdges struct {
 	Recipes []*Recipe `json:"recipes,omitempty"`
 	// Groceries holds the value of the groceries edge.
 	Groceries []*Grocery `json:"groceries,omitempty"`
+	// MealCalendarEntries holds the value of the meal_calendar_entries edge.
+	MealCalendarEntries []*MealCalendarEntry `json:"meal_calendar_entries,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [6]bool
+	loadedTypes [7]bool
 }
 
 // AccountsOrErr returns the Accounts value or an error if the edge
@@ -106,6 +108,15 @@ func (e UserEdges) GroceriesOrErr() ([]*Grocery, error) {
 		return e.Groceries, nil
 	}
 	return nil, &NotLoadedError{edge: "groceries"}
+}
+
+// MealCalendarEntriesOrErr returns the MealCalendarEntries value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) MealCalendarEntriesOrErr() ([]*MealCalendarEntry, error) {
+	if e.loadedTypes[6] {
+		return e.MealCalendarEntries, nil
+	}
+	return nil, &NotLoadedError{edge: "meal_calendar_entries"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -219,6 +230,11 @@ func (_m *User) QueryRecipes() *RecipeQuery {
 // QueryGroceries queries the "groceries" edge of the User entity.
 func (_m *User) QueryGroceries() *GroceryQuery {
 	return NewUserClient(_m.config).QueryGroceries(_m)
+}
+
+// QueryMealCalendarEntries queries the "meal_calendar_entries" edge of the User entity.
+func (_m *User) QueryMealCalendarEntries() *MealCalendarEntryQuery {
+	return NewUserClient(_m.config).QueryMealCalendarEntries(_m)
 }
 
 // Update returns a builder for updating this User.

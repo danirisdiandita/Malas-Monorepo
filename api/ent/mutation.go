@@ -15,6 +15,7 @@ import (
 	"github.com/danirisdiandita/malas-monorepo/api/ent/account"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/folder"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/grocery"
+	"github.com/danirisdiandita/malas-monorepo/api/ent/mealcalendarentry"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/predicate"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/recipe"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/refreshtoken"
@@ -33,13 +34,14 @@ const (
 	OpUpdateOne = ent.OpUpdateOne
 
 	// Node types.
-	TypeAccount      = "Account"
-	TypeFolder       = "Folder"
-	TypeGrocery      = "Grocery"
-	TypeRecipe       = "Recipe"
-	TypeRefreshToken = "RefreshToken"
-	TypeSession      = "Session"
-	TypeUser         = "User"
+	TypeAccount           = "Account"
+	TypeFolder            = "Folder"
+	TypeGrocery           = "Grocery"
+	TypeMealCalendarEntry = "MealCalendarEntry"
+	TypeRecipe            = "Recipe"
+	TypeRefreshToken      = "RefreshToken"
+	TypeSession           = "Session"
+	TypeUser              = "User"
 )
 
 // AccountMutation represents an operation that mutates the Account nodes in the graph.
@@ -2092,47 +2094,869 @@ func (m *GroceryMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown Grocery edge %s", name)
 }
 
+// MealCalendarEntryMutation represents an operation that mutates the MealCalendarEntry nodes in the graph.
+type MealCalendarEntryMutation struct {
+	config
+	op             Op
+	typ            string
+	id             *uuid.UUID
+	planned_date   *string
+	meal_slot      *string
+	scheduled_time *string
+	timezone       *string
+	notes          *string
+	clearedFields  map[string]struct{}
+	user           *int
+	cleareduser    bool
+	recipe         *uuid.UUID
+	clearedrecipe  bool
+	done           bool
+	oldValue       func(context.Context) (*MealCalendarEntry, error)
+	predicates     []predicate.MealCalendarEntry
+}
+
+var _ ent.Mutation = (*MealCalendarEntryMutation)(nil)
+
+// mealcalendarentryOption allows management of the mutation configuration using functional options.
+type mealcalendarentryOption func(*MealCalendarEntryMutation)
+
+// newMealCalendarEntryMutation creates new mutation for the MealCalendarEntry entity.
+func newMealCalendarEntryMutation(c config, op Op, opts ...mealcalendarentryOption) *MealCalendarEntryMutation {
+	m := &MealCalendarEntryMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeMealCalendarEntry,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withMealCalendarEntryID sets the ID field of the mutation.
+func withMealCalendarEntryID(id uuid.UUID) mealcalendarentryOption {
+	return func(m *MealCalendarEntryMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *MealCalendarEntry
+		)
+		m.oldValue = func(ctx context.Context) (*MealCalendarEntry, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().MealCalendarEntry.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withMealCalendarEntry sets the old MealCalendarEntry of the mutation.
+func withMealCalendarEntry(node *MealCalendarEntry) mealcalendarentryOption {
+	return func(m *MealCalendarEntryMutation) {
+		m.oldValue = func(context.Context) (*MealCalendarEntry, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m MealCalendarEntryMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m MealCalendarEntryMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of MealCalendarEntry entities.
+func (m *MealCalendarEntryMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *MealCalendarEntryMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *MealCalendarEntryMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().MealCalendarEntry.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetUserID sets the "user_id" field.
+func (m *MealCalendarEntryMutation) SetUserID(i int) {
+	m.user = &i
+}
+
+// UserID returns the value of the "user_id" field in the mutation.
+func (m *MealCalendarEntryMutation) UserID() (r int, exists bool) {
+	v := m.user
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUserID returns the old "user_id" field's value of the MealCalendarEntry entity.
+// If the MealCalendarEntry object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MealCalendarEntryMutation) OldUserID(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUserID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUserID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUserID: %w", err)
+	}
+	return oldValue.UserID, nil
+}
+
+// ResetUserID resets all changes to the "user_id" field.
+func (m *MealCalendarEntryMutation) ResetUserID() {
+	m.user = nil
+}
+
+// SetPlannedDate sets the "planned_date" field.
+func (m *MealCalendarEntryMutation) SetPlannedDate(s string) {
+	m.planned_date = &s
+}
+
+// PlannedDate returns the value of the "planned_date" field in the mutation.
+func (m *MealCalendarEntryMutation) PlannedDate() (r string, exists bool) {
+	v := m.planned_date
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPlannedDate returns the old "planned_date" field's value of the MealCalendarEntry entity.
+// If the MealCalendarEntry object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MealCalendarEntryMutation) OldPlannedDate(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPlannedDate is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPlannedDate requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPlannedDate: %w", err)
+	}
+	return oldValue.PlannedDate, nil
+}
+
+// ResetPlannedDate resets all changes to the "planned_date" field.
+func (m *MealCalendarEntryMutation) ResetPlannedDate() {
+	m.planned_date = nil
+}
+
+// SetMealSlot sets the "meal_slot" field.
+func (m *MealCalendarEntryMutation) SetMealSlot(s string) {
+	m.meal_slot = &s
+}
+
+// MealSlot returns the value of the "meal_slot" field in the mutation.
+func (m *MealCalendarEntryMutation) MealSlot() (r string, exists bool) {
+	v := m.meal_slot
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMealSlot returns the old "meal_slot" field's value of the MealCalendarEntry entity.
+// If the MealCalendarEntry object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MealCalendarEntryMutation) OldMealSlot(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMealSlot is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMealSlot requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMealSlot: %w", err)
+	}
+	return oldValue.MealSlot, nil
+}
+
+// ResetMealSlot resets all changes to the "meal_slot" field.
+func (m *MealCalendarEntryMutation) ResetMealSlot() {
+	m.meal_slot = nil
+}
+
+// SetScheduledTime sets the "scheduled_time" field.
+func (m *MealCalendarEntryMutation) SetScheduledTime(s string) {
+	m.scheduled_time = &s
+}
+
+// ScheduledTime returns the value of the "scheduled_time" field in the mutation.
+func (m *MealCalendarEntryMutation) ScheduledTime() (r string, exists bool) {
+	v := m.scheduled_time
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldScheduledTime returns the old "scheduled_time" field's value of the MealCalendarEntry entity.
+// If the MealCalendarEntry object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MealCalendarEntryMutation) OldScheduledTime(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldScheduledTime is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldScheduledTime requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldScheduledTime: %w", err)
+	}
+	return oldValue.ScheduledTime, nil
+}
+
+// ClearScheduledTime clears the value of the "scheduled_time" field.
+func (m *MealCalendarEntryMutation) ClearScheduledTime() {
+	m.scheduled_time = nil
+	m.clearedFields[mealcalendarentry.FieldScheduledTime] = struct{}{}
+}
+
+// ScheduledTimeCleared returns if the "scheduled_time" field was cleared in this mutation.
+func (m *MealCalendarEntryMutation) ScheduledTimeCleared() bool {
+	_, ok := m.clearedFields[mealcalendarentry.FieldScheduledTime]
+	return ok
+}
+
+// ResetScheduledTime resets all changes to the "scheduled_time" field.
+func (m *MealCalendarEntryMutation) ResetScheduledTime() {
+	m.scheduled_time = nil
+	delete(m.clearedFields, mealcalendarentry.FieldScheduledTime)
+}
+
+// SetRecipeID sets the "recipe_id" field.
+func (m *MealCalendarEntryMutation) SetRecipeID(u uuid.UUID) {
+	m.recipe = &u
+}
+
+// RecipeID returns the value of the "recipe_id" field in the mutation.
+func (m *MealCalendarEntryMutation) RecipeID() (r uuid.UUID, exists bool) {
+	v := m.recipe
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRecipeID returns the old "recipe_id" field's value of the MealCalendarEntry entity.
+// If the MealCalendarEntry object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MealCalendarEntryMutation) OldRecipeID(ctx context.Context) (v *uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRecipeID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRecipeID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRecipeID: %w", err)
+	}
+	return oldValue.RecipeID, nil
+}
+
+// ClearRecipeID clears the value of the "recipe_id" field.
+func (m *MealCalendarEntryMutation) ClearRecipeID() {
+	m.recipe = nil
+	m.clearedFields[mealcalendarentry.FieldRecipeID] = struct{}{}
+}
+
+// RecipeIDCleared returns if the "recipe_id" field was cleared in this mutation.
+func (m *MealCalendarEntryMutation) RecipeIDCleared() bool {
+	_, ok := m.clearedFields[mealcalendarentry.FieldRecipeID]
+	return ok
+}
+
+// ResetRecipeID resets all changes to the "recipe_id" field.
+func (m *MealCalendarEntryMutation) ResetRecipeID() {
+	m.recipe = nil
+	delete(m.clearedFields, mealcalendarentry.FieldRecipeID)
+}
+
+// SetTimezone sets the "timezone" field.
+func (m *MealCalendarEntryMutation) SetTimezone(s string) {
+	m.timezone = &s
+}
+
+// Timezone returns the value of the "timezone" field in the mutation.
+func (m *MealCalendarEntryMutation) Timezone() (r string, exists bool) {
+	v := m.timezone
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTimezone returns the old "timezone" field's value of the MealCalendarEntry entity.
+// If the MealCalendarEntry object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MealCalendarEntryMutation) OldTimezone(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTimezone is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTimezone requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTimezone: %w", err)
+	}
+	return oldValue.Timezone, nil
+}
+
+// ResetTimezone resets all changes to the "timezone" field.
+func (m *MealCalendarEntryMutation) ResetTimezone() {
+	m.timezone = nil
+}
+
+// SetNotes sets the "notes" field.
+func (m *MealCalendarEntryMutation) SetNotes(s string) {
+	m.notes = &s
+}
+
+// Notes returns the value of the "notes" field in the mutation.
+func (m *MealCalendarEntryMutation) Notes() (r string, exists bool) {
+	v := m.notes
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNotes returns the old "notes" field's value of the MealCalendarEntry entity.
+// If the MealCalendarEntry object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MealCalendarEntryMutation) OldNotes(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNotes is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNotes requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNotes: %w", err)
+	}
+	return oldValue.Notes, nil
+}
+
+// ClearNotes clears the value of the "notes" field.
+func (m *MealCalendarEntryMutation) ClearNotes() {
+	m.notes = nil
+	m.clearedFields[mealcalendarentry.FieldNotes] = struct{}{}
+}
+
+// NotesCleared returns if the "notes" field was cleared in this mutation.
+func (m *MealCalendarEntryMutation) NotesCleared() bool {
+	_, ok := m.clearedFields[mealcalendarentry.FieldNotes]
+	return ok
+}
+
+// ResetNotes resets all changes to the "notes" field.
+func (m *MealCalendarEntryMutation) ResetNotes() {
+	m.notes = nil
+	delete(m.clearedFields, mealcalendarentry.FieldNotes)
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *MealCalendarEntryMutation) ClearUser() {
+	m.cleareduser = true
+	m.clearedFields[mealcalendarentry.FieldUserID] = struct{}{}
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *MealCalendarEntryMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *MealCalendarEntryMutation) UserIDs() (ids []int) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *MealCalendarEntryMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
+// ClearRecipe clears the "recipe" edge to the Recipe entity.
+func (m *MealCalendarEntryMutation) ClearRecipe() {
+	m.clearedrecipe = true
+	m.clearedFields[mealcalendarentry.FieldRecipeID] = struct{}{}
+}
+
+// RecipeCleared reports if the "recipe" edge to the Recipe entity was cleared.
+func (m *MealCalendarEntryMutation) RecipeCleared() bool {
+	return m.RecipeIDCleared() || m.clearedrecipe
+}
+
+// RecipeIDs returns the "recipe" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// RecipeID instead. It exists only for internal usage by the builders.
+func (m *MealCalendarEntryMutation) RecipeIDs() (ids []uuid.UUID) {
+	if id := m.recipe; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetRecipe resets all changes to the "recipe" edge.
+func (m *MealCalendarEntryMutation) ResetRecipe() {
+	m.recipe = nil
+	m.clearedrecipe = false
+}
+
+// Where appends a list predicates to the MealCalendarEntryMutation builder.
+func (m *MealCalendarEntryMutation) Where(ps ...predicate.MealCalendarEntry) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the MealCalendarEntryMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *MealCalendarEntryMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.MealCalendarEntry, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *MealCalendarEntryMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *MealCalendarEntryMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (MealCalendarEntry).
+func (m *MealCalendarEntryMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *MealCalendarEntryMutation) Fields() []string {
+	fields := make([]string, 0, 7)
+	if m.user != nil {
+		fields = append(fields, mealcalendarentry.FieldUserID)
+	}
+	if m.planned_date != nil {
+		fields = append(fields, mealcalendarentry.FieldPlannedDate)
+	}
+	if m.meal_slot != nil {
+		fields = append(fields, mealcalendarentry.FieldMealSlot)
+	}
+	if m.scheduled_time != nil {
+		fields = append(fields, mealcalendarentry.FieldScheduledTime)
+	}
+	if m.recipe != nil {
+		fields = append(fields, mealcalendarentry.FieldRecipeID)
+	}
+	if m.timezone != nil {
+		fields = append(fields, mealcalendarentry.FieldTimezone)
+	}
+	if m.notes != nil {
+		fields = append(fields, mealcalendarentry.FieldNotes)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *MealCalendarEntryMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case mealcalendarentry.FieldUserID:
+		return m.UserID()
+	case mealcalendarentry.FieldPlannedDate:
+		return m.PlannedDate()
+	case mealcalendarentry.FieldMealSlot:
+		return m.MealSlot()
+	case mealcalendarentry.FieldScheduledTime:
+		return m.ScheduledTime()
+	case mealcalendarentry.FieldRecipeID:
+		return m.RecipeID()
+	case mealcalendarentry.FieldTimezone:
+		return m.Timezone()
+	case mealcalendarentry.FieldNotes:
+		return m.Notes()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *MealCalendarEntryMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case mealcalendarentry.FieldUserID:
+		return m.OldUserID(ctx)
+	case mealcalendarentry.FieldPlannedDate:
+		return m.OldPlannedDate(ctx)
+	case mealcalendarentry.FieldMealSlot:
+		return m.OldMealSlot(ctx)
+	case mealcalendarentry.FieldScheduledTime:
+		return m.OldScheduledTime(ctx)
+	case mealcalendarentry.FieldRecipeID:
+		return m.OldRecipeID(ctx)
+	case mealcalendarentry.FieldTimezone:
+		return m.OldTimezone(ctx)
+	case mealcalendarentry.FieldNotes:
+		return m.OldNotes(ctx)
+	}
+	return nil, fmt.Errorf("unknown MealCalendarEntry field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *MealCalendarEntryMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case mealcalendarentry.FieldUserID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUserID(v)
+		return nil
+	case mealcalendarentry.FieldPlannedDate:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPlannedDate(v)
+		return nil
+	case mealcalendarentry.FieldMealSlot:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMealSlot(v)
+		return nil
+	case mealcalendarentry.FieldScheduledTime:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetScheduledTime(v)
+		return nil
+	case mealcalendarentry.FieldRecipeID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRecipeID(v)
+		return nil
+	case mealcalendarentry.FieldTimezone:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTimezone(v)
+		return nil
+	case mealcalendarentry.FieldNotes:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNotes(v)
+		return nil
+	}
+	return fmt.Errorf("unknown MealCalendarEntry field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *MealCalendarEntryMutation) AddedFields() []string {
+	var fields []string
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *MealCalendarEntryMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *MealCalendarEntryMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown MealCalendarEntry numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *MealCalendarEntryMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(mealcalendarentry.FieldScheduledTime) {
+		fields = append(fields, mealcalendarentry.FieldScheduledTime)
+	}
+	if m.FieldCleared(mealcalendarentry.FieldRecipeID) {
+		fields = append(fields, mealcalendarentry.FieldRecipeID)
+	}
+	if m.FieldCleared(mealcalendarentry.FieldNotes) {
+		fields = append(fields, mealcalendarentry.FieldNotes)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *MealCalendarEntryMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *MealCalendarEntryMutation) ClearField(name string) error {
+	switch name {
+	case mealcalendarentry.FieldScheduledTime:
+		m.ClearScheduledTime()
+		return nil
+	case mealcalendarentry.FieldRecipeID:
+		m.ClearRecipeID()
+		return nil
+	case mealcalendarentry.FieldNotes:
+		m.ClearNotes()
+		return nil
+	}
+	return fmt.Errorf("unknown MealCalendarEntry nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *MealCalendarEntryMutation) ResetField(name string) error {
+	switch name {
+	case mealcalendarentry.FieldUserID:
+		m.ResetUserID()
+		return nil
+	case mealcalendarentry.FieldPlannedDate:
+		m.ResetPlannedDate()
+		return nil
+	case mealcalendarentry.FieldMealSlot:
+		m.ResetMealSlot()
+		return nil
+	case mealcalendarentry.FieldScheduledTime:
+		m.ResetScheduledTime()
+		return nil
+	case mealcalendarentry.FieldRecipeID:
+		m.ResetRecipeID()
+		return nil
+	case mealcalendarentry.FieldTimezone:
+		m.ResetTimezone()
+		return nil
+	case mealcalendarentry.FieldNotes:
+		m.ResetNotes()
+		return nil
+	}
+	return fmt.Errorf("unknown MealCalendarEntry field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *MealCalendarEntryMutation) AddedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.user != nil {
+		edges = append(edges, mealcalendarentry.EdgeUser)
+	}
+	if m.recipe != nil {
+		edges = append(edges, mealcalendarentry.EdgeRecipe)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *MealCalendarEntryMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case mealcalendarentry.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	case mealcalendarentry.EdgeRecipe:
+		if id := m.recipe; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *MealCalendarEntryMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 2)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *MealCalendarEntryMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *MealCalendarEntryMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.cleareduser {
+		edges = append(edges, mealcalendarentry.EdgeUser)
+	}
+	if m.clearedrecipe {
+		edges = append(edges, mealcalendarentry.EdgeRecipe)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *MealCalendarEntryMutation) EdgeCleared(name string) bool {
+	switch name {
+	case mealcalendarentry.EdgeUser:
+		return m.cleareduser
+	case mealcalendarentry.EdgeRecipe:
+		return m.clearedrecipe
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *MealCalendarEntryMutation) ClearEdge(name string) error {
+	switch name {
+	case mealcalendarentry.EdgeUser:
+		m.ClearUser()
+		return nil
+	case mealcalendarentry.EdgeRecipe:
+		m.ClearRecipe()
+		return nil
+	}
+	return fmt.Errorf("unknown MealCalendarEntry unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *MealCalendarEntryMutation) ResetEdge(name string) error {
+	switch name {
+	case mealcalendarentry.EdgeUser:
+		m.ResetUser()
+		return nil
+	case mealcalendarentry.EdgeRecipe:
+		m.ResetRecipe()
+		return nil
+	}
+	return fmt.Errorf("unknown MealCalendarEntry edge %s", name)
+}
+
 // RecipeMutation represents an operation that mutates the Recipe nodes in the graph.
 type RecipeMutation struct {
 	config
-	op                       Op
-	typ                      string
-	id                       *uuid.UUID
-	name                     *string
-	servings                 *int
-	addservings              *int
-	process_minutes          *int
-	addprocess_minutes       *int
-	ingredients              *json.RawMessage
-	appendingredients        json.RawMessage
-	instructions             *pq.StringArray
-	tags                     *pq.StringArray
-	import_status            *recipe.ImportStatus
-	import_error             *string
-	processing_at            *time.Time
-	import_webhook           *json.RawMessage
-	appendimport_webhook     json.RawMessage
-	created_at               *time.Time
-	rating                   *float64
-	addrating                *float64
-	notes                    *string
-	image_s3_key             *string
-	url                      *string
-	source                   *string
-	webhook_id               *string
-	raw_source_payload       *json.RawMessage
-	appendraw_source_payload json.RawMessage
-	clearedFields            map[string]struct{}
-	user                     *int
-	cleareduser              bool
-	folder                   *uuid.UUID
-	clearedfolder            bool
-	groceries                map[uuid.UUID]struct{}
-	removedgroceries         map[uuid.UUID]struct{}
-	clearedgroceries         bool
-	done                     bool
-	oldValue                 func(context.Context) (*Recipe, error)
-	predicates               []predicate.Recipe
+	op                           Op
+	typ                          string
+	id                           *uuid.UUID
+	name                         *string
+	servings                     *int
+	addservings                  *int
+	process_minutes              *int
+	addprocess_minutes           *int
+	ingredients                  *json.RawMessage
+	appendingredients            json.RawMessage
+	instructions                 *pq.StringArray
+	tags                         *pq.StringArray
+	import_status                *recipe.ImportStatus
+	import_error                 *string
+	processing_at                *time.Time
+	import_webhook               *json.RawMessage
+	appendimport_webhook         json.RawMessage
+	created_at                   *time.Time
+	rating                       *float64
+	addrating                    *float64
+	notes                        *string
+	image_s3_key                 *string
+	url                          *string
+	source                       *string
+	webhook_id                   *string
+	raw_source_payload           *json.RawMessage
+	appendraw_source_payload     json.RawMessage
+	clearedFields                map[string]struct{}
+	user                         *int
+	cleareduser                  bool
+	folder                       *uuid.UUID
+	clearedfolder                bool
+	groceries                    map[uuid.UUID]struct{}
+	removedgroceries             map[uuid.UUID]struct{}
+	clearedgroceries             bool
+	meal_calendar_entries        map[uuid.UUID]struct{}
+	removedmeal_calendar_entries map[uuid.UUID]struct{}
+	clearedmeal_calendar_entries bool
+	done                         bool
+	oldValue                     func(context.Context) (*Recipe, error)
+	predicates                   []predicate.Recipe
 }
 
 var _ ent.Mutation = (*RecipeMutation)(nil)
@@ -3331,6 +4155,60 @@ func (m *RecipeMutation) ResetGroceries() {
 	m.removedgroceries = nil
 }
 
+// AddMealCalendarEntryIDs adds the "meal_calendar_entries" edge to the MealCalendarEntry entity by ids.
+func (m *RecipeMutation) AddMealCalendarEntryIDs(ids ...uuid.UUID) {
+	if m.meal_calendar_entries == nil {
+		m.meal_calendar_entries = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.meal_calendar_entries[ids[i]] = struct{}{}
+	}
+}
+
+// ClearMealCalendarEntries clears the "meal_calendar_entries" edge to the MealCalendarEntry entity.
+func (m *RecipeMutation) ClearMealCalendarEntries() {
+	m.clearedmeal_calendar_entries = true
+}
+
+// MealCalendarEntriesCleared reports if the "meal_calendar_entries" edge to the MealCalendarEntry entity was cleared.
+func (m *RecipeMutation) MealCalendarEntriesCleared() bool {
+	return m.clearedmeal_calendar_entries
+}
+
+// RemoveMealCalendarEntryIDs removes the "meal_calendar_entries" edge to the MealCalendarEntry entity by IDs.
+func (m *RecipeMutation) RemoveMealCalendarEntryIDs(ids ...uuid.UUID) {
+	if m.removedmeal_calendar_entries == nil {
+		m.removedmeal_calendar_entries = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.meal_calendar_entries, ids[i])
+		m.removedmeal_calendar_entries[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedMealCalendarEntries returns the removed IDs of the "meal_calendar_entries" edge to the MealCalendarEntry entity.
+func (m *RecipeMutation) RemovedMealCalendarEntriesIDs() (ids []uuid.UUID) {
+	for id := range m.removedmeal_calendar_entries {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// MealCalendarEntriesIDs returns the "meal_calendar_entries" edge IDs in the mutation.
+func (m *RecipeMutation) MealCalendarEntriesIDs() (ids []uuid.UUID) {
+	for id := range m.meal_calendar_entries {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetMealCalendarEntries resets all changes to the "meal_calendar_entries" edge.
+func (m *RecipeMutation) ResetMealCalendarEntries() {
+	m.meal_calendar_entries = nil
+	m.clearedmeal_calendar_entries = false
+	m.removedmeal_calendar_entries = nil
+}
+
 // Where appends a list predicates to the RecipeMutation builder.
 func (m *RecipeMutation) Where(ps ...predicate.Recipe) {
 	m.predicates = append(m.predicates, ps...)
@@ -3901,7 +4779,7 @@ func (m *RecipeMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *RecipeMutation) AddedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.user != nil {
 		edges = append(edges, recipe.EdgeUser)
 	}
@@ -3910,6 +4788,9 @@ func (m *RecipeMutation) AddedEdges() []string {
 	}
 	if m.groceries != nil {
 		edges = append(edges, recipe.EdgeGroceries)
+	}
+	if m.meal_calendar_entries != nil {
+		edges = append(edges, recipe.EdgeMealCalendarEntries)
 	}
 	return edges
 }
@@ -3932,15 +4813,24 @@ func (m *RecipeMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case recipe.EdgeMealCalendarEntries:
+		ids := make([]ent.Value, 0, len(m.meal_calendar_entries))
+		for id := range m.meal_calendar_entries {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *RecipeMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.removedgroceries != nil {
 		edges = append(edges, recipe.EdgeGroceries)
+	}
+	if m.removedmeal_calendar_entries != nil {
+		edges = append(edges, recipe.EdgeMealCalendarEntries)
 	}
 	return edges
 }
@@ -3955,13 +4845,19 @@ func (m *RecipeMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case recipe.EdgeMealCalendarEntries:
+		ids := make([]ent.Value, 0, len(m.removedmeal_calendar_entries))
+		for id := range m.removedmeal_calendar_entries {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *RecipeMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.cleareduser {
 		edges = append(edges, recipe.EdgeUser)
 	}
@@ -3970,6 +4866,9 @@ func (m *RecipeMutation) ClearedEdges() []string {
 	}
 	if m.clearedgroceries {
 		edges = append(edges, recipe.EdgeGroceries)
+	}
+	if m.clearedmeal_calendar_entries {
+		edges = append(edges, recipe.EdgeMealCalendarEntries)
 	}
 	return edges
 }
@@ -3984,6 +4883,8 @@ func (m *RecipeMutation) EdgeCleared(name string) bool {
 		return m.clearedfolder
 	case recipe.EdgeGroceries:
 		return m.clearedgroceries
+	case recipe.EdgeMealCalendarEntries:
+		return m.clearedmeal_calendar_entries
 	}
 	return false
 }
@@ -4014,6 +4915,9 @@ func (m *RecipeMutation) ResetEdge(name string) error {
 		return nil
 	case recipe.EdgeGroceries:
 		m.ResetGroceries()
+		return nil
+	case recipe.EdgeMealCalendarEntries:
+		m.ResetMealCalendarEntries()
 		return nil
 	}
 	return fmt.Errorf("unknown Recipe edge %s", name)
@@ -5300,37 +6204,40 @@ func (m *SessionMutation) ResetEdge(name string) error {
 // UserMutation represents an operation that mutates the User nodes in the graph.
 type UserMutation struct {
 	config
-	op                    Op
-	typ                   string
-	id                    *int
-	email                 *string
-	name                  *string
-	picture               *string
-	email_verified        *bool
-	created_at            *time.Time
-	updated_at            *time.Time
-	clearedFields         map[string]struct{}
-	accounts              map[int]struct{}
-	removedaccounts       map[int]struct{}
-	clearedaccounts       bool
-	sessions              map[int]struct{}
-	removedsessions       map[int]struct{}
-	clearedsessions       bool
-	refresh_tokens        map[int]struct{}
-	removedrefresh_tokens map[int]struct{}
-	clearedrefresh_tokens bool
-	folders               map[uuid.UUID]struct{}
-	removedfolders        map[uuid.UUID]struct{}
-	clearedfolders        bool
-	recipes               map[uuid.UUID]struct{}
-	removedrecipes        map[uuid.UUID]struct{}
-	clearedrecipes        bool
-	groceries             map[uuid.UUID]struct{}
-	removedgroceries      map[uuid.UUID]struct{}
-	clearedgroceries      bool
-	done                  bool
-	oldValue              func(context.Context) (*User, error)
-	predicates            []predicate.User
+	op                           Op
+	typ                          string
+	id                           *int
+	email                        *string
+	name                         *string
+	picture                      *string
+	email_verified               *bool
+	created_at                   *time.Time
+	updated_at                   *time.Time
+	clearedFields                map[string]struct{}
+	accounts                     map[int]struct{}
+	removedaccounts              map[int]struct{}
+	clearedaccounts              bool
+	sessions                     map[int]struct{}
+	removedsessions              map[int]struct{}
+	clearedsessions              bool
+	refresh_tokens               map[int]struct{}
+	removedrefresh_tokens        map[int]struct{}
+	clearedrefresh_tokens        bool
+	folders                      map[uuid.UUID]struct{}
+	removedfolders               map[uuid.UUID]struct{}
+	clearedfolders               bool
+	recipes                      map[uuid.UUID]struct{}
+	removedrecipes               map[uuid.UUID]struct{}
+	clearedrecipes               bool
+	groceries                    map[uuid.UUID]struct{}
+	removedgroceries             map[uuid.UUID]struct{}
+	clearedgroceries             bool
+	meal_calendar_entries        map[uuid.UUID]struct{}
+	removedmeal_calendar_entries map[uuid.UUID]struct{}
+	clearedmeal_calendar_entries bool
+	done                         bool
+	oldValue                     func(context.Context) (*User, error)
+	predicates                   []predicate.User
 }
 
 var _ ent.Mutation = (*UserMutation)(nil)
@@ -5984,6 +6891,60 @@ func (m *UserMutation) ResetGroceries() {
 	m.removedgroceries = nil
 }
 
+// AddMealCalendarEntryIDs adds the "meal_calendar_entries" edge to the MealCalendarEntry entity by ids.
+func (m *UserMutation) AddMealCalendarEntryIDs(ids ...uuid.UUID) {
+	if m.meal_calendar_entries == nil {
+		m.meal_calendar_entries = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.meal_calendar_entries[ids[i]] = struct{}{}
+	}
+}
+
+// ClearMealCalendarEntries clears the "meal_calendar_entries" edge to the MealCalendarEntry entity.
+func (m *UserMutation) ClearMealCalendarEntries() {
+	m.clearedmeal_calendar_entries = true
+}
+
+// MealCalendarEntriesCleared reports if the "meal_calendar_entries" edge to the MealCalendarEntry entity was cleared.
+func (m *UserMutation) MealCalendarEntriesCleared() bool {
+	return m.clearedmeal_calendar_entries
+}
+
+// RemoveMealCalendarEntryIDs removes the "meal_calendar_entries" edge to the MealCalendarEntry entity by IDs.
+func (m *UserMutation) RemoveMealCalendarEntryIDs(ids ...uuid.UUID) {
+	if m.removedmeal_calendar_entries == nil {
+		m.removedmeal_calendar_entries = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.meal_calendar_entries, ids[i])
+		m.removedmeal_calendar_entries[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedMealCalendarEntries returns the removed IDs of the "meal_calendar_entries" edge to the MealCalendarEntry entity.
+func (m *UserMutation) RemovedMealCalendarEntriesIDs() (ids []uuid.UUID) {
+	for id := range m.removedmeal_calendar_entries {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// MealCalendarEntriesIDs returns the "meal_calendar_entries" edge IDs in the mutation.
+func (m *UserMutation) MealCalendarEntriesIDs() (ids []uuid.UUID) {
+	for id := range m.meal_calendar_entries {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetMealCalendarEntries resets all changes to the "meal_calendar_entries" edge.
+func (m *UserMutation) ResetMealCalendarEntries() {
+	m.meal_calendar_entries = nil
+	m.clearedmeal_calendar_entries = false
+	m.removedmeal_calendar_entries = nil
+}
+
 // Where appends a list predicates to the UserMutation builder.
 func (m *UserMutation) Where(ps ...predicate.User) {
 	m.predicates = append(m.predicates, ps...)
@@ -6211,7 +7172,7 @@ func (m *UserMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *UserMutation) AddedEdges() []string {
-	edges := make([]string, 0, 6)
+	edges := make([]string, 0, 7)
 	if m.accounts != nil {
 		edges = append(edges, user.EdgeAccounts)
 	}
@@ -6229,6 +7190,9 @@ func (m *UserMutation) AddedEdges() []string {
 	}
 	if m.groceries != nil {
 		edges = append(edges, user.EdgeGroceries)
+	}
+	if m.meal_calendar_entries != nil {
+		edges = append(edges, user.EdgeMealCalendarEntries)
 	}
 	return edges
 }
@@ -6273,13 +7237,19 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeMealCalendarEntries:
+		ids := make([]ent.Value, 0, len(m.meal_calendar_entries))
+		for id := range m.meal_calendar_entries {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *UserMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 6)
+	edges := make([]string, 0, 7)
 	if m.removedaccounts != nil {
 		edges = append(edges, user.EdgeAccounts)
 	}
@@ -6297,6 +7267,9 @@ func (m *UserMutation) RemovedEdges() []string {
 	}
 	if m.removedgroceries != nil {
 		edges = append(edges, user.EdgeGroceries)
+	}
+	if m.removedmeal_calendar_entries != nil {
+		edges = append(edges, user.EdgeMealCalendarEntries)
 	}
 	return edges
 }
@@ -6341,13 +7314,19 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeMealCalendarEntries:
+		ids := make([]ent.Value, 0, len(m.removedmeal_calendar_entries))
+		for id := range m.removedmeal_calendar_entries {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *UserMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 6)
+	edges := make([]string, 0, 7)
 	if m.clearedaccounts {
 		edges = append(edges, user.EdgeAccounts)
 	}
@@ -6365,6 +7344,9 @@ func (m *UserMutation) ClearedEdges() []string {
 	}
 	if m.clearedgroceries {
 		edges = append(edges, user.EdgeGroceries)
+	}
+	if m.clearedmeal_calendar_entries {
+		edges = append(edges, user.EdgeMealCalendarEntries)
 	}
 	return edges
 }
@@ -6385,6 +7367,8 @@ func (m *UserMutation) EdgeCleared(name string) bool {
 		return m.clearedrecipes
 	case user.EdgeGroceries:
 		return m.clearedgroceries
+	case user.EdgeMealCalendarEntries:
+		return m.clearedmeal_calendar_entries
 	}
 	return false
 }
@@ -6418,6 +7402,9 @@ func (m *UserMutation) ResetEdge(name string) error {
 		return nil
 	case user.EdgeGroceries:
 		m.ResetGroceries()
+		return nil
+	case user.EdgeMealCalendarEntries:
+		m.ResetMealCalendarEntries()
 		return nil
 	}
 	return fmt.Errorf("unknown User edge %s", name)

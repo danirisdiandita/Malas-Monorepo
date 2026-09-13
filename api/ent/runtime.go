@@ -7,6 +7,7 @@ import (
 
 	"github.com/danirisdiandita/malas-monorepo/api/ent/folder"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/grocery"
+	"github.com/danirisdiandita/malas-monorepo/api/ent/mealcalendarentry"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/recipe"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/refreshtoken"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/schema"
@@ -35,6 +36,12 @@ func init() {
 	groceryDescID := groceryFields[0].Descriptor()
 	// grocery.DefaultID holds the default value on creation for the id field.
 	grocery.DefaultID = groceryDescID.Default.(func() uuid.UUID)
+	mealcalendarentryFields := schema.MealCalendarEntry{}.Fields()
+	_ = mealcalendarentryFields
+	// mealcalendarentryDescID is the schema descriptor for id field.
+	mealcalendarentryDescID := mealcalendarentryFields[0].Descriptor()
+	// mealcalendarentry.DefaultID holds the default value on creation for the id field.
+	mealcalendarentry.DefaultID = mealcalendarentryDescID.Default.(func() uuid.UUID)
 	recipeFields := schema.Recipe{}.Fields()
 	_ = recipeFields
 	// recipeDescCreatedAt is the schema descriptor for created_at field.

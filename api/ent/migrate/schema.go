@@ -104,6 +104,44 @@ var (
 			},
 		},
 	}
+	// MealCalendarEntriesColumns holds the columns for the "meal_calendar_entries" table.
+	MealCalendarEntriesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "planned_date", Type: field.TypeString},
+		{Name: "meal_slot", Type: field.TypeString},
+		{Name: "scheduled_time", Type: field.TypeString, Nullable: true},
+		{Name: "timezone", Type: field.TypeString},
+		{Name: "notes", Type: field.TypeString, Nullable: true},
+		{Name: "recipe_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "user_id", Type: field.TypeInt},
+	}
+	// MealCalendarEntriesTable holds the schema information for the "meal_calendar_entries" table.
+	MealCalendarEntriesTable = &schema.Table{
+		Name:       "meal_calendar_entries",
+		Columns:    MealCalendarEntriesColumns,
+		PrimaryKey: []*schema.Column{MealCalendarEntriesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "meal_calendar_entries_recipes_meal_calendar_entries",
+				Columns:    []*schema.Column{MealCalendarEntriesColumns[6]},
+				RefColumns: []*schema.Column{RecipesColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "meal_calendar_entries_users_meal_calendar_entries",
+				Columns:    []*schema.Column{MealCalendarEntriesColumns[7]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "mealcalendarentry_user_id_planned_date",
+				Unique:  false,
+				Columns: []*schema.Column{MealCalendarEntriesColumns[7], MealCalendarEntriesColumns[1]},
+			},
+		},
+	}
 	// RecipesColumns holds the columns for the "recipes" table.
 	RecipesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -234,6 +272,7 @@ var (
 		AccountsTable,
 		FoldersTable,
 		GroceriesTable,
+		MealCalendarEntriesTable,
 		RecipesTable,
 		RefreshTokensTable,
 		SessionsTable,
@@ -246,6 +285,8 @@ func init() {
 	FoldersTable.ForeignKeys[0].RefTable = UsersTable
 	GroceriesTable.ForeignKeys[0].RefTable = RecipesTable
 	GroceriesTable.ForeignKeys[1].RefTable = UsersTable
+	MealCalendarEntriesTable.ForeignKeys[0].RefTable = RecipesTable
+	MealCalendarEntriesTable.ForeignKeys[1].RefTable = UsersTable
 	RecipesTable.ForeignKeys[0].RefTable = FoldersTable
 	RecipesTable.ForeignKeys[1].RefTable = UsersTable
 	RefreshTokensTable.ForeignKeys[0].RefTable = UsersTable

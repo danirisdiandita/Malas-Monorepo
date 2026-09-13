@@ -9,6 +9,7 @@ import (
 	"github.com/danirisdiandita/malas-monorepo/api/internal/groceries"
 	"github.com/danirisdiandita/malas-monorepo/api/internal/handlers"
 	"github.com/danirisdiandita/malas-monorepo/api/internal/imports"
+	"github.com/danirisdiandita/malas-monorepo/api/internal/planner"
 	"github.com/danirisdiandita/malas-monorepo/api/internal/recipes"
 	"github.com/go-chi/chi/v5"
 	mid "github.com/go-chi/chi/v5/middleware"
@@ -66,6 +67,8 @@ func NewRouter(deps Dependencies) http.Handler {
 		r.Delete("/folders/{id}", folders.Delete(deps.DB))
 		r.Get("/groceries", groceries.List(deps.DB, deps.Imports.Storage))
 		r.Post("/groceries", groceries.AddManual(deps.DB))
+		r.Get("/meal-calendar", planner.List(deps.DB, deps.Imports.Storage))
+		r.Post("/meal-calendar", planner.Create(deps.DB))
 		r.Delete("/groceries", groceries.Clear(deps.DB))
 		r.Patch("/groceries/{id}/checked", groceries.UpdateChecked(deps.DB))
 		r.Post("/recipes/{id}/groceries", groceries.AddFromRecipe(deps.DB))

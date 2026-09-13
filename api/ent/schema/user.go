@@ -34,5 +34,6 @@ func (User) Edges() []ent.Edge {
 		edge.To("folders", Folder.Type),
 		edge.To("recipes", Recipe.Type),
 		edge.To("groceries", Grocery.Type),
+		edge.To("meal_calendar_entries", MealCalendarEntry.Type),
 	}
 }

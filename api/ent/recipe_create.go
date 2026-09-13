@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/folder"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/grocery"
+	"github.com/danirisdiandita/malas-monorepo/api/ent/mealcalendarentry"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/recipe"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/user"
 	"github.com/google/uuid"
@@ -273,6 +274,21 @@ func (_c *RecipeCreate) AddGroceries(v ...*Grocery) *RecipeCreate {
 	return _c.AddGroceryIDs(ids...)
 }
 
+// AddMealCalendarEntryIDs adds the "meal_calendar_entries" edge to the MealCalendarEntry entity by IDs.
+func (_c *RecipeCreate) AddMealCalendarEntryIDs(ids ...uuid.UUID) *RecipeCreate {
+	_c.mutation.AddMealCalendarEntryIDs(ids...)
+	return _c
+}
+
+// AddMealCalendarEntries adds the "meal_calendar_entries" edges to the MealCalendarEntry entity.
+func (_c *RecipeCreate) AddMealCalendarEntries(v ...*MealCalendarEntry) *RecipeCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddMealCalendarEntryIDs(ids...)
+}
+
 // Mutation returns the RecipeMutation object of the builder.
 func (_c *RecipeCreate) Mutation() *RecipeMutation {
 	return _c.mutation
@@ -506,6 +522,22 @@ func (_c *RecipeCreate) createSpec() (*Recipe, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(grocery.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.MealCalendarEntriesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   recipe.MealCalendarEntriesTable,
+			Columns: []string{recipe.MealCalendarEntriesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mealcalendarentry.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

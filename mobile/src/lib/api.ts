@@ -63,6 +63,18 @@ export interface FolderPage {
   next_page: number;
 }
 
+export interface MealCalendarEntry {
+  id: string;
+  planned_date: string;
+  meal_slot: string;
+  scheduled_time?: string;
+  timezone: string;
+  notes?: string;
+  recipe_id?: string;
+  recipe_name?: string;
+  image_url?: string;
+}
+
 export interface Grocery {
   id: string;
   name: string;
@@ -240,6 +252,24 @@ export async function getGroceries(): Promise<Grocery[]> {
   const body: unknown = await response.json();
   if (!Array.isArray(body) || !body.every(isGrocery)) throw new Error('Invalid groceries response.');
   return body;
+}
+
+export async function getMealCalendar(date: string): Promise<MealCalendarEntry[]> {
+  const response = await authenticatedFetch(`/meal-calendar?date=${encodeURIComponent(date)}`);
+  if (!response.ok) throw new Error('Unable to load meal plan.');
+  const body: unknown = await response.json();
+  if (!Array.isArray(body)) throw new Error('Invalid meal plan response.');
+  return body as MealCalendarEntry[];
+}
+
+export async function createMealCalendar(input: { planned_date: string; meal_slot: string; scheduled_time?: string; timezone: string; recipe_id: string }): Promise<MealCalendarEntry> {
+  const response = await authenticatedFetch('/meal-calendar', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(input),
+  });
+  if (!response.ok) throw new Error((await response.text()) || 'Unable to add meal plan.');
+  const body: unknown = await response.json();
+  if (!body || typeof body !== 'object' || typeof (body as Record<string, unknown>).id !== 'string') throw new Error('Invalid meal plan response.');
+  return body as MealCalendarEntry;
 }
 
 export async function addGrocery(input: { name: string; quantity?: number; unit?: string }): Promise<Grocery> {

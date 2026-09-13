@@ -1121,6 +1121,29 @@ func HasGroceriesWith(preds ...predicate.Grocery) predicate.Recipe {
 	})
 }
 
+// HasMealCalendarEntries applies the HasEdge predicate on the "meal_calendar_entries" edge.
+func HasMealCalendarEntries() predicate.Recipe {
+	return predicate.Recipe(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, MealCalendarEntriesTable, MealCalendarEntriesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasMealCalendarEntriesWith applies the HasEdge predicate on the "meal_calendar_entries" edge with a given conditions (other predicates).
+func HasMealCalendarEntriesWith(preds ...predicate.MealCalendarEntry) predicate.Recipe {
+	return predicate.Recipe(func(s *sql.Selector) {
+		step := newMealCalendarEntriesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.Recipe) predicate.Recipe {
 	return predicate.Recipe(sql.AndPredicates(predicates...))

@@ -15,6 +15,9 @@ type Folder func(*sql.Selector)
 // Grocery is the predicate function for grocery builders.
 type Grocery func(*sql.Selector)
 
+// MealCalendarEntry is the predicate function for mealcalendarentry builders.
+type MealCalendarEntry func(*sql.Selector)
+
 // Recipe is the predicate function for recipe builders.
 type Recipe func(*sql.Selector)
 

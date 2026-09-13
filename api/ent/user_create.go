@@ -13,6 +13,7 @@ import (
 	"github.com/danirisdiandita/malas-monorepo/api/ent/account"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/folder"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/grocery"
+	"github.com/danirisdiandita/malas-monorepo/api/ent/mealcalendarentry"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/recipe"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/refreshtoken"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/session"
@@ -183,6 +184,21 @@ func (_c *UserCreate) AddGroceries(v ...*Grocery) *UserCreate {
 		ids[i] = v[i].ID
 	}
 	return _c.AddGroceryIDs(ids...)
+}
+
+// AddMealCalendarEntryIDs adds the "meal_calendar_entries" edge to the MealCalendarEntry entity by IDs.
+func (_c *UserCreate) AddMealCalendarEntryIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddMealCalendarEntryIDs(ids...)
+	return _c
+}
+
+// AddMealCalendarEntries adds the "meal_calendar_entries" edges to the MealCalendarEntry entity.
+func (_c *UserCreate) AddMealCalendarEntries(v ...*MealCalendarEntry) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddMealCalendarEntryIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -390,6 +406,22 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(grocery.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.MealCalendarEntriesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.MealCalendarEntriesTable,
+			Columns: []string{user.MealCalendarEntriesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mealcalendarentry.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

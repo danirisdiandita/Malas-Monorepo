@@ -19,6 +19,7 @@ import (
 	"github.com/danirisdiandita/malas-monorepo/api/ent/account"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/folder"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/grocery"
+	"github.com/danirisdiandita/malas-monorepo/api/ent/mealcalendarentry"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/recipe"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/refreshtoken"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/session"
@@ -36,6 +37,8 @@ type Client struct {
 	Folder *FolderClient
 	// Grocery is the client for interacting with the Grocery builders.
 	Grocery *GroceryClient
+	// MealCalendarEntry is the client for interacting with the MealCalendarEntry builders.
+	MealCalendarEntry *MealCalendarEntryClient
 	// Recipe is the client for interacting with the Recipe builders.
 	Recipe *RecipeClient
 	// RefreshToken is the client for interacting with the RefreshToken builders.
@@ -58,6 +61,7 @@ func (c *Client) init() {
 	c.Account = NewAccountClient(c.config)
 	c.Folder = NewFolderClient(c.config)
 	c.Grocery = NewGroceryClient(c.config)
+	c.MealCalendarEntry = NewMealCalendarEntryClient(c.config)
 	c.Recipe = NewRecipeClient(c.config)
 	c.RefreshToken = NewRefreshTokenClient(c.config)
 	c.Session = NewSessionClient(c.config)
@@ -152,15 +156,16 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := c.config
 	cfg.driver = tx
 	return &Tx{
-		ctx:          ctx,
-		config:       cfg,
-		Account:      NewAccountClient(cfg),
-		Folder:       NewFolderClient(cfg),
-		Grocery:      NewGroceryClient(cfg),
-		Recipe:       NewRecipeClient(cfg),
-		RefreshToken: NewRefreshTokenClient(cfg),
-		Session:      NewSessionClient(cfg),
-		User:         NewUserClient(cfg),
+		ctx:               ctx,
+		config:            cfg,
+		Account:           NewAccountClient(cfg),
+		Folder:            NewFolderClient(cfg),
+		Grocery:           NewGroceryClient(cfg),
+		MealCalendarEntry: NewMealCalendarEntryClient(cfg),
+		Recipe:            NewRecipeClient(cfg),
+		RefreshToken:      NewRefreshTokenClient(cfg),
+		Session:           NewSessionClient(cfg),
+		User:              NewUserClient(cfg),
 	}, nil
 }
 
@@ -178,15 +183,16 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := c.config
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		ctx:          ctx,
-		config:       cfg,
-		Account:      NewAccountClient(cfg),
-		Folder:       NewFolderClient(cfg),
-		Grocery:      NewGroceryClient(cfg),
-		Recipe:       NewRecipeClient(cfg),
-		RefreshToken: NewRefreshTokenClient(cfg),
-		Session:      NewSessionClient(cfg),
-		User:         NewUserClient(cfg),
+		ctx:               ctx,
+		config:            cfg,
+		Account:           NewAccountClient(cfg),
+		Folder:            NewFolderClient(cfg),
+		Grocery:           NewGroceryClient(cfg),
+		MealCalendarEntry: NewMealCalendarEntryClient(cfg),
+		Recipe:            NewRecipeClient(cfg),
+		RefreshToken:      NewRefreshTokenClient(cfg),
+		Session:           NewSessionClient(cfg),
+		User:              NewUserClient(cfg),
 	}, nil
 }
 
@@ -216,7 +222,8 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.Account, c.Folder, c.Grocery, c.Recipe, c.RefreshToken, c.Session, c.User,
+		c.Account, c.Folder, c.Grocery, c.MealCalendarEntry, c.Recipe, c.RefreshToken,
+		c.Session, c.User,
 	} {
 		n.Use(hooks...)
 	}
@@ -226,7 +233,8 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.Account, c.Folder, c.Grocery, c.Recipe, c.RefreshToken, c.Session, c.User,
+		c.Account, c.Folder, c.Grocery, c.MealCalendarEntry, c.Recipe, c.RefreshToken,
+		c.Session, c.User,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -241,6 +249,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Folder.mutate(ctx, m)
 	case *GroceryMutation:
 		return c.Grocery.mutate(ctx, m)
+	case *MealCalendarEntryMutation:
+		return c.MealCalendarEntry.mutate(ctx, m)
 	case *RecipeMutation:
 		return c.Recipe.mutate(ctx, m)
 	case *RefreshTokenMutation:
@@ -733,6 +743,171 @@ func (c *GroceryClient) mutate(ctx context.Context, m *GroceryMutation) (Value, 
 	}
 }
 
+// MealCalendarEntryClient is a client for the MealCalendarEntry schema.
+type MealCalendarEntryClient struct {
+	config
+}
+
+// NewMealCalendarEntryClient returns a client for the MealCalendarEntry from the given config.
+func NewMealCalendarEntryClient(c config) *MealCalendarEntryClient {
+	return &MealCalendarEntryClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `mealcalendarentry.Hooks(f(g(h())))`.
+func (c *MealCalendarEntryClient) Use(hooks ...Hook) {
+	c.hooks.MealCalendarEntry = append(c.hooks.MealCalendarEntry, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `mealcalendarentry.Intercept(f(g(h())))`.
+func (c *MealCalendarEntryClient) Intercept(interceptors ...Interceptor) {
+	c.inters.MealCalendarEntry = append(c.inters.MealCalendarEntry, interceptors...)
+}
+
+// Create returns a builder for creating a MealCalendarEntry entity.
+func (c *MealCalendarEntryClient) Create() *MealCalendarEntryCreate {
+	mutation := newMealCalendarEntryMutation(c.config, OpCreate)
+	return &MealCalendarEntryCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of MealCalendarEntry entities.
+func (c *MealCalendarEntryClient) CreateBulk(builders ...*MealCalendarEntryCreate) *MealCalendarEntryCreateBulk {
+	return &MealCalendarEntryCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *MealCalendarEntryClient) MapCreateBulk(slice any, setFunc func(*MealCalendarEntryCreate, int)) *MealCalendarEntryCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &MealCalendarEntryCreateBulk{err: fmt.Errorf("calling to MealCalendarEntryClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*MealCalendarEntryCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &MealCalendarEntryCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for MealCalendarEntry.
+func (c *MealCalendarEntryClient) Update() *MealCalendarEntryUpdate {
+	mutation := newMealCalendarEntryMutation(c.config, OpUpdate)
+	return &MealCalendarEntryUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *MealCalendarEntryClient) UpdateOne(_m *MealCalendarEntry) *MealCalendarEntryUpdateOne {
+	mutation := newMealCalendarEntryMutation(c.config, OpUpdateOne, withMealCalendarEntry(_m))
+	return &MealCalendarEntryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *MealCalendarEntryClient) UpdateOneID(id uuid.UUID) *MealCalendarEntryUpdateOne {
+	mutation := newMealCalendarEntryMutation(c.config, OpUpdateOne, withMealCalendarEntryID(id))
+	return &MealCalendarEntryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for MealCalendarEntry.
+func (c *MealCalendarEntryClient) Delete() *MealCalendarEntryDelete {
+	mutation := newMealCalendarEntryMutation(c.config, OpDelete)
+	return &MealCalendarEntryDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *MealCalendarEntryClient) DeleteOne(_m *MealCalendarEntry) *MealCalendarEntryDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *MealCalendarEntryClient) DeleteOneID(id uuid.UUID) *MealCalendarEntryDeleteOne {
+	builder := c.Delete().Where(mealcalendarentry.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &MealCalendarEntryDeleteOne{builder}
+}
+
+// Query returns a query builder for MealCalendarEntry.
+func (c *MealCalendarEntryClient) Query() *MealCalendarEntryQuery {
+	return &MealCalendarEntryQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeMealCalendarEntry},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a MealCalendarEntry entity by its id.
+func (c *MealCalendarEntryClient) Get(ctx context.Context, id uuid.UUID) (*MealCalendarEntry, error) {
+	return c.Query().Where(mealcalendarentry.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *MealCalendarEntryClient) GetX(ctx context.Context, id uuid.UUID) *MealCalendarEntry {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryUser queries the user edge of a MealCalendarEntry.
+func (c *MealCalendarEntryClient) QueryUser(_m *MealCalendarEntry) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(mealcalendarentry.Table, mealcalendarentry.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, mealcalendarentry.UserTable, mealcalendarentry.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRecipe queries the recipe edge of a MealCalendarEntry.
+func (c *MealCalendarEntryClient) QueryRecipe(_m *MealCalendarEntry) *RecipeQuery {
+	query := (&RecipeClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(mealcalendarentry.Table, mealcalendarentry.FieldID, id),
+			sqlgraph.To(recipe.Table, recipe.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, mealcalendarentry.RecipeTable, mealcalendarentry.RecipeColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *MealCalendarEntryClient) Hooks() []Hook {
+	return c.hooks.MealCalendarEntry
+}
+
+// Interceptors returns the client interceptors.
+func (c *MealCalendarEntryClient) Interceptors() []Interceptor {
+	return c.inters.MealCalendarEntry
+}
+
+func (c *MealCalendarEntryClient) mutate(ctx context.Context, m *MealCalendarEntryMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&MealCalendarEntryCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&MealCalendarEntryUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&MealCalendarEntryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&MealCalendarEntryDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown MealCalendarEntry mutation op: %q", m.Op())
+	}
+}
+
 // RecipeClient is a client for the Recipe schema.
 type RecipeClient struct {
 	config
@@ -882,6 +1057,22 @@ func (c *RecipeClient) QueryGroceries(_m *Recipe) *GroceryQuery {
 			sqlgraph.From(recipe.Table, recipe.FieldID, id),
 			sqlgraph.To(grocery.Table, grocery.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, recipe.GroceriesTable, recipe.GroceriesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryMealCalendarEntries queries the meal_calendar_entries edge of a Recipe.
+func (c *RecipeClient) QueryMealCalendarEntries(_m *Recipe) *MealCalendarEntryQuery {
+	query := (&MealCalendarEntryClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(recipe.Table, recipe.FieldID, id),
+			sqlgraph.To(mealcalendarentry.Table, mealcalendarentry.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, recipe.MealCalendarEntriesTable, recipe.MealCalendarEntriesColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
@@ -1416,6 +1607,22 @@ func (c *UserClient) QueryGroceries(_m *User) *GroceryQuery {
 	return query
 }
 
+// QueryMealCalendarEntries queries the meal_calendar_entries edge of a User.
+func (c *UserClient) QueryMealCalendarEntries(_m *User) *MealCalendarEntryQuery {
+	query := (&MealCalendarEntryClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(mealcalendarentry.Table, mealcalendarentry.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.MealCalendarEntriesTable, user.MealCalendarEntriesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *UserClient) Hooks() []Hook {
 	return c.hooks.User
@@ -1444,9 +1651,11 @@ func (c *UserClient) mutate(ctx context.Context, m *UserMutation) (Value, error)
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Account, Folder, Grocery, Recipe, RefreshToken, Session, User []ent.Hook
+		Account, Folder, Grocery, MealCalendarEntry, Recipe, RefreshToken, Session,
+		User []ent.Hook
 	}
 	inters struct {
-		Account, Folder, Grocery, Recipe, RefreshToken, Session, User []ent.Interceptor
+		Account, Folder, Grocery, MealCalendarEntry, Recipe, RefreshToken, Session,
+		User []ent.Interceptor
 	}
 )

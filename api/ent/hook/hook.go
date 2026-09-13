@@ -45,6 +45,18 @@ func (f GroceryFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, err
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.GroceryMutation", m)
 }
 
+// The MealCalendarEntryFunc type is an adapter to allow the use of ordinary
+// function as MealCalendarEntry mutator.
+type MealCalendarEntryFunc func(context.Context, *ent.MealCalendarEntryMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f MealCalendarEntryFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.MealCalendarEntryMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.MealCalendarEntryMutation", m)
+}
+
 // The RecipeFunc type is an adapter to allow the use of ordinary
 // function as Recipe mutator.
 type RecipeFunc func(context.Context, *ent.RecipeMutation) (ent.Value, error)

@@ -15,6 +15,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/folder"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/grocery"
+	"github.com/danirisdiandita/malas-monorepo/api/ent/mealcalendarentry"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/predicate"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/recipe"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/user"
@@ -411,6 +412,21 @@ func (_u *RecipeUpdate) AddGroceries(v ...*Grocery) *RecipeUpdate {
 	return _u.AddGroceryIDs(ids...)
 }
 
+// AddMealCalendarEntryIDs adds the "meal_calendar_entries" edge to the MealCalendarEntry entity by IDs.
+func (_u *RecipeUpdate) AddMealCalendarEntryIDs(ids ...uuid.UUID) *RecipeUpdate {
+	_u.mutation.AddMealCalendarEntryIDs(ids...)
+	return _u
+}
+
+// AddMealCalendarEntries adds the "meal_calendar_entries" edges to the MealCalendarEntry entity.
+func (_u *RecipeUpdate) AddMealCalendarEntries(v ...*MealCalendarEntry) *RecipeUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddMealCalendarEntryIDs(ids...)
+}
+
 // Mutation returns the RecipeMutation object of the builder.
 func (_u *RecipeUpdate) Mutation() *RecipeMutation {
 	return _u.mutation
@@ -447,6 +463,27 @@ func (_u *RecipeUpdate) RemoveGroceries(v ...*Grocery) *RecipeUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveGroceryIDs(ids...)
+}
+
+// ClearMealCalendarEntries clears all "meal_calendar_entries" edges to the MealCalendarEntry entity.
+func (_u *RecipeUpdate) ClearMealCalendarEntries() *RecipeUpdate {
+	_u.mutation.ClearMealCalendarEntries()
+	return _u
+}
+
+// RemoveMealCalendarEntryIDs removes the "meal_calendar_entries" edge to MealCalendarEntry entities by IDs.
+func (_u *RecipeUpdate) RemoveMealCalendarEntryIDs(ids ...uuid.UUID) *RecipeUpdate {
+	_u.mutation.RemoveMealCalendarEntryIDs(ids...)
+	return _u
+}
+
+// RemoveMealCalendarEntries removes "meal_calendar_entries" edges to MealCalendarEntry entities.
+func (_u *RecipeUpdate) RemoveMealCalendarEntries(v ...*MealCalendarEntry) *RecipeUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveMealCalendarEntryIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -708,6 +745,51 @@ func (_u *RecipeUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(grocery.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.MealCalendarEntriesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   recipe.MealCalendarEntriesTable,
+			Columns: []string{recipe.MealCalendarEntriesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mealcalendarentry.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedMealCalendarEntriesIDs(); len(nodes) > 0 && !_u.mutation.MealCalendarEntriesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   recipe.MealCalendarEntriesTable,
+			Columns: []string{recipe.MealCalendarEntriesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mealcalendarentry.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.MealCalendarEntriesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   recipe.MealCalendarEntriesTable,
+			Columns: []string{recipe.MealCalendarEntriesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mealcalendarentry.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -1111,6 +1193,21 @@ func (_u *RecipeUpdateOne) AddGroceries(v ...*Grocery) *RecipeUpdateOne {
 	return _u.AddGroceryIDs(ids...)
 }
 
+// AddMealCalendarEntryIDs adds the "meal_calendar_entries" edge to the MealCalendarEntry entity by IDs.
+func (_u *RecipeUpdateOne) AddMealCalendarEntryIDs(ids ...uuid.UUID) *RecipeUpdateOne {
+	_u.mutation.AddMealCalendarEntryIDs(ids...)
+	return _u
+}
+
+// AddMealCalendarEntries adds the "meal_calendar_entries" edges to the MealCalendarEntry entity.
+func (_u *RecipeUpdateOne) AddMealCalendarEntries(v ...*MealCalendarEntry) *RecipeUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddMealCalendarEntryIDs(ids...)
+}
+
 // Mutation returns the RecipeMutation object of the builder.
 func (_u *RecipeUpdateOne) Mutation() *RecipeMutation {
 	return _u.mutation
@@ -1147,6 +1244,27 @@ func (_u *RecipeUpdateOne) RemoveGroceries(v ...*Grocery) *RecipeUpdateOne {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveGroceryIDs(ids...)
+}
+
+// ClearMealCalendarEntries clears all "meal_calendar_entries" edges to the MealCalendarEntry entity.
+func (_u *RecipeUpdateOne) ClearMealCalendarEntries() *RecipeUpdateOne {
+	_u.mutation.ClearMealCalendarEntries()
+	return _u
+}
+
+// RemoveMealCalendarEntryIDs removes the "meal_calendar_entries" edge to MealCalendarEntry entities by IDs.
+func (_u *RecipeUpdateOne) RemoveMealCalendarEntryIDs(ids ...uuid.UUID) *RecipeUpdateOne {
+	_u.mutation.RemoveMealCalendarEntryIDs(ids...)
+	return _u
+}
+
+// RemoveMealCalendarEntries removes "meal_calendar_entries" edges to MealCalendarEntry entities.
+func (_u *RecipeUpdateOne) RemoveMealCalendarEntries(v ...*MealCalendarEntry) *RecipeUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveMealCalendarEntryIDs(ids...)
 }
 
 // Where appends a list predicates to the RecipeUpdate builder.
@@ -1438,6 +1556,51 @@ func (_u *RecipeUpdateOne) sqlSave(ctx context.Context) (_node *Recipe, err erro
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(grocery.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.MealCalendarEntriesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   recipe.MealCalendarEntriesTable,
+			Columns: []string{recipe.MealCalendarEntriesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mealcalendarentry.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedMealCalendarEntriesIDs(); len(nodes) > 0 && !_u.mutation.MealCalendarEntriesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   recipe.MealCalendarEntriesTable,
+			Columns: []string{recipe.MealCalendarEntriesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mealcalendarentry.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.MealCalendarEntriesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   recipe.MealCalendarEntriesTable,
+			Columns: []string{recipe.MealCalendarEntriesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mealcalendarentry.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
