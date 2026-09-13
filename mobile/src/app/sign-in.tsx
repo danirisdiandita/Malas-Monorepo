@@ -37,14 +37,15 @@ export default function SignInScreen() {
           </Pressable>
         )}
         <View style={styles.content}>
-          <ThemedText style={styles.brand}>YUZU</ThemedText>
-          <ThemedText style={styles.title}>
-            Keep your kitchen in sync.
-          </ThemedText>
-          <ThemedText style={styles.description}>
-            Sign in to keep every saved recipe, grocery list, and meal plan safe
-            on every device.
-          </ThemedText>
+          <View style={styles.header}>
+            <ThemedText style={styles.title}>
+              Your kitchen, in sync with Yuzu.
+            </ThemedText>
+            <ThemedText style={styles.description}>
+              Sign in to save recipes, build grocery lists, and plan meals
+              across your devices.
+            </ThemedText>
+          </View>
           <View style={styles.syncCard}>
             <Image
               source={require("@/assets/images/yuzu-logo-transparent.png")}
@@ -53,7 +54,7 @@ export default function SignInScreen() {
               accessibilityLabel="Yuzu logo"
             />
             <ThemedText style={styles.syncCaption}>
-              RECIPES · LISTS · PLANS
+              RECIPES · GROCERIES · PLANS
             </ThemedText>
           </View>
         </View>
@@ -192,6 +193,7 @@ function LegalSection({ title, text }: { title: string; text: string }) {
 }
 
 const styles = StyleSheet.create({
+  header: {},
   screen: { flex: 1, backgroundColor: "#FCFBF8" },
   safeArea: {
     flex: 1,
@@ -200,7 +202,12 @@ const styles = StyleSheet.create({
     paddingBottom: 18,
   },
   back: { color: colors.muted, fontSize: 16 },
-  content: { flex: 1, alignItems: "center", paddingTop: 36 },
+  content: {
+    flex: 1,
+    alignItems: "center",
+    paddingTop: 12,
+    justifyContent: "center",
+  },
   brand: {
     color: colors.leaf,
     fontSize: 19,
@@ -225,16 +232,16 @@ const styles = StyleSheet.create({
     marginTop: 14,
   },
   syncCard: {
-    width: 220,
-    // height: 160,
+    width: "100%",
+    minHeight: 160,
     borderRadius: 26,
-    backgroundColor: colors.sage,
+    backgroundColor: "transparent",
     alignItems: "center",
     justifyContent: "center",
     marginTop: 18,
     marginBottom: 18,
   },
-  logo: { width: 82, height: 82, marginBottom: 8, alignSelf: "center" },
+  logo: { width: 120, height: 120, marginBottom: 8, alignSelf: "center" },
   syncIcon: {
     color: colors.leaf,
     fontSize: 64,
@@ -248,7 +255,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     textAlign: "center",
   },
-  authArea: { width: "100%", paddingTop: 12 },
+  authArea: { width: "100%", paddingTop: 4 },
   continueLabel: {
     color: colors.muted,
     fontSize: 16,
@@ -257,7 +264,12 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   providers: { width: "100%", gap: 10 },
-  orDivider: { flexDirection: "row", alignItems: "center", gap: 10, marginVertical: 2 },
+  orDivider: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginVertical: 2,
+  },
   orLine: { flex: 1, height: 1, backgroundColor: "#D9E1D7" },
   orLabel: { color: colors.muted, fontSize: 12 },
   footer: { alignItems: "center", gap: 12, paddingTop: 12 },
