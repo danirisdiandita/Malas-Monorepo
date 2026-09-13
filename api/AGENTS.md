@@ -84,7 +84,8 @@ This endpoint is for debugging only and should move to durable storage or be
 removed before production.
 
 Link imports use `POST /imports/link`; their completion callback uses the
-source-agnostic `POST /webhooks/import`. TikTok and Facebook Reels are supported.
+source-agnostic `POST /webhooks/import`. TikTok, Facebook Reels, and Facebook
+post pages are supported.
 Configure `APIFY_API_TOKEN`, public
 `AUTH_URL`, and `IMPORT_WEBHOOK_SECRET`. The import webhook accepts any Apify dataset and
 saves `webhook.json`, `dataset.json`, downloaded media under `assets/`, and

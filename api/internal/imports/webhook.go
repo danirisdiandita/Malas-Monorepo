@@ -114,7 +114,7 @@ func HandleImportWebhook(token, debugDir, secret string) http.HandlerFunc {
 		assets := collectImagePostAssetURLs(items)
 		if strings.EqualFold(webhook.ContentType, "tiktok:video") {
 			assets = collectVideoAssetURLs(items)
-		} else if isFacebookReelContentType(webhook.ContentType) {
+		} else if isFacebookReelContentType(webhook.ContentType) || strings.EqualFold(webhook.ContentType, "facebook:post") {
 			assets = collectAssetURLs(items)
 		}
 		for index := range assets {
@@ -252,7 +252,7 @@ func buildFinalJSON(items []any, contentType string, assets []asset) map[string]
 	}
 	if len(items) > 0 {
 		item, _ := items[0].(map[string]any)
-		if isFacebookReelContentType(contentType) {
+		if isFacebookReelContentType(contentType) || strings.EqualFold(contentType, "facebook:post") {
 			result["title"] = stringValue(item, "text")
 			result["description"] = stringValue(item, "text")
 		}

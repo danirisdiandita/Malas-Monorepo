@@ -24,6 +24,7 @@ const (
 	TikTokPhoto   LinkContentType = "tiktok:photo"
 	TikTokVideo   LinkContentType = "tiktok:video"
 	FacebookReels LinkContentType = "facebook:reel"
+	FacebookPost  LinkContentType = "facebook:post"
 )
 
 var awemeIDPattern = regexp.MustCompile(`(?:^|/)((?:\d){10,})(?:/|$)`)
@@ -51,7 +52,7 @@ type apifyRun struct {
 	} `json:"data"`
 }
 
-func HandleImport(token, debugDir, authURL, webhookSecret, tikTokActorURL, facebookReelsActorURL string, pipeline *Pipeline) http.HandlerFunc {
+func HandleImport(token, debugDir, authURL, webhookSecret, tikTokActorURL, facebookReelsActorURL, facebookPostsActorURL string, pipeline *Pipeline) http.HandlerFunc {
 	client := &http.Client{Timeout: 25 * time.Second, CheckRedirect: func(req *http.Request, via []*http.Request) error {
 		if _, err := validateLinkURL(req.URL.String()); err != nil {
 			return err
@@ -96,7 +97,7 @@ func HandleImport(token, debugDir, authURL, webhookSecret, tikTokActorURL, faceb
 			return
 		}
 		awemeID := extractAwemeID(redirected.Path)
-		if contentType != FacebookReels && awemeID == "" {
+		if (contentType == TikTokPhoto || contentType == TikTokVideo) && awemeID == "" {
 			http.Error(w, "TikTok URL does not contain an Aweme ID", http.StatusBadRequest)
 			return
 		}
@@ -105,6 +106,9 @@ func HandleImport(token, debugDir, authURL, webhookSecret, tikTokActorURL, faceb
 		if contentType == FacebookReels {
 			source, actorURL = "facebook", facebookReelsActorURL
 			actorInput = facebookActorInput(redirected.String())
+		} else if contentType == FacebookPost {
+			source, actorURL = "facebook", facebookPostsActorURL
+			actorInput = facebookPostsActorInput(redirected.String())
 		}
 		payload, _ := json.Marshal(actorInput)
 		webhook, err := url.Parse(strings.TrimRight(authURL, "/") + "/webhooks/import")
@@ -113,7 +117,7 @@ func HandleImport(token, debugDir, authURL, webhookSecret, tikTokActorURL, faceb
 			return
 		}
 		recipeID := ""
-		if contentType == TikTokPhoto || contentType == TikTokVideo || contentType == FacebookReels {
+		if contentType == TikTokPhoto || contentType == TikTokVideo || contentType == FacebookReels || contentType == FacebookPost {
 			if pipeline == nil || pipeline.Config.OpenRouterKey == "" || pipeline.Storage == nil {
 				http.Error(w, "Recipe extraction requires OPENROUTER_API_KEY and S3 configuration", 503)
 				return
@@ -232,8 +236,9 @@ func ParseLinkContentType(raw string) (LinkContentType, error) {
 				return FacebookReels, nil
 			}
 		}
+		return FacebookPost, nil
 	}
-	return "", fmt.Errorf("URL must be a TikTok photo/video or Facebook Reel")
+	return "", fmt.Errorf("URL must be a TikTok photo/video or Facebook post/reel")
 }
 
 func validateLinkURL(raw string) (*url.URL, error) {
@@ -275,6 +280,12 @@ func facebookActorInput(url string) map[string]any {
 	return map[string]any{
 		"individual_reel_url": []map[string]string{{"url": url}},
 		"reels_count":         1,
+	}
+}
+
+func facebookPostsActorInput(url string) map[string]any {
+	return map[string]any{
+		"startUrls": []map[string]string{{"url": url}},
 	}
 }
 

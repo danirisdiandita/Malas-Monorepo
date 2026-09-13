@@ -34,11 +34,26 @@ func TestParseFacebookReelsContentType(t *testing.T) {
 	}
 }
 
+func TestParseFacebookPostContentType(t *testing.T) {
+	got, err := ParseLinkContentType("https://www.facebook.com/humansofnewyork/")
+	if err != nil || got != FacebookPost {
+		t.Fatalf("ParseLinkContentType() = %q, %v", got, err)
+	}
+}
+
 func TestFacebookActorInput(t *testing.T) {
 	input := facebookActorInput("https://www.facebook.com/reel/123456789")
 	urls, ok := input["individual_reel_url"].([]map[string]string)
 	if !ok || len(urls) != 1 || urls[0]["url"] != "https://www.facebook.com/reel/123456789" || input["reels_count"] != 1 {
 		t.Fatalf("unexpected Facebook actor input: %#v", input)
+	}
+}
+
+func TestFacebookPostsActorInput(t *testing.T) {
+	input := facebookPostsActorInput("https://www.facebook.com/humansofnewyork/")
+	urls, ok := input["startUrls"].([]map[string]string)
+	if !ok || len(urls) != 1 || urls[0]["url"] != "https://www.facebook.com/humansofnewyork/" {
+		t.Fatalf("unexpected Facebook posts actor input: %#v", input)
 	}
 }
 
@@ -88,6 +103,18 @@ func TestCollectVideoAssetURLsSupportsFacebookReel(t *testing.T) {
 	}})
 	if len(assets) != 1 || assets[0].URL != "https://video.fbcdn.net/reel.mp4" {
 		t.Fatalf("unexpected Facebook video assets: %#v", assets)
+	}
+}
+
+func TestCollectAssetURLsSupportsFacebookPostMedia(t *testing.T) {
+	assets := collectAssetURLs([]any{map[string]any{
+		"media": []any{map[string]any{
+			"thumbnail":   "https://scontent.fbcdn.net/post.jpg",
+			"photo_image": map[string]any{"uri": "https://scontent.fbcdn.net/post-full.jpg"},
+		}},
+	}})
+	if len(assets) != 2 {
+		t.Fatalf("expected 2 Facebook post assets, got %#v", assets)
 	}
 }
 
