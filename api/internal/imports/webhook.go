@@ -118,7 +118,7 @@ func HandleImportWebhook(token, debugDir, secret string) http.HandlerFunc {
 			assets = collectAssetURLs(items)
 		} else if strings.EqualFold(webhook.ContentType, "facebook:post") {
 			assets = collectFacebookPostAssetURLs(items)
-		} else if strings.EqualFold(webhook.ContentType, "youtube:video") {
+		} else if strings.EqualFold(webhook.ContentType, "youtube:video") || strings.EqualFold(webhook.ContentType, "youtube:short") {
 			// YouTube media is processed from its metadata and thumbnail in the
 			// recipe worker; do not download the platform video here.
 			assets = nil
@@ -294,11 +294,16 @@ func buildFinalJSON(items []any, contentType string, assets []asset) map[string]
 		if isFacebookReelContentType(contentType) || strings.EqualFold(contentType, "facebook:post") {
 			result["title"] = stringValue(item, "text")
 			result["description"] = stringValue(item, "text")
-		} else if strings.EqualFold(contentType, "youtube:video") {
-			result["title"] = stringValue(item, "title")
-			result["description"] = stringValue(item, "text")
-			result["thumbnail_url"] = stringValue(item, "thumbnailUrl")
+		} else if strings.EqualFold(contentType, "youtube:video") || strings.EqualFold(contentType, "youtube:short") {
+			result["title"] = firstString(item, "title", "name")
+			result["description"] = firstString(item, "description", "text")
+			result["thumbnail_url"] = firstString(item, "thumbnailUrl", "thumbnail_url")
 			result["subtitles"] = youtubeSubtitleText(item)
+			for _, key := range []string{"video_id", "language", "language_code", "duration_human", "channel_name", "channel_id", "channel_url", "url", "thumbnail_url"} {
+				if value, ok := item[key]; ok {
+					result["youtube_"+key] = value
+				}
+			}
 		}
 		if detail, ok := item["aweme_detail"].(map[string]any); ok {
 			result["title"] = stringValue(detail, "desc")
@@ -324,6 +329,9 @@ func buildFinalJSON(items []any, contentType string, assets []asset) map[string]
 }
 
 func youtubeSubtitleText(item map[string]any) string {
+	if text := firstString(item, "non_timestamped", "transcript", "subtitles", "text"); text != "" {
+		return text
+	}
 	subtitles, _ := item["subtitles"].([]any)
 	for _, raw := range subtitles {
 		subtitle, ok := raw.(map[string]any)
@@ -332,6 +340,15 @@ func youtubeSubtitleText(item map[string]any) string {
 		}
 		if text, ok := subtitle["plaintext"].(string); ok && strings.TrimSpace(text) != "" {
 			return text
+		}
+	}
+	return ""
+}
+
+func firstString(object map[string]any, keys ...string) string {
+	for _, key := range keys {
+		if value, ok := object[key].(string); ok && strings.TrimSpace(value) != "" {
+			return value
 		}
 	}
 	return ""

@@ -35,12 +35,13 @@ type S3Config struct {
 }
 
 type ApifyConfig struct {
-	APIToken              string
-	DebugDir              string
-	TikTokActorURL        string
-	FacebookReelsActorURL string
-	FacebookPostsActorURL string
-	YouTubeActorURL       string
+	APIToken                  string
+	DebugDir                  string
+	TikTokActorURL            string
+	FacebookReelsActorURL     string
+	FacebookPostsActorURL     string
+	YouTubeActorURL           string
+	YouTubeTranscriptActorURL string
 }
 
 func LoadConfig() *Config {
@@ -62,12 +63,13 @@ func LoadConfig() *Config {
 		WebhookDebugDir:     getEnv("WEBHOOK_DEBUG_DIR", "./debug/webhooks"),
 		WebhookDebugSecret:  getEnv("WEBHOOK_DEBUG_SECRET", ""),
 		Apify: ApifyConfig{
-			APIToken:              getEnv("APIFY_API_TOKEN", ""),
-			DebugDir:              getEnv("APIFY_DEBUG_DIR", "./debug/apify"),
-			TikTokActorURL:        getEnv("APIFY_TIKTOK_ACTOR_URL", "https://api.apify.com/v2/acts/scraptik~tiktok-api/runs"),
-			FacebookReelsActorURL: getEnv("APIFY_FACEBOOK_REELS_ACTOR_URL", "https://api.apify.com/v2/actors/scraperdataworld~facebook-reels-scraper/runs"),
-			FacebookPostsActorURL: getEnv("APIFY_FACEBOOK_POSTS_ACTOR_URL", "https://api.apify.com/v2/actors/apify~facebook-posts-scraper/runs"),
-			YouTubeActorURL:       getEnv("APIFY_YOUTUBE_ACTOR_URL", "https://api.apify.com/v2/actors/streamers~youtube-scraper/runs"),
+			APIToken:                  getEnv("APIFY_API_TOKEN", ""),
+			DebugDir:                  getEnv("APIFY_DEBUG_DIR", "./debug/apify"),
+			TikTokActorURL:            getEnv("APIFY_TIKTOK_ACTOR_URL", "https://api.apify.com/v2/acts/scraptik~tiktok-api/runs"),
+			FacebookReelsActorURL:     getEnv("APIFY_FACEBOOK_REELS_ACTOR_URL", "https://api.apify.com/v2/actors/scraperdataworld~facebook-reels-scraper/runs"),
+			FacebookPostsActorURL:     getEnv("APIFY_FACEBOOK_POSTS_ACTOR_URL", "https://api.apify.com/v2/actors/apify~facebook-posts-scraper/runs"),
+			YouTubeActorURL:           getEnv("APIFY_YOUTUBE_ACTOR_URL", "https://api.apify.com/v2/actors/streamers~youtube-scraper/runs"),
+			YouTubeTranscriptActorURL: getEnv("APIFY_YOUTUBE_TRANSCRIPT_ACTOR_URL", "https://api.apify.com/v2/actors/johnvc~youtubetranscripts/runs"),
 		},
 		ImportWebhookSecret:  getEnv("IMPORT_WEBHOOK_SECRET", getEnv("TIKTOK_WEBHOOK_SECRET", "")),
 		OpenRouterKey:        getEnv("OPENROUTER_API_KEY", ""),

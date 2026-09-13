@@ -258,7 +258,7 @@ func (p *Pipeline) process(ctx context.Context, row *ent.Recipe) error {
 			return err
 		}
 	}
-	isYouTube := strings.EqualFold(hook.ContentType, string(YouTubeVideo))
+	isYouTube := strings.EqualFold(hook.ContentType, string(YouTubeVideo)) || strings.EqualFold(hook.ContentType, string(YouTubeShort))
 	isVideo := strings.EqualFold(hook.ContentType, string(TikTokVideo)) || isFacebookReelContentType(hook.ContentType)
 	assets := collectImagePostAssetURLs(items)
 	if isVideo {
@@ -295,7 +295,7 @@ func (p *Pipeline) process(ctx context.Context, row *ent.Recipe) error {
 	var extractionImage, coverSource, videoData []byte
 	var err error
 	if isYouTube {
-		thumbnail := stringValue(items[0].(map[string]any), "thumbnailUrl")
+		thumbnail := stringValue(final, "thumbnail_url")
 		if thumbnail == "" {
 			return fmt.Errorf("YouTube result contains no thumbnail")
 		}

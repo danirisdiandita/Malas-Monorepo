@@ -26,6 +26,7 @@ const (
 	FacebookReels LinkContentType = "facebook:reel"
 	FacebookPost  LinkContentType = "facebook:post"
 	YouTubeVideo  LinkContentType = "youtube:video"
+	YouTubeShort  LinkContentType = "youtube:short"
 )
 
 var awemeIDPattern = regexp.MustCompile(`(?:^|/)((?:\d){10,})(?:/|$)`)
@@ -53,7 +54,7 @@ type apifyRun struct {
 	} `json:"data"`
 }
 
-func HandleImport(token, debugDir, authURL, webhookSecret, tikTokActorURL, facebookReelsActorURL, facebookPostsActorURL, youtubeActorURL string, pipeline *Pipeline) http.HandlerFunc {
+func HandleImport(token, debugDir, authURL, webhookSecret, tikTokActorURL, facebookReelsActorURL, facebookPostsActorURL, youtubeActorURL, youtubeTranscriptActorURL string, pipeline *Pipeline) http.HandlerFunc {
 	client := &http.Client{Timeout: 25 * time.Second, CheckRedirect: func(req *http.Request, via []*http.Request) error {
 		if _, err := validateLinkURL(req.URL.String()); err != nil {
 			return err
@@ -89,7 +90,7 @@ func HandleImport(token, debugDir, authURL, webhookSecret, tikTokActorURL, faceb
 		}
 		redirected, err := resolve(r.Context(), client, requested)
 		if err != nil {
-			http.Error(w, "failed to resolve TikTok URL", http.StatusBadGateway)
+			http.Error(w, "failed to resolve URL", http.StatusBadGateway)
 			return
 		}
 		contentType, err := ParseLinkContentType(redirected.String())
@@ -110,9 +111,13 @@ func HandleImport(token, debugDir, authURL, webhookSecret, tikTokActorURL, faceb
 		} else if contentType == FacebookPost {
 			source, actorURL = "facebook", facebookPostsActorURL
 			actorInput = facebookPostsActorInput(redirected.String())
-		} else if contentType == YouTubeVideo {
+		} else if contentType == YouTubeVideo || contentType == YouTubeShort {
 			source, actorURL = "youtube", youtubeActorURL
 			actorInput = youtubeActorInput(redirected.String())
+			if contentType == YouTubeShort {
+				actorURL = youtubeTranscriptActorURL
+				actorInput = youtubeTranscriptActorInput(redirected.String())
+			}
 		}
 		payload, _ := json.Marshal(actorInput)
 		webhook, err := url.Parse(strings.TrimRight(authURL, "/") + "/webhooks/import")
@@ -121,7 +126,7 @@ func HandleImport(token, debugDir, authURL, webhookSecret, tikTokActorURL, faceb
 			return
 		}
 		recipeID := ""
-		if contentType == TikTokPhoto || contentType == TikTokVideo || contentType == FacebookReels || contentType == FacebookPost || contentType == YouTubeVideo {
+		if contentType == TikTokPhoto || contentType == TikTokVideo || contentType == FacebookReels || contentType == FacebookPost || contentType == YouTubeVideo || contentType == YouTubeShort {
 			if pipeline == nil || pipeline.Config.OpenRouterKey == "" || pipeline.Storage == nil {
 				http.Error(w, "Recipe extraction requires OPENROUTER_API_KEY and S3 configuration", 503)
 				return
@@ -243,7 +248,10 @@ func ParseLinkContentType(raw string) (LinkContentType, error) {
 		return FacebookPost, nil
 	}
 	if isYouTubeHost(u.Hostname()) {
-		if strings.EqualFold(u.Hostname(), "youtu.be") || strings.EqualFold(u.Path, "/watch") || strings.HasPrefix(strings.ToLower(u.Path), "/shorts/") {
+		if strings.HasPrefix(strings.ToLower(u.Path), "/shorts/") {
+			return YouTubeShort, nil
+		}
+		if strings.EqualFold(u.Hostname(), "youtu.be") || strings.EqualFold(u.Path, "/watch") {
 			return YouTubeVideo, nil
 		}
 	}
@@ -313,6 +321,17 @@ func youtubeActorInput(url string) map[string]any {
 		"saveSubsToKVS": false, "startUrls": []map[string]string{{"url": url}},
 		"subtitlesFormat": "plaintext", "subtitlesLanguage": "any",
 		"transcriptionAndSubtitle": "ALWAYS_SUBTITLES",
+	}
+}
+
+func youtubeTranscriptActorInput(url string) map[string]any {
+	return map[string]any{
+		"channel_transcripts": false,
+		"include_metadata":    true,
+		"languages":           []string{"en"},
+		"list_only":           false,
+		"preserve_formatting": false,
+		"youtube_url":         url,
 	}
 }
 

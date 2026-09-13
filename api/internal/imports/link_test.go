@@ -58,15 +58,39 @@ func TestFacebookPostsActorInput(t *testing.T) {
 }
 
 func TestParseYouTubeContentType(t *testing.T) {
+	short, err := ParseLinkContentType("https://www.youtube.com/shorts/abc123")
+	if err != nil || short != YouTubeShort {
+		t.Fatalf("short content type = %q, %v", short, err)
+	}
 	for _, raw := range []string{
 		"https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-		"https://www.youtube.com/shorts/abc123",
 		"https://youtu.be/dQw4w9WgXcQ",
 	} {
 		got, err := ParseLinkContentType(raw)
 		if err != nil || got != YouTubeVideo {
 			t.Fatalf("ParseLinkContentType(%q) = %q, %v", raw, got, err)
 		}
+	}
+}
+
+func TestYouTubeTranscriptActorInput(t *testing.T) {
+	input := youtubeTranscriptActorInput("https://www.youtube.com/shorts/abc123")
+	if input["youtube_url"] != "https://www.youtube.com/shorts/abc123" || input["include_metadata"] != true || input["channel_transcripts"] != false {
+		t.Fatalf("unexpected YouTube transcript actor input: %#v", input)
+	}
+}
+
+func TestYouTubeShortFinalJSON(t *testing.T) {
+	items := []any{map[string]any{
+		"video_id":        "abc123",
+		"title":           "Chicken Parm",
+		"description":     "Chicken recipe",
+		"non_timestamped": "Mix and cook",
+		"thumbnail_url":   "https://i.ytimg.com/vi/abc123/maxresdefault.jpg",
+	}}
+	final := buildFinalJSON(items, string(YouTubeShort), nil)
+	if final["title"] != "Chicken Parm" || final["description"] != "Chicken recipe" || final["subtitles"] != "Mix and cook" || final["thumbnail_url"] == "" {
+		t.Fatalf("unexpected YouTube Shorts final JSON: %#v", final)
 	}
 }
 
