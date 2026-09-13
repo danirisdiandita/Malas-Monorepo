@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { router } from "expo-router";
 import { Ionicons } from "@react-native-vector-icons/ionicons";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
@@ -41,53 +41,22 @@ const steps: OnboardingStep[] = [
     title: ["Recipe in.", "Grocery list ready."],
     description:
       "Turn any saved recipe into a clear grocery list with one tap. No more copying ingredients or wondering what to buy.",
-    button: "Make my grocery list",
+    button: "Continue",
   },
   {
     index: 2,
-    eyebrow: "SHOP WITH EASE",
-    title: ["Your list is ready.", "Shopping feels simple."],
-    description:
-      "Everything you need is organized by aisle, so you can check off ingredients quickly and never forget the important stuff.",
-    button: "Take me shopping",
-  },
-  {
-    index: 3,
-    eyebrow: "COOK WITH CONFIDENCE",
-    title: ["From saved", "to served."],
-    description:
-      "Your recipes, groceries, and next meal live together in yuzu — ready whenever you are.",
-    button: "Start cooking",
-  },
-  {
-    index: 4,
     eyebrow: "PLAN WITHOUT THE PRESSURE",
     title: ["Know what to cook", "next."],
     description:
       "Pick your saved recipes for the week and let yuzu make the plan. Simpler dinners, fewer last-minute decisions.",
-    button: "Plan my week",
-  },
-  {
-    index: 5,
-    eyebrow: "A LIST THAT FITS YOUR LIFE",
-    title: ["Only buy what", "you need."],
-    description:
-      "Set servings, keep track of what you already have, and make every grocery trip feel lighter.",
-    button: "Keep it simple",
-  },
-  {
-    index: 6,
-    eyebrow: "YUZU",
-    title: ["Every recipe.", "Right where you left it."],
-    description:
-      "Save inspiration once, turn it into a grocery list, and plan your meals simply with yuzu.",
-    button: "Start cooking",
+    button: "Continue",
   },
 ];
 
 export default function OnboardingScreen() {
   const { data: user } = useCurrentUser();
   const [step, setStep] = useState(0);
+  const swipe = useRef({ startX: 0, startY: 0 });
   const current = steps[step];
   useEffect(() => {
     if (user) router.replace("/recipes");
@@ -95,9 +64,25 @@ export default function OnboardingScreen() {
 
   const next = () =>
     step === steps.length - 1 ? router.push("/sign-in") : setStep(step + 1);
+  const previous = () => setStep((value) => Math.max(0, value - 1));
   return (
     <ThemedView style={styles.screen}>
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView
+        style={styles.safeArea}
+        onTouchStart={(event) => {
+          swipe.current = {
+            startX: event.nativeEvent.pageX,
+            startY: event.nativeEvent.pageY,
+          };
+        }}
+        onTouchEnd={(event) => {
+          const dx = event.nativeEvent.pageX - swipe.current.startX;
+          const dy = event.nativeEvent.pageY - swipe.current.startY;
+          if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) {
+            dx < 0 ? next() : previous();
+          }
+        }}
+      >
         <ScrollView
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
@@ -144,53 +129,53 @@ export default function OnboardingScreen() {
 function OnboardingVisual({ step }: { step: number }) {
   if (step === 0)
     return (
-      <View style={styles.illustration}>
-        <View style={styles.plate}>
-          <View style={styles.food}>
-            <View style={styles.greenGarnish} />
-            <View style={styles.redGarnish} />
-          </View>
-        </View>
+      <View style={styles.listPanel}>
+        <ThemedText style={styles.panelEyebrow}>
+          IMPORT FROM ANYWHERE
+        </ThemedText>
+        {["TikTok", "Instagram", "Facebook", "YouTube", "Pinterest", "Web"].map(
+          (source, index) => (
+            <View key={source} style={styles.listRow}>
+              <View
+                style={[
+                  styles.sourceDot,
+                  {
+                    backgroundColor: [
+                      "#111",
+                      "#E1306C",
+                      "#1877F2",
+                      "#FF0000",
+                      "#E60023",
+                      colors.leaf,
+                    ][index],
+                  },
+                ]}
+              />
+              <ThemedText style={styles.listText}>{source}</ThemedText>
+              <Ionicons name="checkmark" size={17} color={colors.leaf} />
+            </View>
+          ),
+        )}
       </View>
     );
   if (step === 1)
     return (
       <View style={styles.listPanel}>
-        <ThemedText style={styles.panelEyebrow}>FROM RECIPE TO LIST</ThemedText>
-        {[
-          "🍋  Lemon pasta",
-          "🌶️  Crispy chili eggs",
-          "🥬  Green goddess bowl",
-        ].map((item) => (
-          <View key={item} style={styles.listRow}>
-            <ThemedText style={styles.listText}>{item}</ThemedText>
-            <Ionicons name="chevron-forward" size={15} color={colors.muted} />
-          </View>
-        ))}
+        <ThemedText style={styles.panelEyebrow}>YOUR SHOPPING LIST</ThemedText>
+        {["Avocados", "Cherry tomatoes", "Basil", "Pasta"].map(
+          (item, index) => (
+            <View key={item} style={styles.listRow}>
+              <View style={styles.check} />
+              <ThemedText style={styles.listText}>{item}</ThemedText>
+              <ThemedText style={styles.quantity}>
+                {["2 ripe", "1 pint", "1 bunch", "400 g"][index]}
+              </ThemedText>
+            </View>
+          ),
+        )}
       </View>
     );
-  if (step === 2 || step === 5)
-    return (
-      <View style={styles.listPanel}>
-        <ThemedText style={styles.panelEyebrow}>
-          {step === 2 ? "YOUR SHOPPING LIST" : "SMART LIST"}
-        </ThemedText>
-        {(step === 2
-          ? ["Avocados", "Cherry tomatoes", "Basil", "Pasta"]
-          : ["Olive oil", "Garlic", "Parmesan"]
-        ).map((item, index) => (
-          <View key={item} style={styles.listRow}>
-            <View style={styles.check} />
-            <ThemedText style={styles.listText}>{item}</ThemedText>
-            <ThemedText style={styles.quantity}>
-              {["2 ripe", "1 pint", "1 bunch", "400 g"][index] ||
-                ["1 bottle", "1 bulb", "200 g"][index]}
-            </ThemedText>
-          </View>
-        ))}
-      </View>
-    );
-  if (step === 4)
+  if (step === 2)
     return (
       <View style={styles.weekPanel}>
         <ThemedText style={styles.panelEyebrow}>THIS WEEK</ThemedText>
@@ -246,48 +231,6 @@ const styles = StyleSheet.create({
     marginTop: 14,
     maxWidth: 330,
   },
-  illustration: {
-    width: 280,
-    height: 280,
-    borderRadius: 140,
-    backgroundColor: colors.sage,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 22,
-  },
-  plate: {
-    width: 190,
-    height: 190,
-    borderRadius: 95,
-    backgroundColor: "#fff",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  food: {
-    width: 126,
-    height: 126,
-    borderRadius: 63,
-    backgroundColor: colors.sun,
-    position: "relative",
-  },
-  greenGarnish: {
-    position: "absolute",
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: colors.leaf,
-    top: 22,
-    left: 34,
-  },
-  redGarnish: {
-    position: "absolute",
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: colors.tomato,
-    right: 25,
-    bottom: 27,
-  },
   listPanel: {
     width: "100%",
     backgroundColor: colors.sage,
@@ -313,6 +256,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   listText: { color: colors.ink, fontSize: 16, fontWeight: "700", flex: 1 },
+  sourceDot: { width: 12, height: 12, borderRadius: 6 },
   check: {
     width: 17,
     height: 17,
@@ -353,7 +297,12 @@ const styles = StyleSheet.create({
     paddingTop: 24,
   },
   progress: { flexDirection: "row", gap: 6, marginBottom: 16 },
-  stepIndex: { color: colors.muted, fontSize: 12, fontWeight: "700", marginBottom: 8 },
+  stepIndex: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: "700",
+    marginBottom: 8,
+  },
   dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.line },
   activeDot: { width: 24, backgroundColor: colors.leaf },
   primaryButton: {
