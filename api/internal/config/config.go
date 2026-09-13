@@ -41,6 +41,7 @@ type ApifyConfig struct {
 	FacebookReelsActorURL     string
 	FacebookPostsActorURL     string
 	InstagramActorURL         string
+	InstagramReelsActorURL    string
 	YouTubeActorURL           string
 	YouTubeTranscriptActorURL string
 }
@@ -70,6 +71,7 @@ func LoadConfig() *Config {
 			FacebookReelsActorURL:     getEnv("APIFY_FACEBOOK_REELS_ACTOR_URL", "https://api.apify.com/v2/actors/scraperdataworld~facebook-reels-scraper/runs"),
 			FacebookPostsActorURL:     getEnv("APIFY_FACEBOOK_POSTS_ACTOR_URL", "https://api.apify.com/v2/actors/apify~facebook-posts-scraper/runs"),
 			InstagramActorURL:         getEnv("APIFY_INSTAGRAM_ACTOR_URL", "https://api.apify.com/v2/actors/apify~instagram-scraper/runs"),
+			InstagramReelsActorURL:    getEnv("APIFY_INSTAGRAM_REELS_ACTOR_URL", "https://api.apify.com/v2/actors/apify~instagram-reel-scraper/runs"),
 			YouTubeActorURL:           getEnv("APIFY_YOUTUBE_ACTOR_URL", "https://api.apify.com/v2/actors/streamers~youtube-scraper/runs"),
 			YouTubeTranscriptActorURL: getEnv("APIFY_YOUTUBE_TRANSCRIPT_ACTOR_URL", "https://api.apify.com/v2/actors/johnvc~youtubetranscripts/runs"),
 		},

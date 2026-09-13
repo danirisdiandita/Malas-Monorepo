@@ -26,6 +26,7 @@ const (
 	FacebookReels LinkContentType = "facebook:reel"
 	FacebookPost  LinkContentType = "facebook:post"
 	InstagramPost LinkContentType = "instagram:post"
+	InstagramReel LinkContentType = "instagram:reel"
 	YouTubeVideo  LinkContentType = "youtube:video"
 	YouTubeShort  LinkContentType = "youtube:short"
 )
@@ -55,7 +56,7 @@ type apifyRun struct {
 	} `json:"data"`
 }
 
-func HandleImport(token, debugDir, authURL, webhookSecret, tikTokActorURL, facebookReelsActorURL, facebookPostsActorURL, instagramActorURL, youtubeActorURL, youtubeTranscriptActorURL string, pipeline *Pipeline) http.HandlerFunc {
+func HandleImport(token, debugDir, authURL, webhookSecret, tikTokActorURL, facebookReelsActorURL, facebookPostsActorURL, instagramActorURL, instagramReelsActorURL, youtubeActorURL, youtubeTranscriptActorURL string, pipeline *Pipeline) http.HandlerFunc {
 	client := &http.Client{Timeout: 25 * time.Second, CheckRedirect: func(req *http.Request, via []*http.Request) error {
 		if _, err := validateLinkURL(req.URL.String()); err != nil {
 			return err
@@ -115,6 +116,9 @@ func HandleImport(token, debugDir, authURL, webhookSecret, tikTokActorURL, faceb
 		} else if contentType == InstagramPost {
 			source, actorURL = "instagram", instagramActorURL
 			actorInput = instagramActorInput(redirected.String())
+		} else if contentType == InstagramReel {
+			source, actorURL = "instagram", instagramReelsActorURL
+			actorInput = instagramReelsActorInput(redirected.String())
 		} else if contentType == YouTubeVideo || contentType == YouTubeShort {
 			source, actorURL = "youtube", youtubeActorURL
 			actorInput = youtubeActorInput(redirected.String())
@@ -130,7 +134,7 @@ func HandleImport(token, debugDir, authURL, webhookSecret, tikTokActorURL, faceb
 			return
 		}
 		recipeID := ""
-		if contentType == TikTokPhoto || contentType == TikTokVideo || contentType == FacebookReels || contentType == FacebookPost || contentType == InstagramPost || contentType == YouTubeVideo || contentType == YouTubeShort {
+		if contentType == TikTokPhoto || contentType == TikTokVideo || contentType == FacebookReels || contentType == FacebookPost || contentType == InstagramPost || contentType == InstagramReel || contentType == YouTubeVideo || contentType == YouTubeShort {
 			if pipeline == nil || pipeline.Config.OpenRouterKey == "" || pipeline.Storage == nil {
 				http.Error(w, "Recipe extraction requires OPENROUTER_API_KEY and S3 configuration", 503)
 				return
@@ -252,6 +256,9 @@ func ParseLinkContentType(raw string) (LinkContentType, error) {
 		return FacebookPost, nil
 	}
 	if isInstagramHost(u.Hostname()) {
+		if strings.HasPrefix(strings.ToLower(u.Path), "/reel/") {
+			return InstagramReel, nil
+		}
 		if strings.HasPrefix(strings.ToLower(u.Path), "/p/") {
 			return InstagramPost, nil
 		}
@@ -264,7 +271,7 @@ func ParseLinkContentType(raw string) (LinkContentType, error) {
 			return YouTubeVideo, nil
 		}
 	}
-	return "", fmt.Errorf("URL must be a TikTok photo/video, Facebook post/reel, Instagram post, or YouTube video/Short")
+	return "", fmt.Errorf("URL must be a TikTok photo/video, Facebook post/reel, Instagram post/reel, or YouTube video/Short")
 }
 
 func validateLinkURL(raw string) (*url.URL, error) {
@@ -333,6 +340,18 @@ func instagramActorInput(url string) map[string]any {
 		"resultsType":   "posts",
 		"searchLimit":   10,
 		"searchType":    "hashtag",
+	}
+}
+
+func instagramReelsActorInput(url string) map[string]any {
+	return map[string]any{
+		"includeDownloadedVideo": false,
+		"includeSharesCount":     false,
+		"includeTranscript":      false,
+		"resultsLimit":           1,
+		"skipPinnedPosts":        false,
+		"skipTrialReels":         false,
+		"username":               []string{url},
 	}
 }
 

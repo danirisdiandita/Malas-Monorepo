@@ -62,6 +62,7 @@ export default function RecipeDetailScreen() {
   if (isError || !recipe) return <StatusScreen message="Recipe not found." />;
 
   const isTikTok = recipe.source.toLowerCase().startsWith("tiktok");
+  const isInstagram = recipe.source.toLowerCase().startsWith("instagram");
 
   return (
     <ThemedView style={styles.screen}>
@@ -161,12 +162,12 @@ export default function RecipeDetailScreen() {
                 onPress={() => Linking.openURL(recipe.url as string)}
               >
                 <Ionicons
-                  name={isTikTok ? "logo-tiktok" : "open-outline"}
+                  name={isTikTok ? "logo-tiktok" : isInstagram ? "logo-instagram" : "open-outline"}
                   size={15}
                   color={yuzuColors.leaf}
                 />
                 <ThemedText style={styles.sourceLinkLabel}>
-                  {isTikTok ? "View on TikTok" : "View original source"}
+                  {isTikTok ? "View on TikTok" : isInstagram ? "View on Instagram" : "View original source"}
                 </ThemedText>
               </Pressable>
             )}

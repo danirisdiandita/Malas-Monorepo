@@ -120,6 +120,8 @@ func HandleImportWebhook(token, debugDir, secret string) http.HandlerFunc {
 			assets = collectFacebookPostAssetURLs(items)
 		} else if strings.EqualFold(webhook.ContentType, string(InstagramPost)) {
 			assets = collectInstagramAssetURLs(items)
+		} else if strings.EqualFold(webhook.ContentType, string(InstagramReel)) {
+			assets = collectInstagramReelAssetURLs(items)
 		} else if strings.EqualFold(webhook.ContentType, "youtube:video") || strings.EqualFold(webhook.ContentType, "youtube:short") {
 			// YouTube media is processed from its metadata and thumbnail in the
 			// recipe worker; do not download the platform video here.
@@ -287,7 +289,7 @@ func buildFinalJSON(items []any, contentType string, assets []asset) map[string]
 		"description":     "",
 		"image_post_info": []string{},
 	}
-	if strings.EqualFold(contentType, "tiktok:video") || isFacebookReelContentType(contentType) {
+	if strings.EqualFold(contentType, "tiktok:video") || isFacebookReelContentType(contentType) || strings.EqualFold(contentType, string(InstagramReel)) {
 		delete(result, "image_post_info")
 		result["video"] = ""
 	}
@@ -297,6 +299,10 @@ func buildFinalJSON(items []any, contentType string, assets []asset) map[string]
 			result["title"] = stringValue(item, "text")
 			result["description"] = stringValue(item, "text")
 		} else if strings.EqualFold(contentType, string(InstagramPost)) {
+			result["title"] = firstString(item, "caption", "title", "name")
+			result["description"] = firstString(item, "caption", "description", "alt")
+			result["source_url"] = firstString(item, "url", "inputUrl")
+		} else if strings.EqualFold(contentType, string(InstagramReel)) {
 			result["title"] = firstString(item, "caption", "title", "name")
 			result["description"] = firstString(item, "caption", "description", "alt")
 			result["source_url"] = firstString(item, "url", "inputUrl")
@@ -318,7 +324,7 @@ func buildFinalJSON(items []any, contentType string, assets []asset) map[string]
 			}
 		}
 	}
-	if strings.EqualFold(contentType, "tiktok:video") || isFacebookReelContentType(contentType) {
+	if strings.EqualFold(contentType, "tiktok:video") || isFacebookReelContentType(contentType) || strings.EqualFold(contentType, string(InstagramReel)) {
 		if len(assets) > 0 && assets[0].File != "" && assets[0].Error == "" {
 			result["video"] = assets[0].File
 		}
@@ -378,6 +384,43 @@ func collectInstagramAssetURLs(value any) []asset {
 			}
 		case string:
 			if imageContext && strings.HasPrefix(typed, "https://") && !seen[typed] && len(assets) < maxAssetCount {
+				seen[typed] = true
+				assets = append(assets, asset{URL: typed})
+			}
+		}
+	}
+	walk(value, false)
+	return assets
+}
+
+func collectInstagramReelAssetURLs(value any) []asset {
+	for _, video := range collectInstagramURLs(value, true) {
+		return []asset{video}
+	}
+	return collectInstagramURLs(value, false)
+}
+
+func collectInstagramURLs(value any, videoOnly bool) []asset {
+	seen := map[string]bool{}
+	assets := make([]asset, 0)
+	var walk func(any, bool)
+	walk = func(current any, mediaContext bool) {
+		switch typed := current.(type) {
+		case map[string]any:
+			for key, child := range typed {
+				keyName := strings.ToLower(key)
+				isMedia := strings.Contains(keyName, "video")
+				if !videoOnly {
+					isMedia = strings.Contains(keyName, "image") || strings.Contains(keyName, "displayurl") || strings.Contains(keyName, "thumbnail")
+				}
+				walk(child, mediaContext || isMedia)
+			}
+		case []any:
+			for _, child := range typed {
+				walk(child, mediaContext)
+			}
+		case string:
+			if mediaContext && strings.HasPrefix(typed, "https://") && !seen[typed] && len(assets) < maxAssetCount {
 				seen[typed] = true
 				assets = append(assets, asset{URL: typed})
 			}

@@ -84,7 +84,7 @@ func (p *Pipeline) Receive(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "unable to load import", 500)
 		return
 	}
-	if (row.WebhookID != "" && row.WebhookID != hook.Resource.ID) || row.Source != hook.Source {
+	if !sameImportSource(row.Source, hook.Source) {
 		http.Error(w, "webhook does not match import", 409)
 		return
 	}
@@ -102,7 +102,13 @@ func (p *Pipeline) Receive(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	update := p.DB.Recipe.Update().Where(recipe.ID(row.ID), recipe.ImportStatusEQ(recipe.ImportStatusLooking),
-		recipe.ImportWebhookIsNil()).SetWebhookID(hook.Resource.ID).SetImportWebhook(body)
+		recipe.ImportWebhookIsNil()).SetImportWebhook(body)
+	// Keep the launch run ID used by the mobile status poller. The recipe_id in
+	// the signed webhook payload identifies the import row; callbacks may carry
+	// a different resource ID after an Apify retry/resurrection.
+	if row.WebhookID == "" {
+		update.SetWebhookID(hook.Resource.ID)
+	}
 	if terminalFailure {
 		update.SetImportStatus(recipe.ImportStatusFailed).SetImportError("The source could not be downloaded. Please try another link.")
 	}
@@ -111,6 +117,17 @@ func (p *Pipeline) Receive(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusAccepted)
+}
+
+func sameImportSource(left, right string) bool {
+	left = strings.ToLower(strings.TrimSpace(left))
+	right = strings.ToLower(strings.TrimSpace(right))
+	if left == right {
+		return true
+	}
+	left, _, _ = strings.Cut(left, ":")
+	right, _, _ = strings.Cut(right, ":")
+	return left != "" && left == right
 }
 
 func (p *Pipeline) Status(w http.ResponseWriter, r *http.Request) {
@@ -259,10 +276,13 @@ func (p *Pipeline) process(ctx context.Context, row *ent.Recipe) error {
 		}
 	}
 	isYouTube := strings.EqualFold(hook.ContentType, string(YouTubeVideo)) || strings.EqualFold(hook.ContentType, string(YouTubeShort))
+	isInstagramReel := strings.EqualFold(hook.ContentType, string(InstagramReel))
 	isVideo := strings.EqualFold(hook.ContentType, string(TikTokVideo)) || isFacebookReelContentType(hook.ContentType)
 	assets := collectImagePostAssetURLs(items)
 	if isVideo {
 		assets = collectVideoAssetURLs(items)
+	} else if isInstagramReel {
+		assets = collectInstagramReelAssetURLs(items)
 	} else if strings.EqualFold(hook.ContentType, "facebook:post") {
 		assets = collectFacebookPostAssetURLs(items)
 	} else if strings.EqualFold(hook.ContentType, string(InstagramPost)) {
@@ -319,6 +339,20 @@ func (p *Pipeline) process(ctx context.Context, row *ent.Recipe) error {
 		if err = os.WriteFile(filepath.Join(folder, "assets", "first-frame.jpg"), extractionImage, 0600); err != nil {
 			return fmt.Errorf("save first video frame: %w", err)
 		}
+	} else if isInstagramReel {
+		if len(paths) == 0 {
+			return fmt.Errorf("Instagram Reel contains no downloadable video")
+		}
+		extractionImage, err = firstVideoFrame(ctx, paths[0])
+		if err != nil {
+			return err
+		}
+		coverSource = extractionImage
+		if err = os.WriteFile(filepath.Join(folder, "assets", "first-frame.jpg"), extractionImage, 0600); err != nil {
+			return fmt.Errorf("save first video frame: %w", err)
+		}
+		// Instagram Reel extraction intentionally sends only text to GPT Luna.
+		extractionImage = nil
 	} else {
 		extractionImage, err = stackPhotos(paths)
 		if err != nil {
@@ -329,7 +363,7 @@ func (p *Pipeline) process(ctx context.Context, row *ent.Recipe) error {
 			return err
 		}
 	}
-	extracted, err := p.extract(ctx, final, extractionImage, videoData)
+	extracted, err := p.extract(ctx, final, extractionImage, videoData, filepath.Join(folder, "prompt.json"))
 	if err != nil {
 		return err
 	}
