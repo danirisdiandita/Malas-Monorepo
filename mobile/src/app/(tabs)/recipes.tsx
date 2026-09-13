@@ -534,7 +534,9 @@ function RecipeCard({
         <RecipeImage url={imageURL} />
       </View>
       <View style={styles.cardInfo}>
-        <ThemedText style={styles.cardTitle}>{title}</ThemedText>
+        <ThemedText style={styles.cardTitle} numberOfLines={1} ellipsizeMode="tail">
+          {title}
+        </ThemedText>
         <ThemedText style={styles.cardMeta}>{meta}</ThemedText>
       </View>
     </Pressable>
