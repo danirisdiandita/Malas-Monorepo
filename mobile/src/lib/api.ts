@@ -188,7 +188,7 @@ function isFolder(value: unknown): value is Folder {
 }
 
 export async function getFolders(page = 1, search = ''): Promise<FolderPage> {
-  const params = new URLSearchParams({ page: String(page), page_size: '20' });
+  const params = new URLSearchParams({ page: String(page), page_size: '5' });
   if (search.trim()) params.set('q', search.trim());
   const response = await authenticatedFetch(`/folders?${params.toString()}`);
   if (!response.ok) throw new Error('Unable to load folders.');
@@ -309,11 +309,13 @@ export async function addRecipeIngredients(id: string): Promise<{ count: number 
   return response.json();
 }
 
-export async function importLink(url: string): Promise<LinkImportResult> {
+type ImportPreferences = { language_code?: string; folder_id?: string };
+
+export async function importLink(url: string, preferences: ImportPreferences = {}): Promise<LinkImportResult> {
   const response = await authenticatedFetch('/imports/link', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ url }),
+    body: JSON.stringify({ url, ...preferences }),
   });
   if (!response.ok) throw new Error((await response.text()) || 'Unable to process link.');
   const body: unknown = await response.json();
@@ -321,9 +323,11 @@ export async function importLink(url: string): Promise<LinkImportResult> {
   return body;
 }
 
-export async function importPhoto(uri: string): Promise<PhotoImportResult> {
+export async function importPhoto(uri: string, preferences: ImportPreferences = {}): Promise<PhotoImportResult> {
   const form = new FormData();
   form.append('photo', { uri, name: 'recipe-photo.jpg', type: 'image/jpeg' } as unknown as Blob);
+  if (preferences.language_code) form.append('language_code', preferences.language_code);
+  if (preferences.folder_id) form.append('folder_id', preferences.folder_id);
   const response = await authenticatedFetch('/imports/photo', { method: 'POST', body: form });
   if (!response.ok) throw new Error((await response.text()) || 'Unable to process photo.');
   const body: unknown = await response.json();
@@ -333,11 +337,11 @@ export async function importPhoto(uri: string): Promise<PhotoImportResult> {
   return body as PhotoImportResult;
 }
 
-export async function importText(text: string): Promise<PhotoImportResult> {
+export async function importText(text: string, preferences: ImportPreferences = {}): Promise<PhotoImportResult> {
   const response = await authenticatedFetch('/imports/text', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text }),
+    body: JSON.stringify({ text, ...preferences }),
   });
   if (!response.ok) throw new Error((await response.text()) || 'Unable to create recipe from text.');
   const body: unknown = await response.json();

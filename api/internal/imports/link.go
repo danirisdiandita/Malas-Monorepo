@@ -36,7 +36,9 @@ const (
 var awemeIDPattern = regexp.MustCompile(`(?:^|/)((?:\d){10,})(?:/|$)`)
 
 type request struct {
-	URL string `json:"url"`
+	URL          string `json:"url"`
+	LanguageCode string `json:"language_code"`
+	FolderID     string `json:"folder_id"`
 }
 
 type savedRun struct {
@@ -141,13 +143,18 @@ func HandleImport(token, debugDir, authURL, webhookSecret, tikTokActorURL, faceb
 			http.Error(w, "AUTH_URL must be an absolute URL", http.StatusInternalServerError)
 			return
 		}
+		preferences, err := pipelinePreferences(r, pipeline, input.LanguageCode, input.FolderID)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 		recipeID := ""
 		if contentType == TikTokPhoto || contentType == TikTokVideo || contentType == FacebookReels || contentType == FacebookPost || contentType == InstagramPost || contentType == InstagramReel || contentType == PinterestPin || contentType == YouTubeVideo || contentType == YouTubeShort || contentType == WebPage {
 			if pipeline == nil || pipeline.Config.OpenRouterKey == "" || pipeline.Storage == nil {
 				http.Error(w, "Recipe extraction requires OPENROUTER_API_KEY and S3 configuration", 503)
 				return
 			}
-			row, err := pipeline.Create(r, source, redirected.String())
+			row, err := pipeline.Create(r, source, redirected.String(), preferences)
 			if err != nil {
 				http.Error(w, "unable to create recipe import", 500)
 				return

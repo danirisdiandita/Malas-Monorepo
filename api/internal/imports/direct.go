@@ -33,7 +33,12 @@ func (p *Pipeline) HandlePhoto(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid photo", http.StatusBadRequest)
 		return
 	}
-	p.saveDirect(w, r, "photo", map[string]any{"content_type": "photo", "description": "Recipe photo uploaded by the user."}, input)
+	prefs, err := pipelinePreferences(r, p, r.FormValue("language_code"), r.FormValue("folder_id"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	p.saveDirect(w, r, "photo", map[string]any{"content_type": "photo", "description": "Recipe photo uploaded by the user.", "language_code": prefs.LanguageCode}, input, prefs)
 }
 
 func (p *Pipeline) HandleText(w http.ResponseWriter, r *http.Request) {
@@ -42,16 +47,23 @@ func (p *Pipeline) HandleText(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var body struct {
-		Text string `json:"text"`
+		Text         string `json:"text"`
+		LanguageCode string `json:"language_code"`
+		FolderID     string `json:"folder_id"`
 	}
 	if json.NewDecoder(io.LimitReader(r.Body, 64<<10)).Decode(&body) != nil || strings.TrimSpace(body.Text) == "" {
 		http.Error(w, "text is required", http.StatusBadRequest)
 		return
 	}
-	p.saveDirect(w, r, "text", map[string]any{"content_type": "text", "description": body.Text}, nil)
+	prefs, err := pipelinePreferences(r, p, body.LanguageCode, body.FolderID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	p.saveDirect(w, r, "text", map[string]any{"content_type": "text", "description": body.Text, "language_code": prefs.LanguageCode}, nil, prefs)
 }
 
-func (p *Pipeline) saveDirect(w http.ResponseWriter, r *http.Request, source string, final map[string]any, input []byte) {
+func (p *Pipeline) saveDirect(w http.ResponseWriter, r *http.Request, source string, final map[string]any, input []byte, prefs ImportPreferences) {
 	owner, err := recipes.OwnerID(p.DB, r)
 	if err != nil {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
@@ -68,12 +80,15 @@ func (p *Pipeline) saveDirect(w http.ResponseWriter, r *http.Request, source str
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	cover, err := compressImage(input)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("compress photo: %v", err), http.StatusBadRequest)
-		return
+	var cover []byte
+	if len(input) > 0 {
+		cover, err = compressImage(input)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("compress photo: %v", err), http.StatusBadRequest)
+			return
+		}
 	}
-	if p.Storage == nil {
+	if len(cover) > 0 && p.Storage == nil {
 		http.Error(w, "image storage is not configured", http.StatusInternalServerError)
 		return
 	}
@@ -84,20 +99,31 @@ func (p *Pipeline) saveDirect(w http.ResponseWriter, r *http.Request, source str
 			http.Error(w, "invalid ingredients", http.StatusInternalServerError)
 			return
 		}
-		row, createErr := p.DB.Recipe.Create().SetUserID(owner).SetName(strings.TrimSpace(item.Name)).
+		create := p.DB.Recipe.Create().SetUserID(owner).SetName(strings.TrimSpace(item.Name)).
 			SetServings(item.Servings).SetProcessMinutes(item.ProcessMinutes).SetIngredients(ingredients).
 			SetInstructions(pq.StringArray(item.Instructions)).SetTags(pq.StringArray(item.Tags)).
-			SetNotes(item.Notes).SetSource(source).SetImportStatus(recipe.ImportStatusDone).Save(r.Context())
+			SetNotes(item.Notes).SetSource(source).SetImportStatus(recipe.ImportStatusDone)
+		if prefs.FolderID != nil {
+			create.SetFolderID(*prefs.FolderID)
+		}
+		if prefs.LanguageCode != "" {
+			create.SetLanguageCode(prefs.LanguageCode)
+		}
+		row, createErr := create.Save(r.Context())
 		if createErr != nil {
 			http.Error(w, "unable to save recipe", http.StatusInternalServerError)
 			return
 		}
-		key := fmt.Sprintf("recipes/%d/%s/cover.webp", owner, row.ID)
-		if err = p.Storage.Upload(r.Context(), key, bytes.NewReader(cover), int64(len(cover)), "image/webp"); err != nil {
-			http.Error(w, "unable to save recipe image", http.StatusInternalServerError)
-			return
+		update := p.DB.Recipe.UpdateOneID(row.ID).SetRawSourcePayload(json.RawMessage(mustJSON(final)))
+		if len(cover) > 0 {
+			key := fmt.Sprintf("recipes/%d/%s/cover.webp", owner, row.ID)
+			if err = p.Storage.Upload(r.Context(), key, bytes.NewReader(cover), int64(len(cover)), "image/webp"); err != nil {
+				http.Error(w, "unable to save recipe image", http.StatusInternalServerError)
+				return
+			}
+			update.SetImageS3Key(key)
 		}
-		if err = p.DB.Recipe.UpdateOneID(row.ID).SetImageS3Key(key).SetRawSourcePayload(json.RawMessage(mustJSON(final))).Exec(r.Context()); err != nil {
+		if err = update.Exec(r.Context()); err != nil {
 			http.Error(w, "unable to finish recipe", http.StatusInternalServerError)
 			return
 		}

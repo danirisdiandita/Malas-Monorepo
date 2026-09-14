@@ -32,15 +32,29 @@ type Pipeline struct {
 	Client  *http.Client
 }
 
-func (p *Pipeline) Create(r *http.Request, source, link string) (*ent.Recipe, error) {
+type ImportPreferences struct {
+	LanguageCode string
+	FolderID     *uuid.UUID
+}
+
+func (p *Pipeline) Create(r *http.Request, source, link string, preferences ...ImportPreferences) (*ent.Recipe, error) {
 	owner, err := recipes.OwnerID(p.DB, r)
 	if err != nil {
 		return nil, err
 	}
-	return p.DB.Recipe.Create().SetUserID(owner).SetName("Importing recipe").
+	create := p.DB.Recipe.Create().SetUserID(owner).SetName("Importing recipe").
 		SetServings(0).SetProcessMinutes(0).SetIngredients(json.RawMessage("[]")).
 		SetInstructions(pq.StringArray{}).SetTags(pq.StringArray{}).
-		SetURL(link).SetSource(source).SetImportStatus(recipe.ImportStatusLooking).Save(r.Context())
+		SetURL(link).SetSource(source).SetImportStatus(recipe.ImportStatusLooking)
+	if len(preferences) > 0 {
+		if preferences[0].FolderID != nil {
+			create.SetFolderID(*preferences[0].FolderID)
+		}
+		if preferences[0].LanguageCode != "" {
+			create.SetLanguageCode(preferences[0].LanguageCode)
+		}
+	}
+	return create.Save(r.Context())
 }
 
 // Receive acknowledges only after PostgreSQL has stored the callback. The worker
@@ -311,6 +325,9 @@ func (p *Pipeline) process(ctx context.Context, row *ent.Recipe) error {
 		}
 	}
 	final := buildFinalJSON(items, hook.ContentType, assets)
+	if row.LanguageCode != nil && *row.LanguageCode != "" {
+		final["language_code"] = *row.LanguageCode
+	}
 	for name, value := range map[string]any{"assets.json": assets, "final.json": final} {
 		data, err := json.MarshalIndent(value, "", "  ")
 		if err != nil {
@@ -402,12 +419,19 @@ func (p *Pipeline) process(ctx context.Context, row *ent.Recipe) error {
 	for index, extractedRecipe := range extracted {
 		target := row
 		if index > 0 {
-			target, err = p.DB.Recipe.Create().SetUserID(row.UserID).
+			create := p.DB.Recipe.Create().SetUserID(row.UserID).
 				SetName("Importing recipe").SetServings(0).SetProcessMinutes(0).
 				SetIngredients(json.RawMessage("[]")).SetInstructions(pq.StringArray{}).
 				SetTags(pq.StringArray{}).SetURL(row.URL).SetSource(row.Source).
 				SetWebhookID(hook.Resource.ID).SetImportWebhook(row.ImportWebhook).
-				SetRawSourcePayload(dataset).SetImportStatus(recipe.ImportStatusDone).Save(ctx)
+				SetRawSourcePayload(dataset).SetImportStatus(recipe.ImportStatusDone)
+			if row.FolderID != nil {
+				create.SetFolderID(*row.FolderID)
+			}
+			if row.LanguageCode != nil {
+				create.SetLanguageCode(*row.LanguageCode)
+			}
+			target, err = create.Save(ctx)
 			if err != nil {
 				return fmt.Errorf("create recipe %d: %w", index+1, err)
 			}

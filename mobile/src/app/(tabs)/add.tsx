@@ -18,7 +18,6 @@ import {
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { useImportLink, useImportPhoto, useImportText } from "@/hooks/use-import-link";
 
 const colors = {
   ink: "#14231A",
@@ -46,9 +45,6 @@ export default function AddTabScreen() {
   const [recipeLink, setRecipeLink] = useState("");
   const [inputMode, setInputMode] = useState<"link" | "ai" | "text">("link");
   const [cameraOpen, setCameraOpen] = useState(false);
-  const importLink = useImportLink();
-  const importPhoto = useImportPhoto();
-  const importText = useImportText();
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
   const leaveCamera = () => {
     setCameraOpen(false);
@@ -56,6 +52,7 @@ export default function AddTabScreen() {
   };
   useFocusEffect(
     useCallback(() => {
+      setInputMode("link");
       const timer = setTimeout(() => sheetRef.current?.present(), 0);
       return () => clearTimeout(timer);
     }, []),
@@ -64,10 +61,7 @@ export default function AddTabScreen() {
     setCameraOpen(false);
     choosingOption.current = true;
     sheetRef.current?.close();
-    importPhoto.mutate(uri, {
-      onSuccess: (result) => router.replace({ pathname: "/recipe/[id]", params: { id: result.recipe_id } }),
-      onError: (error) => Alert.alert("Photo import failed", error.message),
-    });
+    router.push({ pathname: "/recipe/preferences", params: { kind: "photo", value: uri } });
   };
   const chooseOption = async (label: string) => {
     if (label === "From social") {
@@ -104,25 +98,9 @@ export default function AddTabScreen() {
     const value = recipeLink.trim();
     if (!value) return;
     setRecipeLink("");
-    if (inputMode !== "link") {
-      importText.mutate(value, {
-        onSuccess: (result) => router.replace({ pathname: "/recipe/[id]", params: { id: result.recipe_id } }),
-        onError: (error) => Alert.alert("Recipe creation failed", error.message),
-      });
-      return;
-    }
-    const url = value;
-    importLink.mutate(url, {
-      onSuccess: (result) => {
-        choosingOption.current = true;
-        sheetRef.current?.close();
-        if (result.recipe_id) {
-          router.push({ pathname: "/recipe/processing", params: { runID: result.run_id, url } });
-        } else {
-          router.push("/recipe/preview");
-        }
-      },
-    });
+    choosingOption.current = true;
+    sheetRef.current?.close();
+    router.push({ pathname: "/recipe/preferences", params: { kind: inputMode === "link" ? "link" : "text", value } });
   };
   const handleSheetClose = () => {
     if (choosingOption.current) {
@@ -206,17 +184,16 @@ export default function AddTabScreen() {
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Process recipe link"
-                disabled={!recipeLink.trim() || importLink.isPending || importText.isPending}
+                disabled={!recipeLink.trim()}
                 style={[
                   styles.processButton,
                   !recipeLink.trim() && styles.processButtonDisabled,
                 ]}
                 onPress={processLink}
               >
-                <ThemedText style={styles.processLabel}>{importLink.isPending || importText.isPending || importPhoto.isPending ? "Processing..." : "Process"}</ThemedText>
+                <ThemedText style={styles.processLabel}>Continue</ThemedText>
               </Pressable>
             </View>
-            {importLink.isError && <ThemedText style={styles.error}>{importLink.error.message}</ThemedText>}
             <ThemedText style={styles.or}>or</ThemedText>
             {options.map(([icon, label]) => (
               <Pressable
