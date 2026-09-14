@@ -81,6 +81,18 @@ func (f RefreshTokenFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RefreshTokenMutation", m)
 }
 
+// The RevenueCatIdentityFunc type is an adapter to allow the use of ordinary
+// function as RevenueCatIdentity mutator.
+type RevenueCatIdentityFunc func(context.Context, *ent.RevenueCatIdentityMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f RevenueCatIdentityFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.RevenueCatIdentityMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RevenueCatIdentityMutation", m)
+}
+
 // The SessionFunc type is an adapter to allow the use of ordinary
 // function as Session mutator.
 type SessionFunc func(context.Context, *ent.SessionMutation) (ent.Value, error)
@@ -91,6 +103,18 @@ func (f SessionFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, err
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.SessionMutation", m)
+}
+
+// The SubscriptionFunc type is an adapter to allow the use of ordinary
+// function as Subscription mutator.
+type SubscriptionFunc func(context.Context, *ent.SubscriptionMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f SubscriptionFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.SubscriptionMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.SubscriptionMutation", m)
 }
 
 // The UserFunc type is an adapter to allow the use of ordinary

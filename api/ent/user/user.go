@@ -40,6 +40,10 @@ const (
 	EdgeGroceries = "groceries"
 	// EdgeMealCalendarEntries holds the string denoting the meal_calendar_entries edge name in mutations.
 	EdgeMealCalendarEntries = "meal_calendar_entries"
+	// EdgeSubscriptions holds the string denoting the subscriptions edge name in mutations.
+	EdgeSubscriptions = "subscriptions"
+	// EdgeRevenueCatIdentities holds the string denoting the revenue_cat_identities edge name in mutations.
+	EdgeRevenueCatIdentities = "revenue_cat_identities"
 	// Table holds the table name of the user in the database.
 	Table = "users"
 	// AccountsTable is the table that holds the accounts relation/edge.
@@ -91,6 +95,20 @@ const (
 	MealCalendarEntriesInverseTable = "meal_calendar_entries"
 	// MealCalendarEntriesColumn is the table column denoting the meal_calendar_entries relation/edge.
 	MealCalendarEntriesColumn = "user_id"
+	// SubscriptionsTable is the table that holds the subscriptions relation/edge.
+	SubscriptionsTable = "subscriptions"
+	// SubscriptionsInverseTable is the table name for the Subscription entity.
+	// It exists in this package in order to avoid circular dependency with the "subscription" package.
+	SubscriptionsInverseTable = "subscriptions"
+	// SubscriptionsColumn is the table column denoting the subscriptions relation/edge.
+	SubscriptionsColumn = "user_id"
+	// RevenueCatIdentitiesTable is the table that holds the revenue_cat_identities relation/edge.
+	RevenueCatIdentitiesTable = "revenue_cat_identities"
+	// RevenueCatIdentitiesInverseTable is the table name for the RevenueCatIdentity entity.
+	// It exists in this package in order to avoid circular dependency with the "revenuecatidentity" package.
+	RevenueCatIdentitiesInverseTable = "revenue_cat_identities"
+	// RevenueCatIdentitiesColumn is the table column denoting the revenue_cat_identities relation/edge.
+	RevenueCatIdentitiesColumn = "user_id"
 )
 
 // Columns holds all SQL columns for user fields.
@@ -260,6 +278,34 @@ func ByMealCalendarEntries(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOpti
 		sqlgraph.OrderByNeighborTerms(s, newMealCalendarEntriesStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// BySubscriptionsCount orders the results by subscriptions count.
+func BySubscriptionsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newSubscriptionsStep(), opts...)
+	}
+}
+
+// BySubscriptions orders the results by subscriptions terms.
+func BySubscriptions(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newSubscriptionsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByRevenueCatIdentitiesCount orders the results by revenue_cat_identities count.
+func ByRevenueCatIdentitiesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newRevenueCatIdentitiesStep(), opts...)
+	}
+}
+
+// ByRevenueCatIdentities orders the results by revenue_cat_identities terms.
+func ByRevenueCatIdentities(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newRevenueCatIdentitiesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newAccountsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -307,5 +353,19 @@ func newMealCalendarEntriesStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(MealCalendarEntriesInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, MealCalendarEntriesTable, MealCalendarEntriesColumn),
+	)
+}
+func newSubscriptionsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(SubscriptionsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, SubscriptionsTable, SubscriptionsColumn),
+	)
+}
+func newRevenueCatIdentitiesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(RevenueCatIdentitiesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, RevenueCatIdentitiesTable, RevenueCatIdentitiesColumn),
 	)
 }

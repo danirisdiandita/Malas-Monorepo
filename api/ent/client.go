@@ -22,7 +22,9 @@ import (
 	"github.com/danirisdiandita/malas-monorepo/api/ent/mealcalendarentry"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/recipe"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/refreshtoken"
+	"github.com/danirisdiandita/malas-monorepo/api/ent/revenuecatidentity"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/session"
+	"github.com/danirisdiandita/malas-monorepo/api/ent/subscription"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/user"
 )
 
@@ -43,8 +45,12 @@ type Client struct {
 	Recipe *RecipeClient
 	// RefreshToken is the client for interacting with the RefreshToken builders.
 	RefreshToken *RefreshTokenClient
+	// RevenueCatIdentity is the client for interacting with the RevenueCatIdentity builders.
+	RevenueCatIdentity *RevenueCatIdentityClient
 	// Session is the client for interacting with the Session builders.
 	Session *SessionClient
+	// Subscription is the client for interacting with the Subscription builders.
+	Subscription *SubscriptionClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
 }
@@ -64,7 +70,9 @@ func (c *Client) init() {
 	c.MealCalendarEntry = NewMealCalendarEntryClient(c.config)
 	c.Recipe = NewRecipeClient(c.config)
 	c.RefreshToken = NewRefreshTokenClient(c.config)
+	c.RevenueCatIdentity = NewRevenueCatIdentityClient(c.config)
 	c.Session = NewSessionClient(c.config)
+	c.Subscription = NewSubscriptionClient(c.config)
 	c.User = NewUserClient(c.config)
 }
 
@@ -156,16 +164,18 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := c.config
 	cfg.driver = tx
 	return &Tx{
-		ctx:               ctx,
-		config:            cfg,
-		Account:           NewAccountClient(cfg),
-		Folder:            NewFolderClient(cfg),
-		Grocery:           NewGroceryClient(cfg),
-		MealCalendarEntry: NewMealCalendarEntryClient(cfg),
-		Recipe:            NewRecipeClient(cfg),
-		RefreshToken:      NewRefreshTokenClient(cfg),
-		Session:           NewSessionClient(cfg),
-		User:              NewUserClient(cfg),
+		ctx:                ctx,
+		config:             cfg,
+		Account:            NewAccountClient(cfg),
+		Folder:             NewFolderClient(cfg),
+		Grocery:            NewGroceryClient(cfg),
+		MealCalendarEntry:  NewMealCalendarEntryClient(cfg),
+		Recipe:             NewRecipeClient(cfg),
+		RefreshToken:       NewRefreshTokenClient(cfg),
+		RevenueCatIdentity: NewRevenueCatIdentityClient(cfg),
+		Session:            NewSessionClient(cfg),
+		Subscription:       NewSubscriptionClient(cfg),
+		User:               NewUserClient(cfg),
 	}, nil
 }
 
@@ -183,16 +193,18 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := c.config
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		ctx:               ctx,
-		config:            cfg,
-		Account:           NewAccountClient(cfg),
-		Folder:            NewFolderClient(cfg),
-		Grocery:           NewGroceryClient(cfg),
-		MealCalendarEntry: NewMealCalendarEntryClient(cfg),
-		Recipe:            NewRecipeClient(cfg),
-		RefreshToken:      NewRefreshTokenClient(cfg),
-		Session:           NewSessionClient(cfg),
-		User:              NewUserClient(cfg),
+		ctx:                ctx,
+		config:             cfg,
+		Account:            NewAccountClient(cfg),
+		Folder:             NewFolderClient(cfg),
+		Grocery:            NewGroceryClient(cfg),
+		MealCalendarEntry:  NewMealCalendarEntryClient(cfg),
+		Recipe:             NewRecipeClient(cfg),
+		RefreshToken:       NewRefreshTokenClient(cfg),
+		RevenueCatIdentity: NewRevenueCatIdentityClient(cfg),
+		Session:            NewSessionClient(cfg),
+		Subscription:       NewSubscriptionClient(cfg),
+		User:               NewUserClient(cfg),
 	}, nil
 }
 
@@ -223,7 +235,7 @@ func (c *Client) Close() error {
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
 		c.Account, c.Folder, c.Grocery, c.MealCalendarEntry, c.Recipe, c.RefreshToken,
-		c.Session, c.User,
+		c.RevenueCatIdentity, c.Session, c.Subscription, c.User,
 	} {
 		n.Use(hooks...)
 	}
@@ -234,7 +246,7 @@ func (c *Client) Use(hooks ...Hook) {
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
 		c.Account, c.Folder, c.Grocery, c.MealCalendarEntry, c.Recipe, c.RefreshToken,
-		c.Session, c.User,
+		c.RevenueCatIdentity, c.Session, c.Subscription, c.User,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -255,8 +267,12 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Recipe.mutate(ctx, m)
 	case *RefreshTokenMutation:
 		return c.RefreshToken.mutate(ctx, m)
+	case *RevenueCatIdentityMutation:
+		return c.RevenueCatIdentity.mutate(ctx, m)
 	case *SessionMutation:
 		return c.Session.mutate(ctx, m)
+	case *SubscriptionMutation:
+		return c.Subscription.mutate(ctx, m)
 	case *UserMutation:
 		return c.User.mutate(ctx, m)
 	default:
@@ -1254,6 +1270,155 @@ func (c *RefreshTokenClient) mutate(ctx context.Context, m *RefreshTokenMutation
 	}
 }
 
+// RevenueCatIdentityClient is a client for the RevenueCatIdentity schema.
+type RevenueCatIdentityClient struct {
+	config
+}
+
+// NewRevenueCatIdentityClient returns a client for the RevenueCatIdentity from the given config.
+func NewRevenueCatIdentityClient(c config) *RevenueCatIdentityClient {
+	return &RevenueCatIdentityClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `revenuecatidentity.Hooks(f(g(h())))`.
+func (c *RevenueCatIdentityClient) Use(hooks ...Hook) {
+	c.hooks.RevenueCatIdentity = append(c.hooks.RevenueCatIdentity, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `revenuecatidentity.Intercept(f(g(h())))`.
+func (c *RevenueCatIdentityClient) Intercept(interceptors ...Interceptor) {
+	c.inters.RevenueCatIdentity = append(c.inters.RevenueCatIdentity, interceptors...)
+}
+
+// Create returns a builder for creating a RevenueCatIdentity entity.
+func (c *RevenueCatIdentityClient) Create() *RevenueCatIdentityCreate {
+	mutation := newRevenueCatIdentityMutation(c.config, OpCreate)
+	return &RevenueCatIdentityCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of RevenueCatIdentity entities.
+func (c *RevenueCatIdentityClient) CreateBulk(builders ...*RevenueCatIdentityCreate) *RevenueCatIdentityCreateBulk {
+	return &RevenueCatIdentityCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *RevenueCatIdentityClient) MapCreateBulk(slice any, setFunc func(*RevenueCatIdentityCreate, int)) *RevenueCatIdentityCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &RevenueCatIdentityCreateBulk{err: fmt.Errorf("calling to RevenueCatIdentityClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*RevenueCatIdentityCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &RevenueCatIdentityCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for RevenueCatIdentity.
+func (c *RevenueCatIdentityClient) Update() *RevenueCatIdentityUpdate {
+	mutation := newRevenueCatIdentityMutation(c.config, OpUpdate)
+	return &RevenueCatIdentityUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *RevenueCatIdentityClient) UpdateOne(_m *RevenueCatIdentity) *RevenueCatIdentityUpdateOne {
+	mutation := newRevenueCatIdentityMutation(c.config, OpUpdateOne, withRevenueCatIdentity(_m))
+	return &RevenueCatIdentityUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *RevenueCatIdentityClient) UpdateOneID(id int) *RevenueCatIdentityUpdateOne {
+	mutation := newRevenueCatIdentityMutation(c.config, OpUpdateOne, withRevenueCatIdentityID(id))
+	return &RevenueCatIdentityUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for RevenueCatIdentity.
+func (c *RevenueCatIdentityClient) Delete() *RevenueCatIdentityDelete {
+	mutation := newRevenueCatIdentityMutation(c.config, OpDelete)
+	return &RevenueCatIdentityDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *RevenueCatIdentityClient) DeleteOne(_m *RevenueCatIdentity) *RevenueCatIdentityDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *RevenueCatIdentityClient) DeleteOneID(id int) *RevenueCatIdentityDeleteOne {
+	builder := c.Delete().Where(revenuecatidentity.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &RevenueCatIdentityDeleteOne{builder}
+}
+
+// Query returns a query builder for RevenueCatIdentity.
+func (c *RevenueCatIdentityClient) Query() *RevenueCatIdentityQuery {
+	return &RevenueCatIdentityQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeRevenueCatIdentity},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a RevenueCatIdentity entity by its id.
+func (c *RevenueCatIdentityClient) Get(ctx context.Context, id int) (*RevenueCatIdentity, error) {
+	return c.Query().Where(revenuecatidentity.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *RevenueCatIdentityClient) GetX(ctx context.Context, id int) *RevenueCatIdentity {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryUser queries the user edge of a RevenueCatIdentity.
+func (c *RevenueCatIdentityClient) QueryUser(_m *RevenueCatIdentity) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenuecatidentity.Table, revenuecatidentity.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, revenuecatidentity.UserTable, revenuecatidentity.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *RevenueCatIdentityClient) Hooks() []Hook {
+	return c.hooks.RevenueCatIdentity
+}
+
+// Interceptors returns the client interceptors.
+func (c *RevenueCatIdentityClient) Interceptors() []Interceptor {
+	return c.inters.RevenueCatIdentity
+}
+
+func (c *RevenueCatIdentityClient) mutate(ctx context.Context, m *RevenueCatIdentityMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&RevenueCatIdentityCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&RevenueCatIdentityUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&RevenueCatIdentityUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&RevenueCatIdentityDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown RevenueCatIdentity mutation op: %q", m.Op())
+	}
+}
+
 // SessionClient is a client for the Session schema.
 type SessionClient struct {
 	config
@@ -1400,6 +1565,155 @@ func (c *SessionClient) mutate(ctx context.Context, m *SessionMutation) (Value, 
 		return (&SessionDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown Session mutation op: %q", m.Op())
+	}
+}
+
+// SubscriptionClient is a client for the Subscription schema.
+type SubscriptionClient struct {
+	config
+}
+
+// NewSubscriptionClient returns a client for the Subscription from the given config.
+func NewSubscriptionClient(c config) *SubscriptionClient {
+	return &SubscriptionClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `subscription.Hooks(f(g(h())))`.
+func (c *SubscriptionClient) Use(hooks ...Hook) {
+	c.hooks.Subscription = append(c.hooks.Subscription, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `subscription.Intercept(f(g(h())))`.
+func (c *SubscriptionClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Subscription = append(c.inters.Subscription, interceptors...)
+}
+
+// Create returns a builder for creating a Subscription entity.
+func (c *SubscriptionClient) Create() *SubscriptionCreate {
+	mutation := newSubscriptionMutation(c.config, OpCreate)
+	return &SubscriptionCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Subscription entities.
+func (c *SubscriptionClient) CreateBulk(builders ...*SubscriptionCreate) *SubscriptionCreateBulk {
+	return &SubscriptionCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *SubscriptionClient) MapCreateBulk(slice any, setFunc func(*SubscriptionCreate, int)) *SubscriptionCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &SubscriptionCreateBulk{err: fmt.Errorf("calling to SubscriptionClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*SubscriptionCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &SubscriptionCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Subscription.
+func (c *SubscriptionClient) Update() *SubscriptionUpdate {
+	mutation := newSubscriptionMutation(c.config, OpUpdate)
+	return &SubscriptionUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *SubscriptionClient) UpdateOne(_m *Subscription) *SubscriptionUpdateOne {
+	mutation := newSubscriptionMutation(c.config, OpUpdateOne, withSubscription(_m))
+	return &SubscriptionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *SubscriptionClient) UpdateOneID(id int) *SubscriptionUpdateOne {
+	mutation := newSubscriptionMutation(c.config, OpUpdateOne, withSubscriptionID(id))
+	return &SubscriptionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Subscription.
+func (c *SubscriptionClient) Delete() *SubscriptionDelete {
+	mutation := newSubscriptionMutation(c.config, OpDelete)
+	return &SubscriptionDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *SubscriptionClient) DeleteOne(_m *Subscription) *SubscriptionDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *SubscriptionClient) DeleteOneID(id int) *SubscriptionDeleteOne {
+	builder := c.Delete().Where(subscription.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &SubscriptionDeleteOne{builder}
+}
+
+// Query returns a query builder for Subscription.
+func (c *SubscriptionClient) Query() *SubscriptionQuery {
+	return &SubscriptionQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeSubscription},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Subscription entity by its id.
+func (c *SubscriptionClient) Get(ctx context.Context, id int) (*Subscription, error) {
+	return c.Query().Where(subscription.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *SubscriptionClient) GetX(ctx context.Context, id int) *Subscription {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryUser queries the user edge of a Subscription.
+func (c *SubscriptionClient) QueryUser(_m *Subscription) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(subscription.Table, subscription.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, subscription.UserTable, subscription.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *SubscriptionClient) Hooks() []Hook {
+	return c.hooks.Subscription
+}
+
+// Interceptors returns the client interceptors.
+func (c *SubscriptionClient) Interceptors() []Interceptor {
+	return c.inters.Subscription
+}
+
+func (c *SubscriptionClient) mutate(ctx context.Context, m *SubscriptionMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&SubscriptionCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&SubscriptionUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&SubscriptionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&SubscriptionDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Subscription mutation op: %q", m.Op())
 	}
 }
 
@@ -1623,6 +1937,38 @@ func (c *UserClient) QueryMealCalendarEntries(_m *User) *MealCalendarEntryQuery 
 	return query
 }
 
+// QuerySubscriptions queries the subscriptions edge of a User.
+func (c *UserClient) QuerySubscriptions(_m *User) *SubscriptionQuery {
+	query := (&SubscriptionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(subscription.Table, subscription.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.SubscriptionsTable, user.SubscriptionsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRevenueCatIdentities queries the revenue_cat_identities edge of a User.
+func (c *UserClient) QueryRevenueCatIdentities(_m *User) *RevenueCatIdentityQuery {
+	query := (&RevenueCatIdentityClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(revenuecatidentity.Table, revenuecatidentity.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.RevenueCatIdentitiesTable, user.RevenueCatIdentitiesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *UserClient) Hooks() []Hook {
 	return c.hooks.User
@@ -1651,11 +1997,11 @@ func (c *UserClient) mutate(ctx context.Context, m *UserMutation) (Value, error)
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Account, Folder, Grocery, MealCalendarEntry, Recipe, RefreshToken, Session,
-		User []ent.Hook
+		Account, Folder, Grocery, MealCalendarEntry, Recipe, RefreshToken,
+		RevenueCatIdentity, Session, Subscription, User []ent.Hook
 	}
 	inters struct {
-		Account, Folder, Grocery, MealCalendarEntry, Recipe, RefreshToken, Session,
-		User []ent.Interceptor
+		Account, Folder, Grocery, MealCalendarEntry, Recipe, RefreshToken,
+		RevenueCatIdentity, Session, Subscription, User []ent.Interceptor
 	}
 )

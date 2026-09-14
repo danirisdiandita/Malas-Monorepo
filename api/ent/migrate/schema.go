@@ -226,6 +226,35 @@ var (
 			},
 		},
 	}
+	// RevenueCatIdentitiesColumns holds the columns for the "revenue_cat_identities" table.
+	RevenueCatIdentitiesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "rc_app_user_id", Type: field.TypeString},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "user_id", Type: field.TypeInt},
+	}
+	// RevenueCatIdentitiesTable holds the schema information for the "revenue_cat_identities" table.
+	RevenueCatIdentitiesTable = &schema.Table{
+		Name:       "revenue_cat_identities",
+		Columns:    RevenueCatIdentitiesColumns,
+		PrimaryKey: []*schema.Column{RevenueCatIdentitiesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "revenue_cat_identities_users_revenue_cat_identities",
+				Columns:    []*schema.Column{RevenueCatIdentitiesColumns[4]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "revenuecatidentity_user_id",
+				Unique:  false,
+				Columns: []*schema.Column{RevenueCatIdentitiesColumns[4]},
+			},
+		},
+	}
 	// SessionsColumns holds the columns for the "sessions" table.
 	SessionsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -249,6 +278,42 @@ var (
 				Columns:    []*schema.Column{SessionsColumns[8]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
+			},
+		},
+	}
+	// SubscriptionsColumns holds the columns for the "subscriptions" table.
+	SubscriptionsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "start_date", Type: field.TypeTime, Nullable: true},
+		{Name: "end_date", Type: field.TypeTime, Nullable: true},
+		{Name: "status", Type: field.TypeString},
+		{Name: "rc_app_user_id", Type: field.TypeString},
+		{Name: "rc_environment", Type: field.TypeString},
+		{Name: "rc_product_id", Type: field.TypeString},
+		{Name: "rc_store", Type: field.TypeString},
+		{Name: "credit", Type: field.TypeInt},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "user_id", Type: field.TypeInt},
+	}
+	// SubscriptionsTable holds the schema information for the "subscriptions" table.
+	SubscriptionsTable = &schema.Table{
+		Name:       "subscriptions",
+		Columns:    SubscriptionsColumns,
+		PrimaryKey: []*schema.Column{SubscriptionsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "subscriptions_users_subscriptions",
+				Columns:    []*schema.Column{SubscriptionsColumns[11]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "subscription_user_id",
+				Unique:  false,
+				Columns: []*schema.Column{SubscriptionsColumns[11]},
 			},
 		},
 	}
@@ -276,7 +341,9 @@ var (
 		MealCalendarEntriesTable,
 		RecipesTable,
 		RefreshTokensTable,
+		RevenueCatIdentitiesTable,
 		SessionsTable,
+		SubscriptionsTable,
 		UsersTable,
 	}
 )
@@ -291,5 +358,7 @@ func init() {
 	RecipesTable.ForeignKeys[0].RefTable = FoldersTable
 	RecipesTable.ForeignKeys[1].RefTable = UsersTable
 	RefreshTokensTable.ForeignKeys[0].RefTable = UsersTable
+	RevenueCatIdentitiesTable.ForeignKeys[0].RefTable = UsersTable
 	SessionsTable.ForeignKeys[0].RefTable = UsersTable
+	SubscriptionsTable.ForeignKeys[0].RefTable = UsersTable
 }

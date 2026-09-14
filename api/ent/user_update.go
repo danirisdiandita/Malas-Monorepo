@@ -18,7 +18,9 @@ import (
 	"github.com/danirisdiandita/malas-monorepo/api/ent/predicate"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/recipe"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/refreshtoken"
+	"github.com/danirisdiandita/malas-monorepo/api/ent/revenuecatidentity"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/session"
+	"github.com/danirisdiandita/malas-monorepo/api/ent/subscription"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/user"
 	"github.com/google/uuid"
 )
@@ -223,6 +225,36 @@ func (_u *UserUpdate) AddMealCalendarEntries(v ...*MealCalendarEntry) *UserUpdat
 	return _u.AddMealCalendarEntryIDs(ids...)
 }
 
+// AddSubscriptionIDs adds the "subscriptions" edge to the Subscription entity by IDs.
+func (_u *UserUpdate) AddSubscriptionIDs(ids ...int) *UserUpdate {
+	_u.mutation.AddSubscriptionIDs(ids...)
+	return _u
+}
+
+// AddSubscriptions adds the "subscriptions" edges to the Subscription entity.
+func (_u *UserUpdate) AddSubscriptions(v ...*Subscription) *UserUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddSubscriptionIDs(ids...)
+}
+
+// AddRevenueCatIdentityIDs adds the "revenue_cat_identities" edge to the RevenueCatIdentity entity by IDs.
+func (_u *UserUpdate) AddRevenueCatIdentityIDs(ids ...int) *UserUpdate {
+	_u.mutation.AddRevenueCatIdentityIDs(ids...)
+	return _u
+}
+
+// AddRevenueCatIdentities adds the "revenue_cat_identities" edges to the RevenueCatIdentity entity.
+func (_u *UserUpdate) AddRevenueCatIdentities(v ...*RevenueCatIdentity) *UserUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddRevenueCatIdentityIDs(ids...)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (_u *UserUpdate) Mutation() *UserMutation {
 	return _u.mutation
@@ -373,6 +405,48 @@ func (_u *UserUpdate) RemoveMealCalendarEntries(v ...*MealCalendarEntry) *UserUp
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveMealCalendarEntryIDs(ids...)
+}
+
+// ClearSubscriptions clears all "subscriptions" edges to the Subscription entity.
+func (_u *UserUpdate) ClearSubscriptions() *UserUpdate {
+	_u.mutation.ClearSubscriptions()
+	return _u
+}
+
+// RemoveSubscriptionIDs removes the "subscriptions" edge to Subscription entities by IDs.
+func (_u *UserUpdate) RemoveSubscriptionIDs(ids ...int) *UserUpdate {
+	_u.mutation.RemoveSubscriptionIDs(ids...)
+	return _u
+}
+
+// RemoveSubscriptions removes "subscriptions" edges to Subscription entities.
+func (_u *UserUpdate) RemoveSubscriptions(v ...*Subscription) *UserUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveSubscriptionIDs(ids...)
+}
+
+// ClearRevenueCatIdentities clears all "revenue_cat_identities" edges to the RevenueCatIdentity entity.
+func (_u *UserUpdate) ClearRevenueCatIdentities() *UserUpdate {
+	_u.mutation.ClearRevenueCatIdentities()
+	return _u
+}
+
+// RemoveRevenueCatIdentityIDs removes the "revenue_cat_identities" edge to RevenueCatIdentity entities by IDs.
+func (_u *UserUpdate) RemoveRevenueCatIdentityIDs(ids ...int) *UserUpdate {
+	_u.mutation.RemoveRevenueCatIdentityIDs(ids...)
+	return _u
+}
+
+// RemoveRevenueCatIdentities removes "revenue_cat_identities" edges to RevenueCatIdentity entities.
+func (_u *UserUpdate) RemoveRevenueCatIdentities(v ...*RevenueCatIdentity) *UserUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveRevenueCatIdentityIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -756,6 +830,96 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.SubscriptionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.SubscriptionsTable,
+			Columns: []string{user.SubscriptionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscription.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedSubscriptionsIDs(); len(nodes) > 0 && !_u.mutation.SubscriptionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.SubscriptionsTable,
+			Columns: []string{user.SubscriptionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscription.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.SubscriptionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.SubscriptionsTable,
+			Columns: []string{user.SubscriptionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscription.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.RevenueCatIdentitiesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RevenueCatIdentitiesTable,
+			Columns: []string{user.RevenueCatIdentitiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenuecatidentity.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedRevenueCatIdentitiesIDs(); len(nodes) > 0 && !_u.mutation.RevenueCatIdentitiesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RevenueCatIdentitiesTable,
+			Columns: []string{user.RevenueCatIdentitiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenuecatidentity.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RevenueCatIdentitiesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RevenueCatIdentitiesTable,
+			Columns: []string{user.RevenueCatIdentitiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenuecatidentity.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{user.Label}
@@ -963,6 +1127,36 @@ func (_u *UserUpdateOne) AddMealCalendarEntries(v ...*MealCalendarEntry) *UserUp
 	return _u.AddMealCalendarEntryIDs(ids...)
 }
 
+// AddSubscriptionIDs adds the "subscriptions" edge to the Subscription entity by IDs.
+func (_u *UserUpdateOne) AddSubscriptionIDs(ids ...int) *UserUpdateOne {
+	_u.mutation.AddSubscriptionIDs(ids...)
+	return _u
+}
+
+// AddSubscriptions adds the "subscriptions" edges to the Subscription entity.
+func (_u *UserUpdateOne) AddSubscriptions(v ...*Subscription) *UserUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddSubscriptionIDs(ids...)
+}
+
+// AddRevenueCatIdentityIDs adds the "revenue_cat_identities" edge to the RevenueCatIdentity entity by IDs.
+func (_u *UserUpdateOne) AddRevenueCatIdentityIDs(ids ...int) *UserUpdateOne {
+	_u.mutation.AddRevenueCatIdentityIDs(ids...)
+	return _u
+}
+
+// AddRevenueCatIdentities adds the "revenue_cat_identities" edges to the RevenueCatIdentity entity.
+func (_u *UserUpdateOne) AddRevenueCatIdentities(v ...*RevenueCatIdentity) *UserUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddRevenueCatIdentityIDs(ids...)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (_u *UserUpdateOne) Mutation() *UserMutation {
 	return _u.mutation
@@ -1113,6 +1307,48 @@ func (_u *UserUpdateOne) RemoveMealCalendarEntries(v ...*MealCalendarEntry) *Use
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveMealCalendarEntryIDs(ids...)
+}
+
+// ClearSubscriptions clears all "subscriptions" edges to the Subscription entity.
+func (_u *UserUpdateOne) ClearSubscriptions() *UserUpdateOne {
+	_u.mutation.ClearSubscriptions()
+	return _u
+}
+
+// RemoveSubscriptionIDs removes the "subscriptions" edge to Subscription entities by IDs.
+func (_u *UserUpdateOne) RemoveSubscriptionIDs(ids ...int) *UserUpdateOne {
+	_u.mutation.RemoveSubscriptionIDs(ids...)
+	return _u
+}
+
+// RemoveSubscriptions removes "subscriptions" edges to Subscription entities.
+func (_u *UserUpdateOne) RemoveSubscriptions(v ...*Subscription) *UserUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveSubscriptionIDs(ids...)
+}
+
+// ClearRevenueCatIdentities clears all "revenue_cat_identities" edges to the RevenueCatIdentity entity.
+func (_u *UserUpdateOne) ClearRevenueCatIdentities() *UserUpdateOne {
+	_u.mutation.ClearRevenueCatIdentities()
+	return _u
+}
+
+// RemoveRevenueCatIdentityIDs removes the "revenue_cat_identities" edge to RevenueCatIdentity entities by IDs.
+func (_u *UserUpdateOne) RemoveRevenueCatIdentityIDs(ids ...int) *UserUpdateOne {
+	_u.mutation.RemoveRevenueCatIdentityIDs(ids...)
+	return _u
+}
+
+// RemoveRevenueCatIdentities removes "revenue_cat_identities" edges to RevenueCatIdentity entities.
+func (_u *UserUpdateOne) RemoveRevenueCatIdentities(v ...*RevenueCatIdentity) *UserUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveRevenueCatIdentityIDs(ids...)
 }
 
 // Where appends a list predicates to the UserUpdate builder.
@@ -1519,6 +1755,96 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(mealcalendarentry.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.SubscriptionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.SubscriptionsTable,
+			Columns: []string{user.SubscriptionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscription.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedSubscriptionsIDs(); len(nodes) > 0 && !_u.mutation.SubscriptionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.SubscriptionsTable,
+			Columns: []string{user.SubscriptionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscription.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.SubscriptionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.SubscriptionsTable,
+			Columns: []string{user.SubscriptionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscription.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.RevenueCatIdentitiesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RevenueCatIdentitiesTable,
+			Columns: []string{user.RevenueCatIdentitiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenuecatidentity.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedRevenueCatIdentitiesIDs(); len(nodes) > 0 && !_u.mutation.RevenueCatIdentitiesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RevenueCatIdentitiesTable,
+			Columns: []string{user.RevenueCatIdentitiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenuecatidentity.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RevenueCatIdentitiesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RevenueCatIdentitiesTable,
+			Columns: []string{user.RevenueCatIdentitiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenuecatidentity.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

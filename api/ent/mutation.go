@@ -19,7 +19,9 @@ import (
 	"github.com/danirisdiandita/malas-monorepo/api/ent/predicate"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/recipe"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/refreshtoken"
+	"github.com/danirisdiandita/malas-monorepo/api/ent/revenuecatidentity"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/session"
+	"github.com/danirisdiandita/malas-monorepo/api/ent/subscription"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/user"
 	"github.com/google/uuid"
 	"github.com/lib/pq"
@@ -34,14 +36,16 @@ const (
 	OpUpdateOne = ent.OpUpdateOne
 
 	// Node types.
-	TypeAccount           = "Account"
-	TypeFolder            = "Folder"
-	TypeGrocery           = "Grocery"
-	TypeMealCalendarEntry = "MealCalendarEntry"
-	TypeRecipe            = "Recipe"
-	TypeRefreshToken      = "RefreshToken"
-	TypeSession           = "Session"
-	TypeUser              = "User"
+	TypeAccount            = "Account"
+	TypeFolder             = "Folder"
+	TypeGrocery            = "Grocery"
+	TypeMealCalendarEntry  = "MealCalendarEntry"
+	TypeRecipe             = "Recipe"
+	TypeRefreshToken       = "RefreshToken"
+	TypeRevenueCatIdentity = "RevenueCatIdentity"
+	TypeSession            = "Session"
+	TypeSubscription       = "Subscription"
+	TypeUser               = "User"
 )
 
 // AccountMutation represents an operation that mutates the Account nodes in the graph.
@@ -5497,6 +5501,551 @@ func (m *RefreshTokenMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown RefreshToken edge %s", name)
 }
 
+// RevenueCatIdentityMutation represents an operation that mutates the RevenueCatIdentity nodes in the graph.
+type RevenueCatIdentityMutation struct {
+	config
+	op             Op
+	typ            string
+	id             *int
+	rc_app_user_id *string
+	created_at     *time.Time
+	updated_at     *time.Time
+	clearedFields  map[string]struct{}
+	user           *int
+	cleareduser    bool
+	done           bool
+	oldValue       func(context.Context) (*RevenueCatIdentity, error)
+	predicates     []predicate.RevenueCatIdentity
+}
+
+var _ ent.Mutation = (*RevenueCatIdentityMutation)(nil)
+
+// revenuecatidentityOption allows management of the mutation configuration using functional options.
+type revenuecatidentityOption func(*RevenueCatIdentityMutation)
+
+// newRevenueCatIdentityMutation creates new mutation for the RevenueCatIdentity entity.
+func newRevenueCatIdentityMutation(c config, op Op, opts ...revenuecatidentityOption) *RevenueCatIdentityMutation {
+	m := &RevenueCatIdentityMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeRevenueCatIdentity,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withRevenueCatIdentityID sets the ID field of the mutation.
+func withRevenueCatIdentityID(id int) revenuecatidentityOption {
+	return func(m *RevenueCatIdentityMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *RevenueCatIdentity
+		)
+		m.oldValue = func(ctx context.Context) (*RevenueCatIdentity, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().RevenueCatIdentity.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withRevenueCatIdentity sets the old RevenueCatIdentity of the mutation.
+func withRevenueCatIdentity(node *RevenueCatIdentity) revenuecatidentityOption {
+	return func(m *RevenueCatIdentityMutation) {
+		m.oldValue = func(context.Context) (*RevenueCatIdentity, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m RevenueCatIdentityMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m RevenueCatIdentityMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *RevenueCatIdentityMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *RevenueCatIdentityMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().RevenueCatIdentity.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetUserID sets the "user_id" field.
+func (m *RevenueCatIdentityMutation) SetUserID(i int) {
+	m.user = &i
+}
+
+// UserID returns the value of the "user_id" field in the mutation.
+func (m *RevenueCatIdentityMutation) UserID() (r int, exists bool) {
+	v := m.user
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUserID returns the old "user_id" field's value of the RevenueCatIdentity entity.
+// If the RevenueCatIdentity object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RevenueCatIdentityMutation) OldUserID(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUserID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUserID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUserID: %w", err)
+	}
+	return oldValue.UserID, nil
+}
+
+// ResetUserID resets all changes to the "user_id" field.
+func (m *RevenueCatIdentityMutation) ResetUserID() {
+	m.user = nil
+}
+
+// SetRcAppUserID sets the "rc_app_user_id" field.
+func (m *RevenueCatIdentityMutation) SetRcAppUserID(s string) {
+	m.rc_app_user_id = &s
+}
+
+// RcAppUserID returns the value of the "rc_app_user_id" field in the mutation.
+func (m *RevenueCatIdentityMutation) RcAppUserID() (r string, exists bool) {
+	v := m.rc_app_user_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRcAppUserID returns the old "rc_app_user_id" field's value of the RevenueCatIdentity entity.
+// If the RevenueCatIdentity object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RevenueCatIdentityMutation) OldRcAppUserID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRcAppUserID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRcAppUserID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRcAppUserID: %w", err)
+	}
+	return oldValue.RcAppUserID, nil
+}
+
+// ResetRcAppUserID resets all changes to the "rc_app_user_id" field.
+func (m *RevenueCatIdentityMutation) ResetRcAppUserID() {
+	m.rc_app_user_id = nil
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *RevenueCatIdentityMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *RevenueCatIdentityMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the RevenueCatIdentity entity.
+// If the RevenueCatIdentity object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RevenueCatIdentityMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *RevenueCatIdentityMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *RevenueCatIdentityMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *RevenueCatIdentityMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the RevenueCatIdentity entity.
+// If the RevenueCatIdentity object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RevenueCatIdentityMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *RevenueCatIdentityMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *RevenueCatIdentityMutation) ClearUser() {
+	m.cleareduser = true
+	m.clearedFields[revenuecatidentity.FieldUserID] = struct{}{}
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *RevenueCatIdentityMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *RevenueCatIdentityMutation) UserIDs() (ids []int) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *RevenueCatIdentityMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
+// Where appends a list predicates to the RevenueCatIdentityMutation builder.
+func (m *RevenueCatIdentityMutation) Where(ps ...predicate.RevenueCatIdentity) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the RevenueCatIdentityMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *RevenueCatIdentityMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.RevenueCatIdentity, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *RevenueCatIdentityMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *RevenueCatIdentityMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (RevenueCatIdentity).
+func (m *RevenueCatIdentityMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *RevenueCatIdentityMutation) Fields() []string {
+	fields := make([]string, 0, 4)
+	if m.user != nil {
+		fields = append(fields, revenuecatidentity.FieldUserID)
+	}
+	if m.rc_app_user_id != nil {
+		fields = append(fields, revenuecatidentity.FieldRcAppUserID)
+	}
+	if m.created_at != nil {
+		fields = append(fields, revenuecatidentity.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, revenuecatidentity.FieldUpdatedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *RevenueCatIdentityMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case revenuecatidentity.FieldUserID:
+		return m.UserID()
+	case revenuecatidentity.FieldRcAppUserID:
+		return m.RcAppUserID()
+	case revenuecatidentity.FieldCreatedAt:
+		return m.CreatedAt()
+	case revenuecatidentity.FieldUpdatedAt:
+		return m.UpdatedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *RevenueCatIdentityMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case revenuecatidentity.FieldUserID:
+		return m.OldUserID(ctx)
+	case revenuecatidentity.FieldRcAppUserID:
+		return m.OldRcAppUserID(ctx)
+	case revenuecatidentity.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case revenuecatidentity.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown RevenueCatIdentity field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *RevenueCatIdentityMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case revenuecatidentity.FieldUserID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUserID(v)
+		return nil
+	case revenuecatidentity.FieldRcAppUserID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRcAppUserID(v)
+		return nil
+	case revenuecatidentity.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case revenuecatidentity.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown RevenueCatIdentity field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *RevenueCatIdentityMutation) AddedFields() []string {
+	var fields []string
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *RevenueCatIdentityMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *RevenueCatIdentityMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown RevenueCatIdentity numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *RevenueCatIdentityMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *RevenueCatIdentityMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *RevenueCatIdentityMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown RevenueCatIdentity nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *RevenueCatIdentityMutation) ResetField(name string) error {
+	switch name {
+	case revenuecatidentity.FieldUserID:
+		m.ResetUserID()
+		return nil
+	case revenuecatidentity.FieldRcAppUserID:
+		m.ResetRcAppUserID()
+		return nil
+	case revenuecatidentity.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case revenuecatidentity.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown RevenueCatIdentity field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *RevenueCatIdentityMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.user != nil {
+		edges = append(edges, revenuecatidentity.EdgeUser)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *RevenueCatIdentityMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case revenuecatidentity.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *RevenueCatIdentityMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *RevenueCatIdentityMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *RevenueCatIdentityMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.cleareduser {
+		edges = append(edges, revenuecatidentity.EdgeUser)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *RevenueCatIdentityMutation) EdgeCleared(name string) bool {
+	switch name {
+	case revenuecatidentity.EdgeUser:
+		return m.cleareduser
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *RevenueCatIdentityMutation) ClearEdge(name string) error {
+	switch name {
+	case revenuecatidentity.EdgeUser:
+		m.ClearUser()
+		return nil
+	}
+	return fmt.Errorf("unknown RevenueCatIdentity unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *RevenueCatIdentityMutation) ResetEdge(name string) error {
+	switch name {
+	case revenuecatidentity.EdgeUser:
+		m.ResetUser()
+		return nil
+	}
+	return fmt.Errorf("unknown RevenueCatIdentity edge %s", name)
+}
+
 // SessionMutation represents an operation that mutates the Session nodes in the graph.
 type SessionMutation struct {
 	config
@@ -6274,43 +6823,1046 @@ func (m *SessionMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown Session edge %s", name)
 }
 
+// SubscriptionMutation represents an operation that mutates the Subscription nodes in the graph.
+type SubscriptionMutation struct {
+	config
+	op             Op
+	typ            string
+	id             *int
+	start_date     *time.Time
+	end_date       *time.Time
+	status         *string
+	rc_app_user_id *string
+	rc_environment *string
+	rc_product_id  *string
+	rc_store       *string
+	credit         *int
+	addcredit      *int
+	created_at     *time.Time
+	updated_at     *time.Time
+	clearedFields  map[string]struct{}
+	user           *int
+	cleareduser    bool
+	done           bool
+	oldValue       func(context.Context) (*Subscription, error)
+	predicates     []predicate.Subscription
+}
+
+var _ ent.Mutation = (*SubscriptionMutation)(nil)
+
+// subscriptionOption allows management of the mutation configuration using functional options.
+type subscriptionOption func(*SubscriptionMutation)
+
+// newSubscriptionMutation creates new mutation for the Subscription entity.
+func newSubscriptionMutation(c config, op Op, opts ...subscriptionOption) *SubscriptionMutation {
+	m := &SubscriptionMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeSubscription,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withSubscriptionID sets the ID field of the mutation.
+func withSubscriptionID(id int) subscriptionOption {
+	return func(m *SubscriptionMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *Subscription
+		)
+		m.oldValue = func(ctx context.Context) (*Subscription, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().Subscription.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withSubscription sets the old Subscription of the mutation.
+func withSubscription(node *Subscription) subscriptionOption {
+	return func(m *SubscriptionMutation) {
+		m.oldValue = func(context.Context) (*Subscription, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m SubscriptionMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m SubscriptionMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *SubscriptionMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *SubscriptionMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().Subscription.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetUserID sets the "user_id" field.
+func (m *SubscriptionMutation) SetUserID(i int) {
+	m.user = &i
+}
+
+// UserID returns the value of the "user_id" field in the mutation.
+func (m *SubscriptionMutation) UserID() (r int, exists bool) {
+	v := m.user
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUserID returns the old "user_id" field's value of the Subscription entity.
+// If the Subscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubscriptionMutation) OldUserID(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUserID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUserID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUserID: %w", err)
+	}
+	return oldValue.UserID, nil
+}
+
+// ResetUserID resets all changes to the "user_id" field.
+func (m *SubscriptionMutation) ResetUserID() {
+	m.user = nil
+}
+
+// SetStartDate sets the "start_date" field.
+func (m *SubscriptionMutation) SetStartDate(t time.Time) {
+	m.start_date = &t
+}
+
+// StartDate returns the value of the "start_date" field in the mutation.
+func (m *SubscriptionMutation) StartDate() (r time.Time, exists bool) {
+	v := m.start_date
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStartDate returns the old "start_date" field's value of the Subscription entity.
+// If the Subscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubscriptionMutation) OldStartDate(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStartDate is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStartDate requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStartDate: %w", err)
+	}
+	return oldValue.StartDate, nil
+}
+
+// ClearStartDate clears the value of the "start_date" field.
+func (m *SubscriptionMutation) ClearStartDate() {
+	m.start_date = nil
+	m.clearedFields[subscription.FieldStartDate] = struct{}{}
+}
+
+// StartDateCleared returns if the "start_date" field was cleared in this mutation.
+func (m *SubscriptionMutation) StartDateCleared() bool {
+	_, ok := m.clearedFields[subscription.FieldStartDate]
+	return ok
+}
+
+// ResetStartDate resets all changes to the "start_date" field.
+func (m *SubscriptionMutation) ResetStartDate() {
+	m.start_date = nil
+	delete(m.clearedFields, subscription.FieldStartDate)
+}
+
+// SetEndDate sets the "end_date" field.
+func (m *SubscriptionMutation) SetEndDate(t time.Time) {
+	m.end_date = &t
+}
+
+// EndDate returns the value of the "end_date" field in the mutation.
+func (m *SubscriptionMutation) EndDate() (r time.Time, exists bool) {
+	v := m.end_date
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEndDate returns the old "end_date" field's value of the Subscription entity.
+// If the Subscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubscriptionMutation) OldEndDate(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEndDate is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEndDate requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEndDate: %w", err)
+	}
+	return oldValue.EndDate, nil
+}
+
+// ClearEndDate clears the value of the "end_date" field.
+func (m *SubscriptionMutation) ClearEndDate() {
+	m.end_date = nil
+	m.clearedFields[subscription.FieldEndDate] = struct{}{}
+}
+
+// EndDateCleared returns if the "end_date" field was cleared in this mutation.
+func (m *SubscriptionMutation) EndDateCleared() bool {
+	_, ok := m.clearedFields[subscription.FieldEndDate]
+	return ok
+}
+
+// ResetEndDate resets all changes to the "end_date" field.
+func (m *SubscriptionMutation) ResetEndDate() {
+	m.end_date = nil
+	delete(m.clearedFields, subscription.FieldEndDate)
+}
+
+// SetStatus sets the "status" field.
+func (m *SubscriptionMutation) SetStatus(s string) {
+	m.status = &s
+}
+
+// Status returns the value of the "status" field in the mutation.
+func (m *SubscriptionMutation) Status() (r string, exists bool) {
+	v := m.status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatus returns the old "status" field's value of the Subscription entity.
+// If the Subscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubscriptionMutation) OldStatus(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
+	}
+	return oldValue.Status, nil
+}
+
+// ResetStatus resets all changes to the "status" field.
+func (m *SubscriptionMutation) ResetStatus() {
+	m.status = nil
+}
+
+// SetRcAppUserID sets the "rc_app_user_id" field.
+func (m *SubscriptionMutation) SetRcAppUserID(s string) {
+	m.rc_app_user_id = &s
+}
+
+// RcAppUserID returns the value of the "rc_app_user_id" field in the mutation.
+func (m *SubscriptionMutation) RcAppUserID() (r string, exists bool) {
+	v := m.rc_app_user_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRcAppUserID returns the old "rc_app_user_id" field's value of the Subscription entity.
+// If the Subscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubscriptionMutation) OldRcAppUserID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRcAppUserID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRcAppUserID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRcAppUserID: %w", err)
+	}
+	return oldValue.RcAppUserID, nil
+}
+
+// ResetRcAppUserID resets all changes to the "rc_app_user_id" field.
+func (m *SubscriptionMutation) ResetRcAppUserID() {
+	m.rc_app_user_id = nil
+}
+
+// SetRcEnvironment sets the "rc_environment" field.
+func (m *SubscriptionMutation) SetRcEnvironment(s string) {
+	m.rc_environment = &s
+}
+
+// RcEnvironment returns the value of the "rc_environment" field in the mutation.
+func (m *SubscriptionMutation) RcEnvironment() (r string, exists bool) {
+	v := m.rc_environment
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRcEnvironment returns the old "rc_environment" field's value of the Subscription entity.
+// If the Subscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubscriptionMutation) OldRcEnvironment(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRcEnvironment is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRcEnvironment requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRcEnvironment: %w", err)
+	}
+	return oldValue.RcEnvironment, nil
+}
+
+// ResetRcEnvironment resets all changes to the "rc_environment" field.
+func (m *SubscriptionMutation) ResetRcEnvironment() {
+	m.rc_environment = nil
+}
+
+// SetRcProductID sets the "rc_product_id" field.
+func (m *SubscriptionMutation) SetRcProductID(s string) {
+	m.rc_product_id = &s
+}
+
+// RcProductID returns the value of the "rc_product_id" field in the mutation.
+func (m *SubscriptionMutation) RcProductID() (r string, exists bool) {
+	v := m.rc_product_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRcProductID returns the old "rc_product_id" field's value of the Subscription entity.
+// If the Subscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubscriptionMutation) OldRcProductID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRcProductID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRcProductID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRcProductID: %w", err)
+	}
+	return oldValue.RcProductID, nil
+}
+
+// ResetRcProductID resets all changes to the "rc_product_id" field.
+func (m *SubscriptionMutation) ResetRcProductID() {
+	m.rc_product_id = nil
+}
+
+// SetRcStore sets the "rc_store" field.
+func (m *SubscriptionMutation) SetRcStore(s string) {
+	m.rc_store = &s
+}
+
+// RcStore returns the value of the "rc_store" field in the mutation.
+func (m *SubscriptionMutation) RcStore() (r string, exists bool) {
+	v := m.rc_store
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRcStore returns the old "rc_store" field's value of the Subscription entity.
+// If the Subscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubscriptionMutation) OldRcStore(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRcStore is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRcStore requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRcStore: %w", err)
+	}
+	return oldValue.RcStore, nil
+}
+
+// ResetRcStore resets all changes to the "rc_store" field.
+func (m *SubscriptionMutation) ResetRcStore() {
+	m.rc_store = nil
+}
+
+// SetCredit sets the "credit" field.
+func (m *SubscriptionMutation) SetCredit(i int) {
+	m.credit = &i
+	m.addcredit = nil
+}
+
+// Credit returns the value of the "credit" field in the mutation.
+func (m *SubscriptionMutation) Credit() (r int, exists bool) {
+	v := m.credit
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCredit returns the old "credit" field's value of the Subscription entity.
+// If the Subscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubscriptionMutation) OldCredit(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCredit is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCredit requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCredit: %w", err)
+	}
+	return oldValue.Credit, nil
+}
+
+// AddCredit adds i to the "credit" field.
+func (m *SubscriptionMutation) AddCredit(i int) {
+	if m.addcredit != nil {
+		*m.addcredit += i
+	} else {
+		m.addcredit = &i
+	}
+}
+
+// AddedCredit returns the value that was added to the "credit" field in this mutation.
+func (m *SubscriptionMutation) AddedCredit() (r int, exists bool) {
+	v := m.addcredit
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetCredit resets all changes to the "credit" field.
+func (m *SubscriptionMutation) ResetCredit() {
+	m.credit = nil
+	m.addcredit = nil
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *SubscriptionMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *SubscriptionMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the Subscription entity.
+// If the Subscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubscriptionMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *SubscriptionMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *SubscriptionMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *SubscriptionMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the Subscription entity.
+// If the Subscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubscriptionMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *SubscriptionMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *SubscriptionMutation) ClearUser() {
+	m.cleareduser = true
+	m.clearedFields[subscription.FieldUserID] = struct{}{}
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *SubscriptionMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *SubscriptionMutation) UserIDs() (ids []int) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *SubscriptionMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
+// Where appends a list predicates to the SubscriptionMutation builder.
+func (m *SubscriptionMutation) Where(ps ...predicate.Subscription) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the SubscriptionMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *SubscriptionMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.Subscription, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *SubscriptionMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *SubscriptionMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (Subscription).
+func (m *SubscriptionMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *SubscriptionMutation) Fields() []string {
+	fields := make([]string, 0, 11)
+	if m.user != nil {
+		fields = append(fields, subscription.FieldUserID)
+	}
+	if m.start_date != nil {
+		fields = append(fields, subscription.FieldStartDate)
+	}
+	if m.end_date != nil {
+		fields = append(fields, subscription.FieldEndDate)
+	}
+	if m.status != nil {
+		fields = append(fields, subscription.FieldStatus)
+	}
+	if m.rc_app_user_id != nil {
+		fields = append(fields, subscription.FieldRcAppUserID)
+	}
+	if m.rc_environment != nil {
+		fields = append(fields, subscription.FieldRcEnvironment)
+	}
+	if m.rc_product_id != nil {
+		fields = append(fields, subscription.FieldRcProductID)
+	}
+	if m.rc_store != nil {
+		fields = append(fields, subscription.FieldRcStore)
+	}
+	if m.credit != nil {
+		fields = append(fields, subscription.FieldCredit)
+	}
+	if m.created_at != nil {
+		fields = append(fields, subscription.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, subscription.FieldUpdatedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *SubscriptionMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case subscription.FieldUserID:
+		return m.UserID()
+	case subscription.FieldStartDate:
+		return m.StartDate()
+	case subscription.FieldEndDate:
+		return m.EndDate()
+	case subscription.FieldStatus:
+		return m.Status()
+	case subscription.FieldRcAppUserID:
+		return m.RcAppUserID()
+	case subscription.FieldRcEnvironment:
+		return m.RcEnvironment()
+	case subscription.FieldRcProductID:
+		return m.RcProductID()
+	case subscription.FieldRcStore:
+		return m.RcStore()
+	case subscription.FieldCredit:
+		return m.Credit()
+	case subscription.FieldCreatedAt:
+		return m.CreatedAt()
+	case subscription.FieldUpdatedAt:
+		return m.UpdatedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *SubscriptionMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case subscription.FieldUserID:
+		return m.OldUserID(ctx)
+	case subscription.FieldStartDate:
+		return m.OldStartDate(ctx)
+	case subscription.FieldEndDate:
+		return m.OldEndDate(ctx)
+	case subscription.FieldStatus:
+		return m.OldStatus(ctx)
+	case subscription.FieldRcAppUserID:
+		return m.OldRcAppUserID(ctx)
+	case subscription.FieldRcEnvironment:
+		return m.OldRcEnvironment(ctx)
+	case subscription.FieldRcProductID:
+		return m.OldRcProductID(ctx)
+	case subscription.FieldRcStore:
+		return m.OldRcStore(ctx)
+	case subscription.FieldCredit:
+		return m.OldCredit(ctx)
+	case subscription.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case subscription.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown Subscription field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *SubscriptionMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case subscription.FieldUserID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUserID(v)
+		return nil
+	case subscription.FieldStartDate:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStartDate(v)
+		return nil
+	case subscription.FieldEndDate:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEndDate(v)
+		return nil
+	case subscription.FieldStatus:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatus(v)
+		return nil
+	case subscription.FieldRcAppUserID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRcAppUserID(v)
+		return nil
+	case subscription.FieldRcEnvironment:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRcEnvironment(v)
+		return nil
+	case subscription.FieldRcProductID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRcProductID(v)
+		return nil
+	case subscription.FieldRcStore:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRcStore(v)
+		return nil
+	case subscription.FieldCredit:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCredit(v)
+		return nil
+	case subscription.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case subscription.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Subscription field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *SubscriptionMutation) AddedFields() []string {
+	var fields []string
+	if m.addcredit != nil {
+		fields = append(fields, subscription.FieldCredit)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *SubscriptionMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case subscription.FieldCredit:
+		return m.AddedCredit()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *SubscriptionMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case subscription.FieldCredit:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddCredit(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Subscription numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *SubscriptionMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(subscription.FieldStartDate) {
+		fields = append(fields, subscription.FieldStartDate)
+	}
+	if m.FieldCleared(subscription.FieldEndDate) {
+		fields = append(fields, subscription.FieldEndDate)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *SubscriptionMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *SubscriptionMutation) ClearField(name string) error {
+	switch name {
+	case subscription.FieldStartDate:
+		m.ClearStartDate()
+		return nil
+	case subscription.FieldEndDate:
+		m.ClearEndDate()
+		return nil
+	}
+	return fmt.Errorf("unknown Subscription nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *SubscriptionMutation) ResetField(name string) error {
+	switch name {
+	case subscription.FieldUserID:
+		m.ResetUserID()
+		return nil
+	case subscription.FieldStartDate:
+		m.ResetStartDate()
+		return nil
+	case subscription.FieldEndDate:
+		m.ResetEndDate()
+		return nil
+	case subscription.FieldStatus:
+		m.ResetStatus()
+		return nil
+	case subscription.FieldRcAppUserID:
+		m.ResetRcAppUserID()
+		return nil
+	case subscription.FieldRcEnvironment:
+		m.ResetRcEnvironment()
+		return nil
+	case subscription.FieldRcProductID:
+		m.ResetRcProductID()
+		return nil
+	case subscription.FieldRcStore:
+		m.ResetRcStore()
+		return nil
+	case subscription.FieldCredit:
+		m.ResetCredit()
+		return nil
+	case subscription.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case subscription.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown Subscription field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *SubscriptionMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.user != nil {
+		edges = append(edges, subscription.EdgeUser)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *SubscriptionMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case subscription.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *SubscriptionMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *SubscriptionMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *SubscriptionMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.cleareduser {
+		edges = append(edges, subscription.EdgeUser)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *SubscriptionMutation) EdgeCleared(name string) bool {
+	switch name {
+	case subscription.EdgeUser:
+		return m.cleareduser
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *SubscriptionMutation) ClearEdge(name string) error {
+	switch name {
+	case subscription.EdgeUser:
+		m.ClearUser()
+		return nil
+	}
+	return fmt.Errorf("unknown Subscription unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *SubscriptionMutation) ResetEdge(name string) error {
+	switch name {
+	case subscription.EdgeUser:
+		m.ResetUser()
+		return nil
+	}
+	return fmt.Errorf("unknown Subscription edge %s", name)
+}
+
 // UserMutation represents an operation that mutates the User nodes in the graph.
 type UserMutation struct {
 	config
-	op                           Op
-	typ                          string
-	id                           *int
-	email                        *string
-	name                         *string
-	picture                      *string
-	email_verified               *bool
-	created_at                   *time.Time
-	updated_at                   *time.Time
-	clearedFields                map[string]struct{}
-	accounts                     map[int]struct{}
-	removedaccounts              map[int]struct{}
-	clearedaccounts              bool
-	sessions                     map[int]struct{}
-	removedsessions              map[int]struct{}
-	clearedsessions              bool
-	refresh_tokens               map[int]struct{}
-	removedrefresh_tokens        map[int]struct{}
-	clearedrefresh_tokens        bool
-	folders                      map[uuid.UUID]struct{}
-	removedfolders               map[uuid.UUID]struct{}
-	clearedfolders               bool
-	recipes                      map[uuid.UUID]struct{}
-	removedrecipes               map[uuid.UUID]struct{}
-	clearedrecipes               bool
-	groceries                    map[uuid.UUID]struct{}
-	removedgroceries             map[uuid.UUID]struct{}
-	clearedgroceries             bool
-	meal_calendar_entries        map[uuid.UUID]struct{}
-	removedmeal_calendar_entries map[uuid.UUID]struct{}
-	clearedmeal_calendar_entries bool
-	done                         bool
-	oldValue                     func(context.Context) (*User, error)
-	predicates                   []predicate.User
+	op                            Op
+	typ                           string
+	id                            *int
+	email                         *string
+	name                          *string
+	picture                       *string
+	email_verified                *bool
+	created_at                    *time.Time
+	updated_at                    *time.Time
+	clearedFields                 map[string]struct{}
+	accounts                      map[int]struct{}
+	removedaccounts               map[int]struct{}
+	clearedaccounts               bool
+	sessions                      map[int]struct{}
+	removedsessions               map[int]struct{}
+	clearedsessions               bool
+	refresh_tokens                map[int]struct{}
+	removedrefresh_tokens         map[int]struct{}
+	clearedrefresh_tokens         bool
+	folders                       map[uuid.UUID]struct{}
+	removedfolders                map[uuid.UUID]struct{}
+	clearedfolders                bool
+	recipes                       map[uuid.UUID]struct{}
+	removedrecipes                map[uuid.UUID]struct{}
+	clearedrecipes                bool
+	groceries                     map[uuid.UUID]struct{}
+	removedgroceries              map[uuid.UUID]struct{}
+	clearedgroceries              bool
+	meal_calendar_entries         map[uuid.UUID]struct{}
+	removedmeal_calendar_entries  map[uuid.UUID]struct{}
+	clearedmeal_calendar_entries  bool
+	subscriptions                 map[int]struct{}
+	removedsubscriptions          map[int]struct{}
+	clearedsubscriptions          bool
+	revenue_cat_identities        map[int]struct{}
+	removedrevenue_cat_identities map[int]struct{}
+	clearedrevenue_cat_identities bool
+	done                          bool
+	oldValue                      func(context.Context) (*User, error)
+	predicates                    []predicate.User
 }
 
 var _ ent.Mutation = (*UserMutation)(nil)
@@ -7018,6 +8570,114 @@ func (m *UserMutation) ResetMealCalendarEntries() {
 	m.removedmeal_calendar_entries = nil
 }
 
+// AddSubscriptionIDs adds the "subscriptions" edge to the Subscription entity by ids.
+func (m *UserMutation) AddSubscriptionIDs(ids ...int) {
+	if m.subscriptions == nil {
+		m.subscriptions = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.subscriptions[ids[i]] = struct{}{}
+	}
+}
+
+// ClearSubscriptions clears the "subscriptions" edge to the Subscription entity.
+func (m *UserMutation) ClearSubscriptions() {
+	m.clearedsubscriptions = true
+}
+
+// SubscriptionsCleared reports if the "subscriptions" edge to the Subscription entity was cleared.
+func (m *UserMutation) SubscriptionsCleared() bool {
+	return m.clearedsubscriptions
+}
+
+// RemoveSubscriptionIDs removes the "subscriptions" edge to the Subscription entity by IDs.
+func (m *UserMutation) RemoveSubscriptionIDs(ids ...int) {
+	if m.removedsubscriptions == nil {
+		m.removedsubscriptions = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.subscriptions, ids[i])
+		m.removedsubscriptions[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedSubscriptions returns the removed IDs of the "subscriptions" edge to the Subscription entity.
+func (m *UserMutation) RemovedSubscriptionsIDs() (ids []int) {
+	for id := range m.removedsubscriptions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// SubscriptionsIDs returns the "subscriptions" edge IDs in the mutation.
+func (m *UserMutation) SubscriptionsIDs() (ids []int) {
+	for id := range m.subscriptions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetSubscriptions resets all changes to the "subscriptions" edge.
+func (m *UserMutation) ResetSubscriptions() {
+	m.subscriptions = nil
+	m.clearedsubscriptions = false
+	m.removedsubscriptions = nil
+}
+
+// AddRevenueCatIdentityIDs adds the "revenue_cat_identities" edge to the RevenueCatIdentity entity by ids.
+func (m *UserMutation) AddRevenueCatIdentityIDs(ids ...int) {
+	if m.revenue_cat_identities == nil {
+		m.revenue_cat_identities = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.revenue_cat_identities[ids[i]] = struct{}{}
+	}
+}
+
+// ClearRevenueCatIdentities clears the "revenue_cat_identities" edge to the RevenueCatIdentity entity.
+func (m *UserMutation) ClearRevenueCatIdentities() {
+	m.clearedrevenue_cat_identities = true
+}
+
+// RevenueCatIdentitiesCleared reports if the "revenue_cat_identities" edge to the RevenueCatIdentity entity was cleared.
+func (m *UserMutation) RevenueCatIdentitiesCleared() bool {
+	return m.clearedrevenue_cat_identities
+}
+
+// RemoveRevenueCatIdentityIDs removes the "revenue_cat_identities" edge to the RevenueCatIdentity entity by IDs.
+func (m *UserMutation) RemoveRevenueCatIdentityIDs(ids ...int) {
+	if m.removedrevenue_cat_identities == nil {
+		m.removedrevenue_cat_identities = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.revenue_cat_identities, ids[i])
+		m.removedrevenue_cat_identities[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedRevenueCatIdentities returns the removed IDs of the "revenue_cat_identities" edge to the RevenueCatIdentity entity.
+func (m *UserMutation) RemovedRevenueCatIdentitiesIDs() (ids []int) {
+	for id := range m.removedrevenue_cat_identities {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// RevenueCatIdentitiesIDs returns the "revenue_cat_identities" edge IDs in the mutation.
+func (m *UserMutation) RevenueCatIdentitiesIDs() (ids []int) {
+	for id := range m.revenue_cat_identities {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetRevenueCatIdentities resets all changes to the "revenue_cat_identities" edge.
+func (m *UserMutation) ResetRevenueCatIdentities() {
+	m.revenue_cat_identities = nil
+	m.clearedrevenue_cat_identities = false
+	m.removedrevenue_cat_identities = nil
+}
+
 // Where appends a list predicates to the UserMutation builder.
 func (m *UserMutation) Where(ps ...predicate.User) {
 	m.predicates = append(m.predicates, ps...)
@@ -7245,7 +8905,7 @@ func (m *UserMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *UserMutation) AddedEdges() []string {
-	edges := make([]string, 0, 7)
+	edges := make([]string, 0, 9)
 	if m.accounts != nil {
 		edges = append(edges, user.EdgeAccounts)
 	}
@@ -7266,6 +8926,12 @@ func (m *UserMutation) AddedEdges() []string {
 	}
 	if m.meal_calendar_entries != nil {
 		edges = append(edges, user.EdgeMealCalendarEntries)
+	}
+	if m.subscriptions != nil {
+		edges = append(edges, user.EdgeSubscriptions)
+	}
+	if m.revenue_cat_identities != nil {
+		edges = append(edges, user.EdgeRevenueCatIdentities)
 	}
 	return edges
 }
@@ -7316,13 +8982,25 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeSubscriptions:
+		ids := make([]ent.Value, 0, len(m.subscriptions))
+		for id := range m.subscriptions {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeRevenueCatIdentities:
+		ids := make([]ent.Value, 0, len(m.revenue_cat_identities))
+		for id := range m.revenue_cat_identities {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *UserMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 7)
+	edges := make([]string, 0, 9)
 	if m.removedaccounts != nil {
 		edges = append(edges, user.EdgeAccounts)
 	}
@@ -7343,6 +9021,12 @@ func (m *UserMutation) RemovedEdges() []string {
 	}
 	if m.removedmeal_calendar_entries != nil {
 		edges = append(edges, user.EdgeMealCalendarEntries)
+	}
+	if m.removedsubscriptions != nil {
+		edges = append(edges, user.EdgeSubscriptions)
+	}
+	if m.removedrevenue_cat_identities != nil {
+		edges = append(edges, user.EdgeRevenueCatIdentities)
 	}
 	return edges
 }
@@ -7393,13 +9077,25 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeSubscriptions:
+		ids := make([]ent.Value, 0, len(m.removedsubscriptions))
+		for id := range m.removedsubscriptions {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeRevenueCatIdentities:
+		ids := make([]ent.Value, 0, len(m.removedrevenue_cat_identities))
+		for id := range m.removedrevenue_cat_identities {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *UserMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 7)
+	edges := make([]string, 0, 9)
 	if m.clearedaccounts {
 		edges = append(edges, user.EdgeAccounts)
 	}
@@ -7420,6 +9116,12 @@ func (m *UserMutation) ClearedEdges() []string {
 	}
 	if m.clearedmeal_calendar_entries {
 		edges = append(edges, user.EdgeMealCalendarEntries)
+	}
+	if m.clearedsubscriptions {
+		edges = append(edges, user.EdgeSubscriptions)
+	}
+	if m.clearedrevenue_cat_identities {
+		edges = append(edges, user.EdgeRevenueCatIdentities)
 	}
 	return edges
 }
@@ -7442,6 +9144,10 @@ func (m *UserMutation) EdgeCleared(name string) bool {
 		return m.clearedgroceries
 	case user.EdgeMealCalendarEntries:
 		return m.clearedmeal_calendar_entries
+	case user.EdgeSubscriptions:
+		return m.clearedsubscriptions
+	case user.EdgeRevenueCatIdentities:
+		return m.clearedrevenue_cat_identities
 	}
 	return false
 }
@@ -7478,6 +9184,12 @@ func (m *UserMutation) ResetEdge(name string) error {
 		return nil
 	case user.EdgeMealCalendarEntries:
 		m.ResetMealCalendarEntries()
+		return nil
+	case user.EdgeSubscriptions:
+		m.ResetSubscriptions()
+		return nil
+	case user.EdgeRevenueCatIdentities:
+		m.ResetRevenueCatIdentities()
 		return nil
 	}
 	return fmt.Errorf("unknown User edge %s", name)

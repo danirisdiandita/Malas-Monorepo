@@ -16,7 +16,9 @@ import (
 	"github.com/danirisdiandita/malas-monorepo/api/ent/mealcalendarentry"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/recipe"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/refreshtoken"
+	"github.com/danirisdiandita/malas-monorepo/api/ent/revenuecatidentity"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/session"
+	"github.com/danirisdiandita/malas-monorepo/api/ent/subscription"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/user"
 	"github.com/google/uuid"
 )
@@ -199,6 +201,36 @@ func (_c *UserCreate) AddMealCalendarEntries(v ...*MealCalendarEntry) *UserCreat
 		ids[i] = v[i].ID
 	}
 	return _c.AddMealCalendarEntryIDs(ids...)
+}
+
+// AddSubscriptionIDs adds the "subscriptions" edge to the Subscription entity by IDs.
+func (_c *UserCreate) AddSubscriptionIDs(ids ...int) *UserCreate {
+	_c.mutation.AddSubscriptionIDs(ids...)
+	return _c
+}
+
+// AddSubscriptions adds the "subscriptions" edges to the Subscription entity.
+func (_c *UserCreate) AddSubscriptions(v ...*Subscription) *UserCreate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddSubscriptionIDs(ids...)
+}
+
+// AddRevenueCatIdentityIDs adds the "revenue_cat_identities" edge to the RevenueCatIdentity entity by IDs.
+func (_c *UserCreate) AddRevenueCatIdentityIDs(ids ...int) *UserCreate {
+	_c.mutation.AddRevenueCatIdentityIDs(ids...)
+	return _c
+}
+
+// AddRevenueCatIdentities adds the "revenue_cat_identities" edges to the RevenueCatIdentity entity.
+func (_c *UserCreate) AddRevenueCatIdentities(v ...*RevenueCatIdentity) *UserCreate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddRevenueCatIdentityIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -422,6 +454,38 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(mealcalendarentry.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.SubscriptionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.SubscriptionsTable,
+			Columns: []string{user.SubscriptionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscription.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.RevenueCatIdentitiesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RevenueCatIdentitiesTable,
+			Columns: []string{user.RevenueCatIdentitiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenuecatidentity.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

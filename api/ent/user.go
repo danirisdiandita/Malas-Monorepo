@@ -51,9 +51,13 @@ type UserEdges struct {
 	Groceries []*Grocery `json:"groceries,omitempty"`
 	// MealCalendarEntries holds the value of the meal_calendar_entries edge.
 	MealCalendarEntries []*MealCalendarEntry `json:"meal_calendar_entries,omitempty"`
+	// Subscriptions holds the value of the subscriptions edge.
+	Subscriptions []*Subscription `json:"subscriptions,omitempty"`
+	// RevenueCatIdentities holds the value of the revenue_cat_identities edge.
+	RevenueCatIdentities []*RevenueCatIdentity `json:"revenue_cat_identities,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [7]bool
+	loadedTypes [9]bool
 }
 
 // AccountsOrErr returns the Accounts value or an error if the edge
@@ -117,6 +121,24 @@ func (e UserEdges) MealCalendarEntriesOrErr() ([]*MealCalendarEntry, error) {
 		return e.MealCalendarEntries, nil
 	}
 	return nil, &NotLoadedError{edge: "meal_calendar_entries"}
+}
+
+// SubscriptionsOrErr returns the Subscriptions value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) SubscriptionsOrErr() ([]*Subscription, error) {
+	if e.loadedTypes[7] {
+		return e.Subscriptions, nil
+	}
+	return nil, &NotLoadedError{edge: "subscriptions"}
+}
+
+// RevenueCatIdentitiesOrErr returns the RevenueCatIdentities value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) RevenueCatIdentitiesOrErr() ([]*RevenueCatIdentity, error) {
+	if e.loadedTypes[8] {
+		return e.RevenueCatIdentities, nil
+	}
+	return nil, &NotLoadedError{edge: "revenue_cat_identities"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -235,6 +257,16 @@ func (_m *User) QueryGroceries() *GroceryQuery {
 // QueryMealCalendarEntries queries the "meal_calendar_entries" edge of the User entity.
 func (_m *User) QueryMealCalendarEntries() *MealCalendarEntryQuery {
 	return NewUserClient(_m.config).QueryMealCalendarEntries(_m)
+}
+
+// QuerySubscriptions queries the "subscriptions" edge of the User entity.
+func (_m *User) QuerySubscriptions() *SubscriptionQuery {
+	return NewUserClient(_m.config).QuerySubscriptions(_m)
+}
+
+// QueryRevenueCatIdentities queries the "revenue_cat_identities" edge of the User entity.
+func (_m *User) QueryRevenueCatIdentities() *RevenueCatIdentityQuery {
+	return NewUserClient(_m.config).QueryRevenueCatIdentities(_m)
 }
 
 // Update returns a builder for updating this User.

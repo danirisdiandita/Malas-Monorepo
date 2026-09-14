@@ -10,8 +10,10 @@ import (
 	"github.com/danirisdiandita/malas-monorepo/api/ent/mealcalendarentry"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/recipe"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/refreshtoken"
+	"github.com/danirisdiandita/malas-monorepo/api/ent/revenuecatidentity"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/schema"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/session"
+	"github.com/danirisdiandita/malas-monorepo/api/ent/subscription"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/user"
 	"github.com/google/uuid"
 )
@@ -58,6 +60,18 @@ func init() {
 	refreshtokenDescCreatedAt := refreshtokenFields[2].Descriptor()
 	// refreshtoken.DefaultCreatedAt holds the default value on creation for the created_at field.
 	refreshtoken.DefaultCreatedAt = refreshtokenDescCreatedAt.Default.(func() time.Time)
+	revenuecatidentityFields := schema.RevenueCatIdentity{}.Fields()
+	_ = revenuecatidentityFields
+	// revenuecatidentityDescCreatedAt is the schema descriptor for created_at field.
+	revenuecatidentityDescCreatedAt := revenuecatidentityFields[2].Descriptor()
+	// revenuecatidentity.DefaultCreatedAt holds the default value on creation for the created_at field.
+	revenuecatidentity.DefaultCreatedAt = revenuecatidentityDescCreatedAt.Default.(func() time.Time)
+	// revenuecatidentityDescUpdatedAt is the schema descriptor for updated_at field.
+	revenuecatidentityDescUpdatedAt := revenuecatidentityFields[3].Descriptor()
+	// revenuecatidentity.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	revenuecatidentity.DefaultUpdatedAt = revenuecatidentityDescUpdatedAt.Default.(func() time.Time)
+	// revenuecatidentity.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	revenuecatidentity.UpdateDefaultUpdatedAt = revenuecatidentityDescUpdatedAt.UpdateDefault.(func() time.Time)
 	sessionFields := schema.Session{}.Fields()
 	_ = sessionFields
 	// sessionDescCreatedAt is the schema descriptor for created_at field.
@@ -70,6 +84,18 @@ func init() {
 	session.DefaultLastSeenAt = sessionDescLastSeenAt.Default.(func() time.Time)
 	// session.UpdateDefaultLastSeenAt holds the default value on update for the last_seen_at field.
 	session.UpdateDefaultLastSeenAt = sessionDescLastSeenAt.UpdateDefault.(func() time.Time)
+	subscriptionFields := schema.Subscription{}.Fields()
+	_ = subscriptionFields
+	// subscriptionDescCreatedAt is the schema descriptor for created_at field.
+	subscriptionDescCreatedAt := subscriptionFields[9].Descriptor()
+	// subscription.DefaultCreatedAt holds the default value on creation for the created_at field.
+	subscription.DefaultCreatedAt = subscriptionDescCreatedAt.Default.(func() time.Time)
+	// subscriptionDescUpdatedAt is the schema descriptor for updated_at field.
+	subscriptionDescUpdatedAt := subscriptionFields[10].Descriptor()
+	// subscription.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	subscription.DefaultUpdatedAt = subscriptionDescUpdatedAt.Default.(func() time.Time)
+	// subscription.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	subscription.UpdateDefaultUpdatedAt = subscriptionDescUpdatedAt.UpdateDefault.(func() time.Time)
 	userFields := schema.User{}.Fields()
 	_ = userFields
 	// userDescEmailVerified is the schema descriptor for email_verified field.

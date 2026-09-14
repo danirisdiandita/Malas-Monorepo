@@ -24,8 +24,14 @@ type Recipe func(*sql.Selector)
 // RefreshToken is the predicate function for refreshtoken builders.
 type RefreshToken func(*sql.Selector)
 
+// RevenueCatIdentity is the predicate function for revenuecatidentity builders.
+type RevenueCatIdentity func(*sql.Selector)
+
 // Session is the predicate function for session builders.
 type Session func(*sql.Selector)
+
+// Subscription is the predicate function for subscription builders.
+type Subscription func(*sql.Selector)
 
 // User is the predicate function for user builders.
 type User func(*sql.Selector)

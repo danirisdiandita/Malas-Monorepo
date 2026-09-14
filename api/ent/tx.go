@@ -24,8 +24,12 @@ type Tx struct {
 	Recipe *RecipeClient
 	// RefreshToken is the client for interacting with the RefreshToken builders.
 	RefreshToken *RefreshTokenClient
+	// RevenueCatIdentity is the client for interacting with the RevenueCatIdentity builders.
+	RevenueCatIdentity *RevenueCatIdentityClient
 	// Session is the client for interacting with the Session builders.
 	Session *SessionClient
+	// Subscription is the client for interacting with the Subscription builders.
+	Subscription *SubscriptionClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
 
@@ -165,7 +169,9 @@ func (tx *Tx) init() {
 	tx.MealCalendarEntry = NewMealCalendarEntryClient(tx.config)
 	tx.Recipe = NewRecipeClient(tx.config)
 	tx.RefreshToken = NewRefreshTokenClient(tx.config)
+	tx.RevenueCatIdentity = NewRevenueCatIdentityClient(tx.config)
 	tx.Session = NewSessionClient(tx.config)
+	tx.Subscription = NewSubscriptionClient(tx.config)
 	tx.User = NewUserClient(tx.config)
 }
 
