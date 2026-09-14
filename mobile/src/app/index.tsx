@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { router } from "expo-router";
 import { Ionicons } from "@react-native-vector-icons/ionicons";
-import { Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Image } from "expo-image";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ThemedText } from "@/components/themed-text";
@@ -54,13 +55,15 @@ const steps: OnboardingStep[] = [
 ];
 
 export default function OnboardingScreen() {
-  const { data: user } = useCurrentUser();
+  const { data: user, isPending } = useCurrentUser();
   const [step, setStep] = useState(0);
   const swipe = useRef({ startX: 0, startY: 0 });
   const current = steps[step];
   useEffect(() => {
     if (user) router.replace("/recipes");
   }, [user]);
+
+  if (isPending) return <StartupLoader />;
 
   const next = () =>
     step === steps.length - 1 ? router.push("/sign-in") : setStep(step + 1);
@@ -122,6 +125,21 @@ export default function OnboardingScreen() {
           </View>
         </ScrollView>
       </SafeAreaView>
+    </ThemedView>
+  );
+}
+
+function StartupLoader() {
+  return (
+    <ThemedView style={styles.loaderScreen}>
+      <Image
+        source={require("@/assets/images/yuzu-logo-transparent.png")}
+        style={styles.loaderLogo}
+        contentFit="contain"
+        accessibilityLabel="Yuzu logo"
+      />
+      <ThemedText style={styles.loaderName}>Yuzu</ThemedText>
+      <ActivityIndicator size="small" color={colors.leaf} />
     </ThemedView>
   );
 }
@@ -200,6 +218,15 @@ function OnboardingVisual({ step }: { step: number }) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: "#FCFBF8" },
+  loaderScreen: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FCFBF8",
+    gap: 12,
+  },
+  loaderLogo: { width: 104, height: 104 },
+  loaderName: { color: colors.ink, fontSize: 24, fontWeight: "800" },
   safeArea: { flex: 1 },
   content: {
     flexGrow: 1,

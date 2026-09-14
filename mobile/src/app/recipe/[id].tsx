@@ -3,7 +3,7 @@ import BottomSheet, {
   BottomSheetView,
   type BottomSheetMethods,
 } from "@expo/ui/community/bottom-sheet";
-import { router, useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams, useNavigation } from "expo-router";
 import { useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -35,6 +35,7 @@ import { decimalAsFraction } from "@/lib/fractions";
 export default function RecipeDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const recipeId = typeof id === "string" ? id : "";
+  const navigation = useNavigation();
   const { width: windowWidth } = useWindowDimensions();
   const { data: recipe, isPending, isError } = useRecipe(recipeId);
   const [ratingOpen, setRatingOpen] = useState(false);
@@ -57,6 +58,18 @@ export default function RecipeDetailScreen() {
   const addRecipe = useAddRecipeIngredients(recipeId);
   const moveRecipe = useMoveRecipeToFolder(recipeId);
   const { folders: savedFolders } = useFolders();
+
+  const goBack = () => {
+    const state = navigation.getState();
+    const previousRoute = state
+      ? state.routes[state.index - 1]
+      : undefined;
+    if (!previousRoute || previousRoute.name === "index") {
+      router.replace("/recipes");
+      return;
+    }
+    router.back();
+  };
 
   if (isPending) return <StatusScreen message="Loading recipe..." />;
   if (isError || !recipe) return <StatusScreen message="Recipe not found." />;
@@ -106,7 +119,7 @@ export default function RecipeDetailScreen() {
                 </View>*/}
             <Pressable
               style={[styles.circleButton, styles.backButton]}
-              onPress={() => router.replace("/recipes")}
+              onPress={goBack}
               accessibilityLabel="Go back"
             >
               <Ionicons name="chevron-back" size={22} color={yuzuColors.ink} />
