@@ -41,6 +41,11 @@ Do not store OAuth tokens or credentials in this repository.
 - Mobile list endpoints must paginate with a maximum of 5 items per request and
   use infinite scroll to load the next page.
 
+## Mobile async buttons
+
+- Every mobile button that starts an async action must show an activity loader
+  and be disabled until the action completes or fails.
+
 ## Social-media capability workflow
 
 When adding or testing another social-media source, follow this order:

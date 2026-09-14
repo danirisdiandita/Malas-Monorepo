@@ -3,12 +3,13 @@ import BottomSheet, { BottomSheetView, type BottomSheetMethods } from "@expo/ui/
 import { FlashList } from "@shopify/flash-list";
 import { router, useLocalSearchParams } from "expo-router";
 import { useRef, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Modal, Pressable, StyleSheet, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useFolders } from "@/hooks/use-folders";
+import { useCreateFolder } from "@/hooks/use-folders";
 import { useImportLink } from "@/hooks/use-import-link";
 
 const colors = { ink: "#14231A", leaf: "#2F6B3E", sage: "#DDE8D6", muted: "#738078", line: "#D9E1D7", tomato: "#E87955", paper: "#FCFBF8" };
@@ -30,24 +31,44 @@ export default function RecipePreferencesScreen() {
   const [languageCode, setLanguageCode] = useState("");
   const [folderID, setFolderID] = useState("");
   const [selector, setSelector] = useState<"language" | "folder" | null>(null);
+  const [languageSearch, setLanguageSearch] = useState("");
+  const [createFolderOpen, setCreateFolderOpen] = useState(false);
+  const [newFolder, setNewFolder] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const selectorRef = useRef<BottomSheetMethods>(null);
   const [error, setError] = useState("");
   const foldersQuery = useFolders();
+  const createFolder = useCreateFolder();
   const link = useImportLink();
   const preferences = { language_code: languageCode || undefined, folder_id: folderID || undefined };
   const openSelector = (next: "language" | "folder") => {
     setSelector(next);
+    if (next === "language") setLanguageSearch("");
     setTimeout(() => selectorRef.current?.present(), 0);
   };
   const closeSelector = () => selectorRef.current?.close();
+  const saveFolder = async () => {
+    const name = newFolder.trim();
+    if (!name || createFolder.isPending) return;
+    try {
+      const folder = await createFolder.mutateAsync(name);
+      setFolderID(folder.id);
+      setNewFolder("");
+      setCreateFolderOpen(false);
+    } catch {
+      // The mutation error is displayed by the modal below.
+    }
+  };
 
   const continueImport = () => {
+    if (submitting || link.isPending) return;
     setError("");
+    setSubmitting(true);
     if (kind !== "link") {
       router.push({ pathname: "/recipe/direct-processing", params: { kind, value, language_code: languageCode, folder_id: folderID } });
       return;
     }
-    link.mutate({ url: value, preferences }, { onSuccess: (result) => router.replace({ pathname: "/recipe/processing", params: { runID: result.run_id, url: value } }), onError: (reason) => setError(reason.message) });
+    link.mutate({ url: value, preferences }, { onSuccess: (result) => router.replace({ pathname: "/recipe/processing", params: { runID: result.run_id, url: value } }), onError: (reason) => { setSubmitting(false); setError(reason.message); } });
   };
 
   return (
@@ -77,8 +98,8 @@ export default function RecipePreferencesScreen() {
             <Ionicons name="chevron-forward" size={18} color={colors.muted} />
           </Pressable>
           {error ? <ThemedText style={styles.error}>{error}</ThemedText> : null}
-          <Pressable style={styles.button} onPress={continueImport}>
-            <ThemedText style={styles.buttonText}>Continue</ThemedText>
+          <Pressable style={[styles.button, (submitting || link.isPending) && styles.disabled]} disabled={submitting || link.isPending} onPress={continueImport}>
+            {submitting || link.isPending ? <ActivityIndicator color="#fff" /> : <ThemedText style={styles.buttonText}>Continue</ThemedText>}
           </Pressable>
         </View>
       </SafeAreaView>
@@ -98,20 +119,37 @@ export default function RecipePreferencesScreen() {
             </Pressable>
           </View>
           {selector === "language" ? (
-            <FlashList
-              data={languages}
+            <View style={styles.selectorBody}>
+              <TextInput
+                accessibilityLabel="Search languages"
+                placeholder="Search language"
+                placeholderTextColor={colors.muted}
+                value={languageSearch}
+                onChangeText={setLanguageSearch}
+                autoCapitalize="none"
+                autoCorrect={false}
+                style={styles.searchInput}
+              />
+              <FlashList
+              data={languages.filter((language) => `${language.label} ${language.key}`.toLowerCase().includes(languageSearch.trim().toLowerCase()))}
               style={styles.selectorList}
               keyExtractor={(item) => item.key || "auto"}
               renderItem={({ item }) => (
                 <Pressable style={[styles.choice, languageCode === item.key && styles.selected]} onPress={() => { setLanguageCode(item.key); closeSelector(); }}>
-                  <ThemedText style={styles.flag}>{item.flag}</ThemedText>
+                  <ThemedText style={styles.flag} numberOfLines={1}>{item.flag}</ThemedText>
                   <ThemedText style={[styles.choiceText, languageCode === item.key && styles.selectedText]}>{item.label}</ThemedText>
                   {languageCode === item.key && <Ionicons name="checkmark" size={18} color={colors.leaf} />}
                 </Pressable>
               )}
-            />
+              />
+            </View>
           ) : (
-            <FlashList
+            <View style={styles.selectorBody}>
+              <Pressable style={styles.newFolder} onPress={() => { closeSelector(); setCreateFolderOpen(true); }}>
+                <Ionicons name="add" size={18} color={colors.leaf} />
+                <ThemedText style={styles.newFolderText}>New folder</ThemedText>
+              </Pressable>
+              <FlashList
               data={foldersQuery.folders}
               style={styles.selectorList}
               keyExtractor={(item) => item.id}
@@ -126,10 +164,32 @@ export default function RecipePreferencesScreen() {
               ListHeaderComponent={<Pressable style={[styles.choice, !folderID && styles.selected]} onPress={() => { setFolderID(""); closeSelector(); }}><ThemedText style={[styles.choiceText, !folderID && styles.selectedText]}>No folder</ThemedText>{!folderID && <Ionicons name="checkmark" size={18} color={colors.leaf} />}</Pressable>}
               ListFooterComponent={foldersQuery.isFetchingNextPage ? <ActivityIndicator color={colors.leaf} /> : null}
               ListEmptyComponent={foldersQuery.isPending ? <ActivityIndicator color={colors.leaf} /> : null}
-            />
+              />
+            </View>
           )}
         </BottomSheetView>
       </BottomSheet>
+      <Modal visible={createFolderOpen} transparent animationType="fade" onRequestClose={() => setCreateFolderOpen(false)}>
+        <Pressable style={styles.modalBackdrop} onPress={() => setCreateFolderOpen(false)}>
+          <Pressable style={styles.modalCard} onPress={(event) => event.stopPropagation()}>
+            <ThemedText style={styles.modalTitle}>Create a folder</ThemedText>
+            <ThemedText style={styles.modalBody}>Keep this recipe easy to find later.</ThemedText>
+            <TextInput
+              autoFocus
+              placeholder="Folder name"
+              placeholderTextColor={colors.muted}
+              value={newFolder}
+              onChangeText={setNewFolder}
+              style={styles.modalInput}
+            />
+            {createFolder.isError && <ThemedText style={styles.error}>{createFolder.error.message}</ThemedText>}
+            <View style={styles.modalActions}>
+              <Pressable style={styles.modalCancel} onPress={() => setCreateFolderOpen(false)}><ThemedText style={styles.modalCancelText}>Cancel</ThemedText></Pressable>
+              <Pressable style={[styles.modalSave, !newFolder.trim() && styles.disabled]} onPress={saveFolder}><ThemedText style={styles.modalSaveText}>{createFolder.isPending ? "Creating…" : "Create"}</ThemedText></Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </ThemedView>
   );
 }
@@ -156,8 +216,22 @@ const styles = StyleSheet.create({
   sheetHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 12 },
   sheetTitle: { color: colors.ink, fontSize: 21, fontWeight: "900" },
   sheetOptions: { gap: 2 },
-  flag: { width: 44, fontSize: 20 },
+  flag: { width: 58, flexShrink: 0, fontSize: 20 },
   selectorList: { flex: 1 },
+  selectorBody: { flex: 1 },
+  newFolder: { minHeight: 48, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7, borderRadius: 13, backgroundColor: colors.sage, marginBottom: 8 },
+  newFolderText: { color: colors.leaf, fontSize: 15, fontWeight: "800" },
+  searchInput: { minHeight: 48, borderWidth: 1, borderColor: colors.line, borderRadius: 13, backgroundColor: "#fff", paddingHorizontal: 14, color: colors.ink, fontSize: 15, marginBottom: 10 },
+  modalBackdrop: { flex: 1, backgroundColor: "#14231A66", alignItems: "center", justifyContent: "center", padding: 24 },
+  modalCard: { width: "100%", borderRadius: 24, backgroundColor: colors.paper, padding: 22 },
+  modalTitle: { color: colors.ink, fontSize: 22, fontWeight: "900" },
+  modalBody: { color: colors.muted, fontSize: 14, marginTop: 7, marginBottom: 16 },
+  modalInput: { minHeight: 50, borderWidth: 1, borderColor: colors.line, borderRadius: 13, backgroundColor: "#fff", paddingHorizontal: 14, color: colors.ink, fontSize: 15 },
+  modalActions: { flexDirection: "row", justifyContent: "flex-end", gap: 10, marginTop: 18 },
+  modalCancel: { minHeight: 44, paddingHorizontal: 16, alignItems: "center", justifyContent: "center" },
+  modalCancelText: { color: colors.muted, fontWeight: "800" },
+  modalSave: { minHeight: 44, paddingHorizontal: 18, borderRadius: 13, backgroundColor: colors.ink, alignItems: "center", justifyContent: "center" },
+  modalSaveText: { color: "#fff", fontWeight: "800" },
   error: { color: colors.tomato, fontSize: 13, marginTop: 8 },
   button: { minHeight: 52, borderRadius: 17, backgroundColor: colors.ink, alignItems: "center", justifyContent: "center", marginTop: "auto" },
   buttonText: { color: "#fff", fontSize: 16, fontWeight: "800" },

@@ -26,6 +26,8 @@ Read the exact versioned Expo docs at https://docs.expo.dev/versions/v57.0.0/ be
 - Keep client-only state separate from server/API state.
 - Paginated lists must request at most 5 items per page and use TanStack Query
   infinite queries with infinite scroll to load subsequent pages.
+- Every button that starts an asynchronous action must show an activity loader
+  and be disabled while the action is pending.
 
 ## Project structure
 
