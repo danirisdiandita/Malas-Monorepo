@@ -1,11 +1,14 @@
 import { Ionicons } from "@react-native-vector-icons/ionicons";
+import { CameraView, useCameraPermissions, type CameraView as CameraViewType } from "expo-camera";
 import BottomSheet, {
   BottomSheetView,
   type BottomSheetMethods,
 } from "@expo/ui/community/bottom-sheet";
 import { router, useFocusEffect } from "expo-router";
+import * as ImagePicker from "expo-image-picker";
 import { useCallback, useRef, useState } from "react";
 import {
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -15,7 +18,7 @@ import {
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { useImportLink } from "@/hooks/use-import-link";
+import { useImportLink, useImportPhoto, useImportText } from "@/hooks/use-import-link";
 
 const colors = {
   ink: "#14231A",
@@ -33,33 +36,82 @@ const options = [
   ["camera-outline", "Photo of a dish"],
   ["sparkles-outline", "Ask AI for a recipe"],
   ["document-text-outline", "Paste a recipe · from text"],
-  ["chatbubble-ellipses-outline", "Chat with AI"],
+  // Chat with AI: reserved for the later conversational recipe feature.
 ];
 
 export default function AddTabScreen() {
   const sheetRef = useRef<BottomSheetMethods>(null);
   const choosingOption = useRef(false);
+  const cameraRef = useRef<CameraViewType>(null);
   const [recipeLink, setRecipeLink] = useState("");
+  const [inputMode, setInputMode] = useState<"link" | "ai" | "text">("link");
+  const [cameraOpen, setCameraOpen] = useState(false);
   const importLink = useImportLink();
+  const importPhoto = useImportPhoto();
+  const importText = useImportText();
+  const [cameraPermission, requestCameraPermission] = useCameraPermissions();
+  const leaveCamera = () => {
+    setCameraOpen(false);
+    router.back();
+  };
   useFocusEffect(
     useCallback(() => {
       const timer = setTimeout(() => sheetRef.current?.present(), 0);
       return () => clearTimeout(timer);
     }, []),
   );
-  const chooseOption = (label: string) => {
+  const finishPhotoImport = (uri: string) => {
+    setCameraOpen(false);
+    choosingOption.current = true;
+    sheetRef.current?.close();
+    importPhoto.mutate(uri, {
+      onSuccess: (result) => router.replace({ pathname: "/recipe/[id]", params: { id: result.recipe_id } }),
+      onError: (error) => Alert.alert("Photo import failed", error.message),
+    });
+  };
+  const chooseOption = async (label: string) => {
     if (label === "From social") {
       choosingOption.current = true;
       sheetRef.current?.close();
       router.push("/social-import");
       return;
     }
+    if (label === "Ask AI for a recipe") {
+      setInputMode("ai");
+      return;
+    }
+    if (label === "Paste a recipe · from text") {
+      setInputMode("text");
+      return;
+    }
+    if (label === "Photo · screenshot or saved photo") {
+      const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], allowsEditing: false, quality: 0.9 });
+      if (!result.canceled && result.assets[0]?.uri) finishPhotoImport(result.assets[0].uri);
+      return;
+    }
+    if (label === "Photo of a dish") {
+      const permission = cameraPermission?.granted ? cameraPermission : await requestCameraPermission();
+      if (!permission.granted) {
+        Alert.alert("Camera permission needed", "Allow camera access to take a photo of your dish.");
+        return;
+      }
+      setCameraOpen(true);
+      return;
+    }
     sheetRef.current?.close();
   };
   const processLink = () => {
-    const url = recipeLink.trim();
-    if (!url) return;
+    const value = recipeLink.trim();
+    if (!value) return;
     setRecipeLink("");
+    if (inputMode !== "link") {
+      importText.mutate(value, {
+        onSuccess: (result) => router.replace({ pathname: "/recipe/[id]", params: { id: result.recipe_id } }),
+        onError: (error) => Alert.alert("Recipe creation failed", error.message),
+      });
+      return;
+    }
+    const url = value;
     importLink.mutate(url, {
       onSuccess: (result) => {
         choosingOption.current = true;
@@ -79,6 +131,33 @@ export default function AddTabScreen() {
     }
     router.replace("/recipes");
   };
+
+  if (cameraOpen) {
+    return (
+      <View style={styles.cameraScreen}>
+        <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing="back" />
+        <Pressable
+          accessibilityLabel="Close camera"
+          style={styles.cameraClose}
+          onPress={leaveCamera}
+        >
+          <Ionicons name="close" size={25} color="#fff" />
+        </Pressable>
+        <View style={styles.cameraActions}>
+          <Pressable style={styles.cameraCancel} onPress={leaveCamera}>
+            <ThemedText style={styles.cameraActionLabel}>Cancel</ThemedText>
+          </Pressable>
+          <Pressable style={styles.shutter} onPress={async () => {
+            const photo = await cameraRef.current?.takePictureAsync({ quality: 0.9 });
+            if (photo?.uri) finishPhotoImport(photo.uri);
+          }}>
+            <View style={styles.shutterInner} />
+          </Pressable>
+          <View style={styles.cameraSpacer} />
+        </View>
+      </View>
+    );
+  }
 
   return (
     <ThemedView style={styles.screen}>
@@ -114,7 +193,7 @@ export default function AddTabScreen() {
             <View style={styles.linkRow}>
               <TextInput
                 accessibilityLabel="Recipe link"
-                placeholder="Paste the recipe link"
+                placeholder={inputMode === "ai" ? "What food you want? we will make a recipe for you" : inputMode === "text" ? "Paste a recipe from text" : "Paste the recipe link"}
                 placeholderTextColor={colors.muted}
                 value={recipeLink}
                 onChangeText={setRecipeLink}
@@ -127,14 +206,14 @@ export default function AddTabScreen() {
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Process recipe link"
-                disabled={!recipeLink.trim() || importLink.isPending}
+                disabled={!recipeLink.trim() || importLink.isPending || importText.isPending}
                 style={[
                   styles.processButton,
                   !recipeLink.trim() && styles.processButtonDisabled,
                 ]}
                 onPress={processLink}
               >
-                <ThemedText style={styles.processLabel}>{importLink.isPending ? "Processing..." : "Process"}</ThemedText>
+                <ThemedText style={styles.processLabel}>{importLink.isPending || importText.isPending || importPhoto.isPending ? "Processing..." : "Process"}</ThemedText>
               </Pressable>
             </View>
             {importLink.isError && <ThemedText style={styles.error}>{importLink.error.message}</ThemedText>}
@@ -160,10 +239,11 @@ export default function AddTabScreen() {
                 />
               </Pressable>
             ))}
-            <Pressable style={styles.manual} onPress={() => chooseOption("Add manually")}>
+            {/* Add manually: reserved until the manual recipe editor is implemented. */}
+            {/* <Pressable style={styles.manual} onPress={() => chooseOption("Add manually")}>
               <Ionicons name="create-outline" size={17} color={colors.leaf} />
               <ThemedText style={styles.manualLabel}>Add manually</ThemedText>
-            </Pressable>
+            </Pressable> */}
           </ScrollView>
         </BottomSheetView>
       </BottomSheet>
@@ -262,4 +342,12 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   manualLabel: { color: colors.leaf, fontSize: 16, fontWeight: "800" },
+  cameraScreen: { flex: 1, backgroundColor: "#000" },
+  cameraActions: { position: "absolute", bottom: 42, left: 24, right: 24, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  cameraClose: { position: "absolute", top: 54, right: 20, width: 44, height: 44, borderRadius: 22, backgroundColor: "#14231ACC", alignItems: "center", justifyContent: "center" },
+  cameraCancel: { minWidth: 82, paddingHorizontal: 18, paddingVertical: 12, borderRadius: 22, backgroundColor: "#14231ACC", alignItems: "center" },
+  cameraActionLabel: { color: "#fff", fontWeight: "700" },
+  cameraSpacer: { width: 72 },
+  shutter: { width: 76, height: 76, borderRadius: 38, borderWidth: 5, borderColor: "#fff", alignItems: "center", justifyContent: "center" },
+  shutterInner: { width: 60, height: 60, borderRadius: 30, backgroundColor: "#fff" },
 });

@@ -41,6 +41,10 @@ export interface LinkImportResult {
   run_id: string;
 }
 
+export interface PhotoImportResult {
+  recipe_id: string;
+}
+
 export interface ImportStatus {
   run_id: string;
   status: 'looking' | 'making' | 'done' | 'failed';
@@ -315,6 +319,32 @@ export async function importLink(url: string): Promise<LinkImportResult> {
   const body: unknown = await response.json();
   if (!isLinkImportResult(body)) throw new Error('Invalid link import response.');
   return body;
+}
+
+export async function importPhoto(uri: string): Promise<PhotoImportResult> {
+  const form = new FormData();
+  form.append('photo', { uri, name: 'recipe-photo.jpg', type: 'image/jpeg' } as unknown as Blob);
+  const response = await authenticatedFetch('/imports/photo', { method: 'POST', body: form });
+  if (!response.ok) throw new Error((await response.text()) || 'Unable to process photo.');
+  const body: unknown = await response.json();
+  if (!body || typeof body !== 'object' || typeof (body as Record<string, unknown>).recipe_id !== 'string') {
+    throw new Error('Invalid photo import response.');
+  }
+  return body as PhotoImportResult;
+}
+
+export async function importText(text: string): Promise<PhotoImportResult> {
+  const response = await authenticatedFetch('/imports/text', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text }),
+  });
+  if (!response.ok) throw new Error((await response.text()) || 'Unable to create recipe from text.');
+  const body: unknown = await response.json();
+  if (!body || typeof body !== 'object' || typeof (body as Record<string, unknown>).recipe_id !== 'string') {
+    throw new Error('Invalid text import response.');
+  }
+  return body as PhotoImportResult;
 }
 
 export async function getImportStatus(runID: string): Promise<ImportStatus> {
