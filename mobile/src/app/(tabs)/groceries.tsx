@@ -4,10 +4,11 @@ import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, TextInput, View, useWindowDimensions } from "react-native";
 import { useRef, useState } from "react";
+import * as ImagePicker from "expo-image-picker";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { useAddGrocery, useClearGroceries, useGroceries, useUpdateGroceryChecked } from "@/hooks/use-groceries";
+import { useAddGrocery, useClearGroceries, useGroceries, useParseGroceries, useParseGroceryPhoto, useUpdateGroceryChecked } from "@/hooks/use-groceries";
 import { toast } from "sonner-native";
 import type { Grocery } from "@/lib/api";
 import { decimalAsFraction } from "@/lib/fractions";
@@ -26,11 +27,17 @@ export default function GroceriesScreen() {
   const clearGroceries = useClearGroceries();
   const updateChecked = useUpdateGroceryChecked();
   const addGrocery = useAddGrocery();
+  const parseGroceryText = useParseGroceries();
+  const parseGroceryPhoto = useParseGroceryPhoto();
+  const addMethodSheetRef = useRef<BottomSheetMethods>(null);
   const manualSheetRef = useRef<BottomSheetMethods>(null);
+  const pasteSheetRef = useRef<BottomSheetMethods>(null);
   const { width: windowWidth } = useWindowDimensions();
   const [manualName, setManualName] = useState("");
   const [manualQuantity, setManualQuantity] = useState("");
   const [manualUnit, setManualUnit] = useState("");
+  const [pastedIngredients, setPastedIngredients] = useState("");
+  const [photoPicking, setPhotoPicking] = useState(false);
   const [checked, setChecked] = useState<Record<string, boolean>>({});
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
   const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
@@ -47,7 +54,7 @@ export default function GroceriesScreen() {
               <ThemedText style={styles.title}>Grocery list</ThemedText>
             </View>
             <View style={styles.headerActions}>
-              <Pressable style={styles.addItemButton} onPress={() => manualSheetRef.current?.present()} accessibilityRole="button">
+              <Pressable style={styles.addItemButton} onPress={() => addMethodSheetRef.current?.present()} accessibilityRole="button">
                 <Ionicons name="add" size={16} color="#FFFFFF" />
                 <ThemedText style={styles.addItem}>Add item</ThemedText>
               </Pressable>
@@ -56,7 +63,7 @@ export default function GroceriesScreen() {
               </Pressable>}
             </View>
           </View>
-          {isPending ? <ThemedText style={styles.status}>Loading groceries...</ThemedText> : isError ? <ThemedText style={styles.status}>Unable to load groceries.</ThemedText> : items.length === 0 ? <EmptyGroceries onAddManual={() => manualSheetRef.current?.present()} /> : <>
+          {isPending ? <ThemedText style={styles.status}>Loading groceries...</ThemedText> : isError ? <ThemedText style={styles.status}>Unable to load groceries.</ThemedText> : items.length === 0 ? <EmptyGroceries onAdd={() => addMethodSheetRef.current?.present()} /> : <>
           <View style={styles.progressCard}>
             <View style={styles.progressTop}>
               <ThemedText style={styles.progressLabel}>{checkedCount} of {items.length} items</ThemedText>
@@ -113,6 +120,46 @@ export default function GroceriesScreen() {
             </Pressable>
           </Pressable>
         </Modal>
+        <BottomSheet ref={addMethodSheetRef} index={-1} enableDynamicSizing enablePanDownToClose backgroundStyle={styles.sheet}>
+          <BottomSheetView style={[styles.manualSheet, { width: windowWidth }]}>
+            <View style={styles.sheetHeader}><ThemedText style={styles.sheetTitle}>How will you add groceries?</ThemedText><Pressable onPress={() => addMethodSheetRef.current?.close()}><Ionicons name="close" size={22} color={colors.ink} /></Pressable></View>
+            <ThemedText style={styles.sheetHint}>Choose the quickest way to build your list.</ThemedText>
+            <Pressable style={styles.methodOption} onPress={() => { addMethodSheetRef.current?.close(); router.push("/recipes"); }}><Ionicons name="book-outline" size={21} color={colors.leaf} /><ThemedText style={styles.methodLabel}>Add from a recipe</ThemedText><Ionicons name="chevron-forward" size={17} color={colors.muted} /></Pressable>
+            <Pressable style={styles.methodOption} onPress={() => { addMethodSheetRef.current?.close(); setTimeout(() => manualSheetRef.current?.present(), 150); }}><Ionicons name="create-outline" size={21} color={colors.leaf} /><ThemedText style={styles.methodLabel}>Add manually</ThemedText><Ionicons name="chevron-forward" size={17} color={colors.muted} /></Pressable>
+            <Pressable style={styles.methodOption} onPress={() => { addMethodSheetRef.current?.close(); setTimeout(() => pasteSheetRef.current?.present(), 150); }}><Ionicons name="clipboard-outline" size={21} color={colors.leaf} /><ThemedText style={styles.methodLabel}>Paste your ingredients</ThemedText><Ionicons name="chevron-forward" size={17} color={colors.muted} /></Pressable>
+            <Pressable
+              style={[styles.methodOption, (photoPicking || parseGroceryPhoto.isPending) && styles.disabled]}
+              disabled={photoPicking || parseGroceryPhoto.isPending}
+              onPress={async () => {
+                addMethodSheetRef.current?.close();
+                setPhotoPicking(true);
+                try {
+                  const result = await ImagePicker.launchCameraAsync({ mediaTypes: ["images"], quality: 0.9 });
+                  const uri = result.canceled ? undefined : result.assets[0]?.uri;
+                  if (!uri) return;
+                  const parsed = await parseGroceryPhoto.mutateAsync(uri);
+                  toast.success(`${parsed.count} grocery items added`);
+                } catch (error) {
+                  toast.error(error instanceof Error ? error.message : "Unable to parse grocery photo.");
+                } finally {
+                  setPhotoPicking(false);
+                }
+              }}
+            >
+              <Ionicons name="camera-outline" size={21} color={colors.leaf} />
+              <ThemedText style={styles.methodLabel}>Take a photo</ThemedText>
+              {photoPicking || parseGroceryPhoto.isPending ? <ActivityIndicator size="small" color={colors.leaf} /> : <Ionicons name="chevron-forward" size={17} color={colors.muted} />}
+            </Pressable>
+          </BottomSheetView>
+        </BottomSheet>
+        <BottomSheet ref={pasteSheetRef} index={-1} enableDynamicSizing enablePanDownToClose backgroundStyle={styles.sheet}>
+          <BottomSheetView style={[styles.manualSheet, { width: windowWidth }]}>
+            <View style={styles.sheetHeader}><ThemedText style={styles.sheetTitle}>Paste your ingredients</ThemedText><Pressable onPress={() => pasteSheetRef.current?.close()}><Ionicons name="close" size={22} color={colors.ink} /></Pressable></View>
+            <ThemedText style={styles.sheetHint}>Yuzu will split the text into grocery items for you.</ThemedText>
+            <TextInput value={pastedIngredients} onChangeText={setPastedIngredients} multiline textAlignVertical="top" placeholder="2 onions\n1 cup rice\nsalt to taste" placeholderTextColor={colors.muted} style={styles.pasteInput} />
+            <Pressable style={[styles.saveButton, parseGroceryText.isPending && styles.disabled]} disabled={parseGroceryText.isPending || !pastedIngredients.trim()} onPress={() => parseGroceryText.mutate(pastedIngredients.trim(), { onSuccess: (result) => { setPastedIngredients(""); pasteSheetRef.current?.close(); toast.success(`${result.count} grocery items added`); }, onError: (error) => toast.error(error.message) })}>{parseGroceryText.isPending ? <ActivityIndicator color="#FFFFFF" /> : <ThemedText style={styles.saveButtonLabel}>Parse and add</ThemedText>}</Pressable>
+          </BottomSheetView>
+        </BottomSheet>
         <BottomSheet ref={manualSheetRef} index={-1} enableDynamicSizing enablePanDownToClose backgroundStyle={styles.sheet}>
           <BottomSheetView style={[styles.manualSheet, { width: windowWidth }]}>
             <View style={styles.sheetHeader}>
@@ -153,25 +200,15 @@ export default function GroceriesScreen() {
   );
 }
 
-function EmptyGroceries({ onAddManual }: { onAddManual: () => void }) {
+function EmptyGroceries({ onAdd }: { onAdd: () => void }) {
   return (
     <View style={styles.emptyState}>
       <View style={styles.emptyIcon}><Ionicons name="cart-outline" size={42} color={colors.leaf} /></View>
       <ThemedText style={styles.emptyTitle}>Your grocery list is empty</ThemedText>
       <ThemedText style={styles.emptyBody}>Add ingredients from a saved recipe and we’ll organize your shopping trip for you.</ThemedText>
-      <Pressable style={styles.emptyManualButton} onPress={() => router.push("/recipes")} accessibilityRole="button" accessibilityLabel="Add ingredients from a recipe">
-        <Ionicons name="add" size={19} color={colors.leaf} />
-        <ThemedText style={styles.emptyManualLabel}>Add from a recipe</ThemedText>
-        <Ionicons name="arrow-forward-outline" size={17} color={colors.leaf} />
-      </Pressable>
-      <View style={styles.orRow}>
-        <View style={styles.orLine} />
-        <ThemedText style={styles.orLabel}>or</ThemedText>
-        <View style={styles.orLine} />
-      </View>
-      <Pressable style={styles.emptyButton} onPress={onAddManual} accessibilityRole="button" accessibilityLabel="Add grocery item manually">
+      <Pressable style={styles.emptyButton} onPress={onAdd} accessibilityRole="button" accessibilityLabel="Add grocery item">
         <Ionicons name="create-outline" size={17} color="#FFFFFF" />
-        <ThemedText style={styles.emptyButtonLabel}>Add manually</ThemedText>
+        <ThemedText style={styles.emptyButtonLabel}>Add grocery item</ThemedText>
       </Pressable>
     </View>
   );
@@ -260,11 +297,6 @@ const styles = StyleSheet.create({
   emptyBody: { color: colors.muted, fontSize: 13, lineHeight: 19, textAlign: "center", maxWidth: 306 },
   emptyButton: { width: 242, height: 52, borderRadius: 16, backgroundColor: colors.tomato, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 9, marginTop: 8 },
   emptyButtonLabel: { color: "#FFFFFF", fontSize: 13, fontWeight: "900" },
-  emptyManualButton: { width: 242, height: 48, borderRadius: 15, borderWidth: 1, borderColor: colors.leaf, backgroundColor: "#FFFFFF", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7 },
-  emptyManualLabel: { color: colors.leaf, fontSize: 13, fontWeight: "800" },
-  orRow: { width: 242, flexDirection: "row", alignItems: "center", gap: 10 },
-  orLine: { flex: 1, height: 1, backgroundColor: colors.line },
-  orLabel: { color: colors.muted, fontSize: 12, fontWeight: "700" },
   confirmBackdrop: { flex: 1, backgroundColor: "#14231A66", alignItems: "center", justifyContent: "center", padding: 20 },
   confirmModal: { width: "100%", maxWidth: 360, borderRadius: 24, backgroundColor: "#FCFBF8", padding: 22, alignItems: "center", gap: 9 },
   confirmIcon: { width: 52, height: 52, borderRadius: 26, backgroundColor: "#FCE2D8", alignItems: "center", justifyContent: "center", marginBottom: 2 },
@@ -278,6 +310,10 @@ const styles = StyleSheet.create({
   disabled: { opacity: 0.45 },
   sheet: { backgroundColor: "#FCFBF8", borderTopLeftRadius: 24, borderTopRightRadius: 24 },
   manualSheet: { alignSelf: "stretch", padding: 20, paddingBottom: 28, gap: 12 },
+  sheetHint: { color: colors.muted, fontSize: 14, marginBottom: 4 },
+  methodOption: { minHeight: 54, borderRadius: 14, borderWidth: 1, borderColor: colors.line, backgroundColor: "#FFFFFF", paddingHorizontal: 14, flexDirection: "row", alignItems: "center", gap: 10 },
+  methodLabel: { color: colors.ink, fontSize: 15, fontWeight: "700", flex: 1 },
+  pasteInput: { minHeight: 140, width: "100%", borderRadius: 14, borderWidth: 1, borderColor: colors.line, backgroundColor: "#FFFFFF", padding: 14, color: colors.ink, fontSize: 15 },
   sheetHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   sheetTitle: { color: colors.ink, fontSize: 20, fontWeight: "900" },
   inputRow: { flexDirection: "row", gap: 9 },

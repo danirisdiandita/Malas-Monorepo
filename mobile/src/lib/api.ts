@@ -303,6 +303,20 @@ export async function addGrocery(input: { name: string; quantity?: number; unit?
   return body;
 }
 
+export async function parseGroceries(text: string): Promise<{ count: number }> {
+  const response = await authenticatedFetch('/groceries/parse', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }) });
+  if (!response.ok) throw new Error((await response.text()) || 'Unable to parse groceries.');
+  return response.json();
+}
+
+export async function parseGroceryPhoto(uri: string): Promise<{ count: number }> {
+  const form = new FormData();
+  form.append('photo', { uri, name: 'groceries.jpg', type: 'image/jpeg' } as unknown as Blob);
+  const response = await authenticatedFetch('/groceries/parse-photo', { method: 'POST', body: form });
+  if (!response.ok) throw new Error((await response.text()) || 'Unable to parse grocery photo.');
+  return response.json();
+}
+
 export async function clearGroceries(): Promise<void> {
   const response = await authenticatedFetch('/groceries', { method: 'DELETE' });
   if (!response.ok) throw new Error((await response.text()) || 'Unable to clear groceries.');

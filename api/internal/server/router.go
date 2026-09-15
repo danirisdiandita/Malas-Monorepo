@@ -69,6 +69,8 @@ func NewRouter(deps Dependencies) http.Handler {
 		r.Delete("/folders/{id}", folders.Delete(deps.DB))
 		r.Get("/groceries", groceries.List(deps.DB, deps.Imports.Storage))
 		r.Post("/groceries", groceries.AddManual(deps.DB))
+		r.Post("/groceries/parse", groceries.ParseText(deps.Imports))
+		r.Post("/groceries/parse-photo", groceries.ParsePhoto(deps.Imports))
 		r.Get("/meal-calendar", planner.List(deps.DB, deps.Imports.Storage))
 		r.Post("/meal-calendar", planner.Create(deps.DB))
 		r.Delete("/groceries", groceries.Clear(deps.DB))

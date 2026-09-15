@@ -1,17 +1,24 @@
 package groceries
 
 import (
+	"bytes"
+	"encoding/base64"
 	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
 	"strings"
 
 	"github.com/danirisdiandita/malas-monorepo/api/ent"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/grocery"
 	"github.com/danirisdiandita/malas-monorepo/api/ent/recipe"
+	"github.com/danirisdiandita/malas-monorepo/api/internal/imports"
 	"github.com/danirisdiandita/malas-monorepo/api/internal/recipes"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 )
+
+const groceryParseSchema = `{"type":"object","additionalProperties":false,"properties":{"items":{"type":"array","items":{"type":"object","additionalProperties":false,"properties":{"name":{"type":"string"},"quantity":{"type":["number","null"]},"unit":{"type":"string"}},"required":["name","quantity","unit"]}}},"required":["items"]}`
 
 type Item struct {
 	ID             string   `json:"id"`
@@ -56,6 +63,163 @@ func AddManual(db *ent.Client) http.HandlerFunc {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(Item{ID: row.ID.String(), Name: row.Name, Unit: row.Unit, Quantity: row.Quantity, Checked: row.Checked})
+	}
+}
+
+func ParseText(p *imports.Pipeline) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		owner, err := recipes.OwnerID(p.DB, r)
+		if err != nil {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+		var input struct {
+			Text string `json:"text"`
+		}
+		if json.NewDecoder(http.MaxBytesReader(w, r.Body, 64<<10)).Decode(&input) != nil || strings.TrimSpace(input.Text) == "" {
+			http.Error(w, "text is required", http.StatusBadRequest)
+			return
+		}
+		payload := map[string]any{"model": p.Config.OpenRouterModel, "messages": []any{
+			map[string]string{"role": "system", "content": "Parse the user's pasted grocery list into individual grocery items. Ignore headings and unrelated text. Preserve explicit quantities and units; use null quantity when missing and an empty unit when missing. Return only the JSON schema output."},
+			map[string]string{"role": "user", "content": input.Text},
+		}, "response_format": map[string]any{"type": "json_schema", "json_schema": map[string]any{"name": "groceries", "strict": true, "schema": json.RawMessage(groceryParseSchema)}}}
+		data, _ := json.Marshal(payload)
+		req, err := http.NewRequestWithContext(r.Context(), http.MethodPost, p.Config.OpenRouterURL, bytes.NewReader(data))
+		if err != nil {
+			http.Error(w, "unable to parse groceries", 500)
+			return
+		}
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", "Bearer "+p.Config.OpenRouterKey)
+		resp, err := p.Client.Do(req)
+		if err != nil {
+			http.Error(w, "unable to parse groceries", 502)
+			return
+		}
+		defer resp.Body.Close()
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 2<<20))
+		if resp.StatusCode != http.StatusOK {
+			http.Error(w, fmt.Sprintf("OpenRouter returned HTTP %d", resp.StatusCode), 502)
+			return
+		}
+		var envelope struct {
+			Choices []struct {
+				Message struct {
+					Content string `json:"content"`
+				} `json:"message"`
+			} `json:"choices"`
+		}
+		var result struct {
+			Items []struct {
+				Name     string   `json:"name"`
+				Quantity *float64 `json:"quantity"`
+				Unit     string   `json:"unit"`
+			} `json:"items"`
+		}
+		if json.Unmarshal(body, &envelope) != nil || len(envelope.Choices) != 1 || json.Unmarshal([]byte(envelope.Choices[0].Message.Content), &result) != nil {
+			http.Error(w, "invalid grocery parser response", 502)
+			return
+		}
+		creates := make([]*ent.GroceryCreate, 0, len(result.Items))
+		for _, item := range result.Items {
+			if name := strings.TrimSpace(item.Name); name != "" {
+				create := p.DB.Grocery.Create().SetUserID(owner).SetName(name).SetUnit(strings.TrimSpace(item.Unit))
+				if item.Quantity != nil {
+					create.SetQuantity(*item.Quantity)
+				}
+				creates = append(creates, create)
+			}
+		}
+		if len(creates) > 0 {
+			if _, err = p.DB.Grocery.CreateBulk(creates...).Save(r.Context()); err != nil {
+				http.Error(w, "unable to save groceries", 500)
+				return
+			}
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]int{"count": len(creates)})
+	}
+}
+
+func ParsePhoto(p *imports.Pipeline) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		owner, err := recipes.OwnerID(p.DB, r)
+		if err != nil {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+		r.Body = http.MaxBytesReader(w, r.Body, 15<<20)
+		file, _, err := r.FormFile("photo")
+		if err != nil {
+			http.Error(w, "photo is required", http.StatusBadRequest)
+			return
+		}
+		defer file.Close()
+		image, err := io.ReadAll(file)
+		if err != nil || len(image) == 0 {
+			http.Error(w, "invalid photo", http.StatusBadRequest)
+			return
+		}
+		payload := map[string]any{"model": p.Config.OpenRouterModel, "messages": []any{
+			map[string]string{"role": "system", "content": "Read this grocery-list photo and extract every visible grocery item. Ignore unrelated text. Preserve quantities and units; use null quantity when missing and an empty unit when missing. Return only the JSON schema output."},
+			map[string]any{"role": "user", "content": []any{map[string]string{"type": "text", "text": "Parse the groceries in this image."}, map[string]any{"type": "image_url", "image_url": map[string]string{"url": "data:image/jpeg;base64," + base64.StdEncoding.EncodeToString(image)}}}},
+		}, "response_format": map[string]any{"type": "json_schema", "json_schema": map[string]any{"name": "groceries", "strict": true, "schema": json.RawMessage(groceryParseSchema)}}}
+		data, _ := json.Marshal(payload)
+		req, err := http.NewRequestWithContext(r.Context(), http.MethodPost, p.Config.OpenRouterURL, bytes.NewReader(data))
+		if err != nil {
+			http.Error(w, "unable to parse groceries", 500)
+			return
+		}
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", "Bearer "+p.Config.OpenRouterKey)
+		resp, err := p.Client.Do(req)
+		if err != nil {
+			http.Error(w, "unable to parse groceries", 502)
+			return
+		}
+		defer resp.Body.Close()
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 2<<20))
+		if resp.StatusCode != http.StatusOK {
+			http.Error(w, fmt.Sprintf("OpenRouter returned HTTP %d", resp.StatusCode), 502)
+			return
+		}
+		var envelope struct {
+			Choices []struct {
+				Message struct {
+					Content string `json:"content"`
+				} `json:"message"`
+			} `json:"choices"`
+		}
+		var result struct {
+			Items []struct {
+				Name     string   `json:"name"`
+				Quantity *float64 `json:"quantity"`
+				Unit     string   `json:"unit"`
+			} `json:"items"`
+		}
+		if json.Unmarshal(body, &envelope) != nil || len(envelope.Choices) != 1 || json.Unmarshal([]byte(envelope.Choices[0].Message.Content), &result) != nil {
+			http.Error(w, "invalid grocery parser response", 502)
+			return
+		}
+		creates := make([]*ent.GroceryCreate, 0, len(result.Items))
+		for _, item := range result.Items {
+			if name := strings.TrimSpace(item.Name); name != "" {
+				create := p.DB.Grocery.Create().SetUserID(owner).SetName(name).SetUnit(strings.TrimSpace(item.Unit))
+				if item.Quantity != nil {
+					create.SetQuantity(*item.Quantity)
+				}
+				creates = append(creates, create)
+			}
+		}
+		if len(creates) > 0 {
+			if _, err = p.DB.Grocery.CreateBulk(creates...).Save(r.Context()); err != nil {
+				http.Error(w, "unable to save groceries", 500)
+				return
+			}
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]int{"count": len(creates)})
 	}
 }
 
