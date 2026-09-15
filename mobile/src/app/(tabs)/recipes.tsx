@@ -436,7 +436,7 @@ export default function Tab1Screen() {
               icon={index % 2 === 0 ? "nutrition-outline" : "leaf-outline"}
               list={viewMode === "list"}
               meta={[
-                item.process_minutes > 0 ? `${item.process_minutes} min` : "",
+                item.process_minutes > 0 ? `${item.process_minutes} min` : "Time TBD",
                 item.difficulty,
                 item.servings > 0 ? `${item.servings} servings` : "",
               ]
