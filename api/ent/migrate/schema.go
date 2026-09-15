@@ -312,8 +312,13 @@ var (
 		Indexes: []*schema.Index{
 			{
 				Name:    "subscription_user_id",
-				Unique:  false,
+				Unique:  true,
 				Columns: []*schema.Column{SubscriptionsColumns[11]},
+			},
+			{
+				Name:    "subscription_rc_app_user_id",
+				Unique:  true,
+				Columns: []*schema.Column{SubscriptionsColumns[4]},
 			},
 		},
 	}

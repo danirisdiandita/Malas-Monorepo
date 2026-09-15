@@ -56,6 +56,9 @@ const openAPISpec = `{
     },
     "/webhooks/import": {
       "post": {"summary": "Receive an Apify completion webhook", "parameters": [{"name": "X-Webhook-Secret", "in": "header", "required": true, "schema": {"type": "string"}}], "requestBody": {"required": true, "content": {"application/json": {"schema": {"type": "object"}}}}, "responses": {"200": {"description": "Webhook processed"}, "204": {"description": "Unknown source skipped"}}}
+    },
+    "/webhooks/revenuecat": {
+      "post": {"summary": "Receive a RevenueCat subscription webhook", "parameters": [{"name": "Authorization", "in": "header", "required": true, "schema": {"type": "string", "example": "Bearer your-revenuecat-webhook-secret"}}], "requestBody": {"required": true, "content": {"application/json": {"schema": {"type": "object"}}}}, "responses": {"200": {"description": "Webhook processed"}, "401": {"description": "Unauthorized"}}}
     }
   },
   "components": {

@@ -8,26 +8,29 @@ import (
 )
 
 type Config struct {
-	Environment          string
-	Port                 string
-	DatabaseURL          string
-	GoogleClientID       string
-	GoogleClientSecret   string
-	AppleClientID        string
-	AppleTeamID          string
-	AppleKeyID           string
-	ApplePrivateKeyPath  string
-	AuthURL              string
-	JWTSecret            string
-	WebhookDebugDir      string
-	WebhookDebugSecret   string
-	Apify                ApifyConfig
-	ImportWebhookSecret  string
-	OpenRouterKey        string
-	OpenRouterModel      string
-	OpenRouterVideoModel string
-	OpenRouterURL        string
-	S3                   S3Config
+	Environment             string
+	Port                    string
+	DatabaseURL             string
+	GoogleClientID          string
+	GoogleClientSecret      string
+	AppleClientID           string
+	AppleTeamID             string
+	AppleKeyID              string
+	ApplePrivateKeyPath     string
+	AuthURL                 string
+	JWTSecret               string
+	WebhookDebugDir         string
+	WebhookDebugSecret      string
+	Apify                   ApifyConfig
+	ImportWebhookSecret     string
+	RevenueCatWebhookSecret string
+	RevenueCatAPIKey        string
+	RevenueCatProjectID     string
+	OpenRouterKey           string
+	OpenRouterModel         string
+	OpenRouterVideoModel    string
+	OpenRouterURL           string
+	S3                      S3Config
 }
 
 type S3Config struct {
@@ -81,11 +84,14 @@ func LoadConfig() *Config {
 			YouTubeTranscriptActorURL: getEnv("APIFY_YOUTUBE_TRANSCRIPT_ACTOR_URL", "https://api.apify.com/v2/actors/johnvc~youtubetranscripts/runs"),
 			WebActorURL:               getEnv("APIFY_WEB_ACTOR_URL", "https://api.apify.com/v2/actors/apify~website-content-crawler/runs"),
 		},
-		ImportWebhookSecret:  getEnv("IMPORT_WEBHOOK_SECRET", getEnv("TIKTOK_WEBHOOK_SECRET", "")),
-		OpenRouterKey:        getEnv("OPENROUTER_API_KEY", ""),
-		OpenRouterModel:      getEnv("OPENROUTER_MODEL", "openai/gpt-5.6-luna"),
-		OpenRouterVideoModel: getEnv("OPENROUTER_VIDEO_MODEL", "google/gemini-3.5-flash-lite"),
-		OpenRouterURL:        getEnv("OPENROUTER_URL", "https://openrouter.ai/api/v1/chat/completions"),
+		ImportWebhookSecret:     getEnv("IMPORT_WEBHOOK_SECRET", getEnv("TIKTOK_WEBHOOK_SECRET", "")),
+		RevenueCatWebhookSecret: getEnv("REVENUECAT_WEBHOOK_SECRET", ""),
+		RevenueCatAPIKey:        getEnv("REVENUECAT_API_KEY", ""),
+		RevenueCatProjectID:     getEnv("REVENUECAT_PROJECT_ID", ""),
+		OpenRouterKey:           getEnv("OPENROUTER_API_KEY", ""),
+		OpenRouterModel:         getEnv("OPENROUTER_MODEL", "openai/gpt-5.6-luna"),
+		OpenRouterVideoModel:    getEnv("OPENROUTER_VIDEO_MODEL", "google/gemini-3.5-flash-lite"),
+		OpenRouterURL:           getEnv("OPENROUTER_URL", "https://openrouter.ai/api/v1/chat/completions"),
 		S3: S3Config{Endpoint: getEnv("S3_ENDPOINT", ""), PublicEndpoint: getEnv("S3_PUBLIC_ENDPOINT", ""), Port: getEnv("S3_PORT", ""),
 			AccessKey: getEnv("S3_ACCESS_KEY", ""), SecretKey: getEnv("S3_SECRET_KEY", ""),
 			Region: getEnv("S3_REGION", "auto"), Bucket: getEnv("S3_BUCKET", ""),

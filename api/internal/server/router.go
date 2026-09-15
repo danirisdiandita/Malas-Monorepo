@@ -51,6 +51,7 @@ func NewRouter(deps Dependencies) http.Handler {
 	r.Get("/swagger/openapi.json", handlers.HandleOpenAPI)
 	r.Post("/webhooks/debug", handlers.HandleDebugWebhook(deps.Config.WebhookDebugDir, deps.Config.WebhookDebugSecret))
 	r.Post("/webhooks/import", deps.Imports.Receive)
+	r.Post("/webhooks/revenuecat", handlers.HandleRevenueCatWebhook(deps.DB, deps.Config.RevenueCatWebhookSecret, deps.Config.RevenueCatProjectID, deps.Config.RevenueCatAPIKey))
 
 	r.Group(func(r chi.Router) {
 		r.Use(deps.Authenticate)

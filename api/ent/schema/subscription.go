@@ -35,5 +35,8 @@ func (Subscription) Edges() []ent.Edge {
 }
 
 func (Subscription) Indexes() []ent.Index {
-	return []ent.Index{index.Fields("user_id")}
+	return []ent.Index{
+		index.Fields("user_id").Unique(),
+		index.Fields("rc_app_user_id").Unique(),
+	}
 }
