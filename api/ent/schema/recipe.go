@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"entgo.io/ent"
 	"entgo.io/ent/dialect"
+	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
@@ -45,7 +46,7 @@ func (Recipe) Fields() []ent.Field {
 
 func (Recipe) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("user", User.Type).Ref("recipes").Field("user_id").Unique().Required(),
+		edge.From("user", User.Type).Ref("recipes").Field("user_id").Unique().Required().Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.From("folder", Folder.Type).Ref("recipes").Field("folder_id").Unique(),
 		edge.To("groceries", Grocery.Type),
 		edge.To("meal_calendar_entries", MealCalendarEntry.Type),

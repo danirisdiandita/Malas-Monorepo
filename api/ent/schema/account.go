@@ -2,6 +2,7 @@ package schema
 
 import (
 	"entgo.io/ent"
+	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
@@ -21,7 +22,7 @@ func (Account) Fields() []ent.Field {
 
 func (Account) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("user", User.Type).Ref("accounts").Unique().Required(),
+		edge.From("user", User.Type).Ref("accounts").Unique().Required().Annotations(entsql.OnDelete(entsql.Cascade)),
 	}
 }
 

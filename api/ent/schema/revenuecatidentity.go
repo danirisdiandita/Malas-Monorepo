@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"entgo.io/ent"
+	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
@@ -22,7 +23,7 @@ func (RevenueCatIdentity) Fields() []ent.Field {
 
 func (RevenueCatIdentity) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("user", User.Type).Ref("revenue_cat_identities").Field("user_id").Unique().Required(),
+		edge.From("user", User.Type).Ref("revenue_cat_identities").Field("user_id").Unique().Required().Annotations(entsql.OnDelete(entsql.Cascade)),
 	}
 }
 

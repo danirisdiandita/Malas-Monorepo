@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"entgo.io/ent"
+	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 )
@@ -23,5 +24,5 @@ func (Session) Fields() []ent.Field {
 }
 
 func (Session) Edges() []ent.Edge {
-	return []ent.Edge{edge.From("user", User.Type).Ref("sessions").Unique().Required()}
+	return []ent.Edge{edge.From("user", User.Type).Ref("sessions").Unique().Required().Annotations(entsql.OnDelete(entsql.Cascade))}
 }
