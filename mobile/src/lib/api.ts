@@ -166,6 +166,16 @@ export function getCurrentUser(): Promise<User> {
   return currentUserRequest;
 }
 
+export async function getRevenueCatAppUserId(): Promise<string> {
+  const response = await authenticatedFetch('/revenuecat/app-user-id', { method: 'POST' });
+  if (!response.ok) throw new Error('Unable to create the RevenueCat identity.');
+  const body = (await response.json()) as { rc_app_user_id?: unknown };
+  if (typeof body.rc_app_user_id !== 'string' || body.rc_app_user_id === '') {
+    throw new Error('The API returned an invalid RevenueCat identity.');
+  }
+  return body.rc_app_user_id;
+}
+
 export async function getRecipes(page = 1, search = '', folderID = ''): Promise<RecipePage> {
   const params = new URLSearchParams({ page: String(page), page_size: '5' });
   if (search.trim()) params.set('q', search.trim());

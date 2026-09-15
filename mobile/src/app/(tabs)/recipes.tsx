@@ -24,6 +24,7 @@ import { toast } from "sonner-native";
 import { ThemedText } from "@/components/themed-text";
 import { RecipeImage } from "@/components/recipe-image";
 import { ThemedView } from "@/components/themed-view";
+import { UpgradeSubscriptionSheet } from "@/components/upgrade-subscription-sheet";
 import { useCurrentUser } from "@/hooks/use-auth";
 import { useRecipes } from "@/hooks/use-recipes";
 import {
@@ -54,6 +55,7 @@ function getTimeGreeting() {
 
 export default function Tab1Screen() {
   const folderSheetRef = useRef<BottomSheetMethods>(null);
+  const upgradeSheetRef = useRef<BottomSheetMethods>(null);
   const [createFolderOpen, setCreateFolderOpen] = useState(false);
   const [folderID, setFolderID] = useState("");
   const [folderSearch, setFolderSearch] = useState("");
@@ -127,7 +129,7 @@ export default function Tab1Screen() {
                   <Pressable
                     accessibilityRole="button"
                     style={styles.upgradeButton}
-                    onPress={() => router.push("/paywall")}
+                    onPress={() => upgradeSheetRef.current?.present()}
                   >
                     <ThemedText style={styles.upgradeLabel}>
                       Upgrade to Pro
@@ -473,6 +475,7 @@ export default function Tab1Screen() {
           }
         />
       </SafeAreaView>
+      <UpgradeSubscriptionSheet sheetRef={upgradeSheetRef} />
     </ThemedView>
   );
 }
