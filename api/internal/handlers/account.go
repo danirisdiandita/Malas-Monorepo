@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/danirisdiandita/malas-monorepo/api/ent"
@@ -22,6 +23,7 @@ func HandleDeleteAccount(client *ent.Client) http.HandlerFunc {
 			return
 		}
 		if err := client.User.DeleteOneID(owner.ID).Exec(r.Context()); err != nil {
+			log.Printf("delete account %d failed: %v", owner.ID, err)
 			http.Error(w, "unable to delete account", http.StatusInternalServerError)
 			return
 		}
