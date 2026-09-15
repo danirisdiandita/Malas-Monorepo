@@ -347,11 +347,11 @@ export async function importPhoto(uri: string, preferences: ImportPreferences = 
   return body as PhotoImportResult;
 }
 
-export async function importText(text: string, preferences: ImportPreferences = {}): Promise<PhotoImportResult> {
+export async function importText(text: string, preferences: ImportPreferences = {}, mode: 'text' | 'ai' = 'text'): Promise<PhotoImportResult> {
   const response = await authenticatedFetch('/imports/text', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text, ...preferences }),
+    body: JSON.stringify({ text, mode, ...preferences }),
   });
   if (!response.ok) throw new Error((await response.text()) || 'Unable to create recipe from text.');
   const body: unknown = await response.json();

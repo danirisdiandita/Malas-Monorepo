@@ -18,7 +18,7 @@ export default function DirectProcessingScreen() {
     const preferences = { language_code: language_code || undefined, folder_id: folder_id || undefined };
     const onSuccess = (result: { recipe_id: string }) => router.replace({ pathname: "/recipe/[id]", params: { id: result.recipe_id } });
     if (kind === "photo") photo.mutate({ uri: value, preferences }, { onSuccess });
-    else text.mutate({ text: value, preferences }, { onSuccess });
+    else text.mutate({ text: value, mode: kind === "ai" ? "ai" : "text", preferences }, { onSuccess });
   }, [folder_id, kind, language_code, photo, text, value]);
   const error = photo.error || text.error;
   return (

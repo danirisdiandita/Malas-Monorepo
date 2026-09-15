@@ -29,7 +29,6 @@ const colors = {
   sun: "#F8C957",
 };
 const options = [
-  ["search-outline", "Search by ingredients"],
   ["logo-tiktok", "From social"],
   ["image-outline", "Photo · screenshot or saved photo"],
   ["camera-outline", "Photo of a dish"],
@@ -43,7 +42,6 @@ export default function AddTabScreen() {
   const choosingOption = useRef(false);
   const cameraRef = useRef<CameraViewType>(null);
   const [recipeLink, setRecipeLink] = useState("");
-  const [inputMode, setInputMode] = useState<"link" | "ai" | "text">("link");
   const [cameraOpen, setCameraOpen] = useState(false);
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
   const leaveCamera = () => {
@@ -52,7 +50,6 @@ export default function AddTabScreen() {
   };
   useFocusEffect(
     useCallback(() => {
-      setInputMode("link");
       const timer = setTimeout(() => sheetRef.current?.present(), 0);
       return () => clearTimeout(timer);
     }, []),
@@ -71,11 +68,17 @@ export default function AddTabScreen() {
       return;
     }
     if (label === "Ask AI for a recipe") {
-      setInputMode("ai");
+      setRecipeLink("");
+      choosingOption.current = true;
+      sheetRef.current?.close();
+      router.push({ pathname: "/recipe/preferences", params: { kind: "ai", value: "" } });
       return;
     }
     if (label === "Paste a recipe · from text") {
-      setInputMode("text");
+      setRecipeLink("");
+      choosingOption.current = true;
+      sheetRef.current?.close();
+      router.push({ pathname: "/recipe/preferences", params: { kind: "text", value: recipeLink.trim() } });
       return;
     }
     if (label === "Photo · screenshot or saved photo") {
@@ -100,7 +103,7 @@ export default function AddTabScreen() {
     setRecipeLink("");
     choosingOption.current = true;
     sheetRef.current?.close();
-    router.push({ pathname: "/recipe/preferences", params: { kind: inputMode === "link" ? "link" : "text", value } });
+    router.push({ pathname: "/recipe/preferences", params: { kind: "link", value } });
   };
   const handleSheetClose = () => {
     if (choosingOption.current) {
@@ -171,7 +174,7 @@ export default function AddTabScreen() {
             <View style={styles.linkRow}>
               <TextInput
                 accessibilityLabel="Recipe link"
-                placeholder={inputMode === "ai" ? "What food you want? we will make a recipe for you" : inputMode === "text" ? "Paste a recipe from text" : "Paste the recipe link"}
+                placeholder="Paste the recipe link"
                 placeholderTextColor={colors.muted}
                 value={recipeLink}
                 onChangeText={setRecipeLink}

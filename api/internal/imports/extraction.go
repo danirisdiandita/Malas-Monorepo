@@ -177,6 +177,8 @@ func (p *Pipeline) extract(ctx context.Context, final map[string]any, photo, vid
 	}
 	if contentType, _ := final["content_type"].(string); contentType == string(WebPage) {
 		systemPrompt += " This is website content: identify the main recipe or recipes belonging to the requested page. Ignore navigation, recommendations, related or similar recipes, advertisements, subscription prompts, author/profile text, and unrelated recipe names mentioned elsewhere on the page. Do not extract recipes merely because their names or ingredients appear in a similar-recipes section."
+	} else if contentType == "ai" {
+		systemPrompt += " This is a user's food request or recipe idea, not an existing recipe. Generate a complete practical recipe based on the request. Use the food name and every useful constraint mentioned by the user, infer reasonable ingredients and quantities, and provide clear instructions, servings, preparation time, difficulty, tags, and notes. Do not merely describe the dish. If the request is broad, choose one strong recipe."
 	}
 	content := []any{
 		map[string]any{"type": "text", "text": string(text)},

@@ -48,6 +48,7 @@ func (p *Pipeline) HandleText(w http.ResponseWriter, r *http.Request) {
 	}
 	var body struct {
 		Text         string `json:"text"`
+		Mode         string `json:"mode"`
 		LanguageCode string `json:"language_code"`
 		FolderID     string `json:"folder_id"`
 	}
@@ -55,12 +56,19 @@ func (p *Pipeline) HandleText(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "text is required", http.StatusBadRequest)
 		return
 	}
+	if body.Mode == "" {
+		body.Mode = "text"
+	}
+	if body.Mode != "text" && body.Mode != "ai" {
+		http.Error(w, "invalid text import mode", http.StatusBadRequest)
+		return
+	}
 	prefs, err := pipelinePreferences(r, p, body.LanguageCode, body.FolderID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	p.saveDirect(w, r, "text", map[string]any{"content_type": "text", "description": body.Text, "language_code": prefs.LanguageCode}, nil, prefs)
+	p.saveDirect(w, r, body.Mode, map[string]any{"content_type": body.Mode, "description": body.Text, "language_code": prefs.LanguageCode}, nil, prefs)
 }
 
 func (p *Pipeline) saveDirect(w http.ResponseWriter, r *http.Request, source string, final map[string]any, input []byte, prefs ImportPreferences) {

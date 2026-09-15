@@ -11,5 +11,5 @@ export function useImportPhoto() {
 }
 
 export function useImportText() {
-  return useMutation({ mutationFn: ({ text, preferences }: { text: string; preferences?: { language_code?: string; folder_id?: string } }) => importText(text, preferences) });
+  return useMutation({ mutationFn: ({ text, mode, preferences }: { text: string; mode?: 'text' | 'ai'; preferences?: { language_code?: string; folder_id?: string } }) => importText(text, preferences, mode) });
 }

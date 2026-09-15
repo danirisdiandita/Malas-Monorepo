@@ -141,6 +141,7 @@ export default function RecipePreferencesScreen() {
   }>();
   const [languageCode, setLanguageCode] = useState("");
   const [folderID, setFolderID] = useState("");
+  const [textValue, setTextValue] = useState(value ?? "");
   const [selector, setSelector] = useState<"language" | "folder" | null>(null);
   const [languageSearch, setLanguageSearch] = useState("");
   const [createFolderOpen, setCreateFolderOpen] = useState(false);
@@ -177,13 +178,17 @@ export default function RecipePreferencesScreen() {
   const continueImport = () => {
     if (submitting || link.isPending) return;
     setError("");
+    if ((kind === "text" || kind === "ai") && !textValue.trim()) {
+      setError(kind === "ai" ? "Tell Yuzu what you want to eat first." : "Paste the recipe text before continuing.");
+      return;
+    }
     setSubmitting(true);
     if (kind !== "link") {
       router.push({
         pathname: "/recipe/direct-processing",
         params: {
           kind,
-          value,
+          value: kind === "text" || kind === "ai" ? textValue.trim() : value,
           language_code: languageCode,
           folder_id: folderID,
         },
@@ -227,6 +232,22 @@ export default function RecipePreferencesScreen() {
             Choose the recipe language and folder before Yuzu starts creating
             it.
           </ThemedText>
+
+          {kind === "text" || kind === "ai" ? (
+            <>
+              <ThemedText style={styles.sectionTitle}>{kind === "ai" ? "Recipe idea" : "Recipe text"}</ThemedText>
+              <TextInput
+                accessibilityLabel={kind === "ai" ? "Recipe idea" : "Recipe text"}
+                placeholder={kind === "ai" ? "What food do you want? Tell Yuzu anything you are craving." : "Paste ingredients, instructions, or the whole recipe"}
+                placeholderTextColor={colors.muted}
+                value={textValue}
+                onChangeText={setTextValue}
+                multiline
+                textAlignVertical="top"
+                style={styles.recipeTextInput}
+              />
+            </>
+          ) : null}
 
           <ThemedText style={styles.sectionTitle}>Language</ThemedText>
           <Pressable
@@ -598,6 +619,17 @@ const styles = StyleSheet.create({
     color: colors.ink,
     fontSize: 15,
     marginBottom: 10,
+  },
+  recipeTextInput: {
+    minHeight: 150,
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderRadius: 13,
+    backgroundColor: "#fff",
+    padding: 14,
+    color: colors.ink,
+    fontSize: 15,
+    lineHeight: 21,
   },
   modalBackdrop: {
     flex: 1,
