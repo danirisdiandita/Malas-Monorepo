@@ -149,7 +149,7 @@ export default function AddTabScreen({ embedded = false, onClose }: { embedded?:
       <BottomSheet
         ref={sheetRef}
         index={-1}
-        enableDynamicSizing
+        snapPoints={["100%"]}
         enablePanDownToClose
         onClose={handleSheetClose}
         backgroundStyle={styles.sheet}
@@ -165,8 +165,7 @@ export default function AddTabScreen({ embedded = false, onClose }: { embedded?:
               </ThemedText>
               <Pressable
                 accessibilityLabel="Close add recipe sheet"
-                hitSlop={8}
-                style={styles.closeButton}
+                hitSlop={10}
                 onPress={() => sheetRef.current?.close()}
               >
                 <Ionicons name="close" size={22} color={colors.ink} />
@@ -243,30 +242,25 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
   },
   sheetView: { flex: 1 },
-  sheetContent: { padding: 20, gap: 10 },
+  sheetContent: { padding: 20, gap: 10, alignItems: "center" },
   sheetHeader: {
+    width: "100%",
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     justifyContent: "space-between",
     gap: 12,
   },
   sheetTitle: { color: colors.ink, fontSize: 22, fontWeight: "800", flex: 1 },
-  closeButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.sage,
-  },
-  sheetBody: { color: colors.muted, fontSize: 16, marginBottom: 5 },
+  sheetBody: { width: "100%", color: colors.muted, fontSize: 16, marginBottom: 5 },
   linkRow: {
+    width: "100%",
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
     marginBottom: 2,
   },
   or: {
+    width: "100%",
     color: colors.muted,
     fontSize: 14,
     fontWeight: "700",
@@ -296,6 +290,7 @@ const styles = StyleSheet.create({
   processLabel: { color: "#fff", fontSize: 15, fontWeight: "800" },
   error: { color: colors.tomato, fontSize: 13 },
   option: {
+    width: "100%",
     minHeight: 52,
     borderRadius: 13,
     backgroundColor: "#fff",
