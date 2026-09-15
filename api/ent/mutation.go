@@ -7097,7 +7097,7 @@ func (m *SubscriptionMutation) Status() (r string, exists bool) {
 // OldStatus returns the old "status" field's value of the Subscription entity.
 // If the Subscription object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *SubscriptionMutation) OldStatus(ctx context.Context) (v string, err error) {
+func (m *SubscriptionMutation) OldStatus(ctx context.Context) (v *string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
 	}
@@ -7111,9 +7111,22 @@ func (m *SubscriptionMutation) OldStatus(ctx context.Context) (v string, err err
 	return oldValue.Status, nil
 }
 
+// ClearStatus clears the value of the "status" field.
+func (m *SubscriptionMutation) ClearStatus() {
+	m.status = nil
+	m.clearedFields[subscription.FieldStatus] = struct{}{}
+}
+
+// StatusCleared returns if the "status" field was cleared in this mutation.
+func (m *SubscriptionMutation) StatusCleared() bool {
+	_, ok := m.clearedFields[subscription.FieldStatus]
+	return ok
+}
+
 // ResetStatus resets all changes to the "status" field.
 func (m *SubscriptionMutation) ResetStatus() {
 	m.status = nil
+	delete(m.clearedFields, subscription.FieldStatus)
 }
 
 // SetRcAppUserID sets the "rc_app_user_id" field.
@@ -7133,7 +7146,7 @@ func (m *SubscriptionMutation) RcAppUserID() (r string, exists bool) {
 // OldRcAppUserID returns the old "rc_app_user_id" field's value of the Subscription entity.
 // If the Subscription object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *SubscriptionMutation) OldRcAppUserID(ctx context.Context) (v string, err error) {
+func (m *SubscriptionMutation) OldRcAppUserID(ctx context.Context) (v *string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldRcAppUserID is only allowed on UpdateOne operations")
 	}
@@ -7147,9 +7160,22 @@ func (m *SubscriptionMutation) OldRcAppUserID(ctx context.Context) (v string, er
 	return oldValue.RcAppUserID, nil
 }
 
+// ClearRcAppUserID clears the value of the "rc_app_user_id" field.
+func (m *SubscriptionMutation) ClearRcAppUserID() {
+	m.rc_app_user_id = nil
+	m.clearedFields[subscription.FieldRcAppUserID] = struct{}{}
+}
+
+// RcAppUserIDCleared returns if the "rc_app_user_id" field was cleared in this mutation.
+func (m *SubscriptionMutation) RcAppUserIDCleared() bool {
+	_, ok := m.clearedFields[subscription.FieldRcAppUserID]
+	return ok
+}
+
 // ResetRcAppUserID resets all changes to the "rc_app_user_id" field.
 func (m *SubscriptionMutation) ResetRcAppUserID() {
 	m.rc_app_user_id = nil
+	delete(m.clearedFields, subscription.FieldRcAppUserID)
 }
 
 // SetRcEnvironment sets the "rc_environment" field.
@@ -7169,7 +7195,7 @@ func (m *SubscriptionMutation) RcEnvironment() (r string, exists bool) {
 // OldRcEnvironment returns the old "rc_environment" field's value of the Subscription entity.
 // If the Subscription object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *SubscriptionMutation) OldRcEnvironment(ctx context.Context) (v string, err error) {
+func (m *SubscriptionMutation) OldRcEnvironment(ctx context.Context) (v *string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldRcEnvironment is only allowed on UpdateOne operations")
 	}
@@ -7183,9 +7209,22 @@ func (m *SubscriptionMutation) OldRcEnvironment(ctx context.Context) (v string, 
 	return oldValue.RcEnvironment, nil
 }
 
+// ClearRcEnvironment clears the value of the "rc_environment" field.
+func (m *SubscriptionMutation) ClearRcEnvironment() {
+	m.rc_environment = nil
+	m.clearedFields[subscription.FieldRcEnvironment] = struct{}{}
+}
+
+// RcEnvironmentCleared returns if the "rc_environment" field was cleared in this mutation.
+func (m *SubscriptionMutation) RcEnvironmentCleared() bool {
+	_, ok := m.clearedFields[subscription.FieldRcEnvironment]
+	return ok
+}
+
 // ResetRcEnvironment resets all changes to the "rc_environment" field.
 func (m *SubscriptionMutation) ResetRcEnvironment() {
 	m.rc_environment = nil
+	delete(m.clearedFields, subscription.FieldRcEnvironment)
 }
 
 // SetRcProductID sets the "rc_product_id" field.
@@ -7205,7 +7244,7 @@ func (m *SubscriptionMutation) RcProductID() (r string, exists bool) {
 // OldRcProductID returns the old "rc_product_id" field's value of the Subscription entity.
 // If the Subscription object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *SubscriptionMutation) OldRcProductID(ctx context.Context) (v string, err error) {
+func (m *SubscriptionMutation) OldRcProductID(ctx context.Context) (v *string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldRcProductID is only allowed on UpdateOne operations")
 	}
@@ -7219,9 +7258,22 @@ func (m *SubscriptionMutation) OldRcProductID(ctx context.Context) (v string, er
 	return oldValue.RcProductID, nil
 }
 
+// ClearRcProductID clears the value of the "rc_product_id" field.
+func (m *SubscriptionMutation) ClearRcProductID() {
+	m.rc_product_id = nil
+	m.clearedFields[subscription.FieldRcProductID] = struct{}{}
+}
+
+// RcProductIDCleared returns if the "rc_product_id" field was cleared in this mutation.
+func (m *SubscriptionMutation) RcProductIDCleared() bool {
+	_, ok := m.clearedFields[subscription.FieldRcProductID]
+	return ok
+}
+
 // ResetRcProductID resets all changes to the "rc_product_id" field.
 func (m *SubscriptionMutation) ResetRcProductID() {
 	m.rc_product_id = nil
+	delete(m.clearedFields, subscription.FieldRcProductID)
 }
 
 // SetRcStore sets the "rc_store" field.
@@ -7241,7 +7293,7 @@ func (m *SubscriptionMutation) RcStore() (r string, exists bool) {
 // OldRcStore returns the old "rc_store" field's value of the Subscription entity.
 // If the Subscription object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *SubscriptionMutation) OldRcStore(ctx context.Context) (v string, err error) {
+func (m *SubscriptionMutation) OldRcStore(ctx context.Context) (v *string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldRcStore is only allowed on UpdateOne operations")
 	}
@@ -7255,9 +7307,22 @@ func (m *SubscriptionMutation) OldRcStore(ctx context.Context) (v string, err er
 	return oldValue.RcStore, nil
 }
 
+// ClearRcStore clears the value of the "rc_store" field.
+func (m *SubscriptionMutation) ClearRcStore() {
+	m.rc_store = nil
+	m.clearedFields[subscription.FieldRcStore] = struct{}{}
+}
+
+// RcStoreCleared returns if the "rc_store" field was cleared in this mutation.
+func (m *SubscriptionMutation) RcStoreCleared() bool {
+	_, ok := m.clearedFields[subscription.FieldRcStore]
+	return ok
+}
+
 // ResetRcStore resets all changes to the "rc_store" field.
 func (m *SubscriptionMutation) ResetRcStore() {
 	m.rc_store = nil
+	delete(m.clearedFields, subscription.FieldRcStore)
 }
 
 // SetCredit sets the "credit" field.
@@ -7681,6 +7746,21 @@ func (m *SubscriptionMutation) ClearedFields() []string {
 	if m.FieldCleared(subscription.FieldEndDate) {
 		fields = append(fields, subscription.FieldEndDate)
 	}
+	if m.FieldCleared(subscription.FieldStatus) {
+		fields = append(fields, subscription.FieldStatus)
+	}
+	if m.FieldCleared(subscription.FieldRcAppUserID) {
+		fields = append(fields, subscription.FieldRcAppUserID)
+	}
+	if m.FieldCleared(subscription.FieldRcEnvironment) {
+		fields = append(fields, subscription.FieldRcEnvironment)
+	}
+	if m.FieldCleared(subscription.FieldRcProductID) {
+		fields = append(fields, subscription.FieldRcProductID)
+	}
+	if m.FieldCleared(subscription.FieldRcStore) {
+		fields = append(fields, subscription.FieldRcStore)
+	}
 	return fields
 }
 
@@ -7700,6 +7780,21 @@ func (m *SubscriptionMutation) ClearField(name string) error {
 		return nil
 	case subscription.FieldEndDate:
 		m.ClearEndDate()
+		return nil
+	case subscription.FieldStatus:
+		m.ClearStatus()
+		return nil
+	case subscription.FieldRcAppUserID:
+		m.ClearRcAppUserID()
+		return nil
+	case subscription.FieldRcEnvironment:
+		m.ClearRcEnvironment()
+		return nil
+	case subscription.FieldRcProductID:
+		m.ClearRcProductID()
+		return nil
+	case subscription.FieldRcStore:
+		m.ClearRcStore()
 		return nil
 	}
 	return fmt.Errorf("unknown Subscription nullable field %s", name)

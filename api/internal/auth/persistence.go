@@ -101,6 +101,7 @@ func PersistUser(ctx context.Context, client *ent.Client, providerUser token.Use
 	}
 
 	var local *ent.User
+	createdUser := false
 	if providerUser.Email != "" {
 		local, err = tx.User.Query().Where(user.Email(providerUser.Email)).Only(ctx)
 		if err != nil && !ent.IsNotFound(err) {
@@ -123,6 +124,7 @@ func PersistUser(ctx context.Context, client *ent.Client, providerUser token.Use
 			_ = tx.Rollback()
 			return nil, err
 		}
+		createdUser = true
 	}
 
 	_, err = tx.Account.Create().
@@ -133,6 +135,12 @@ func PersistUser(ctx context.Context, client *ent.Client, providerUser token.Use
 	if err != nil {
 		_ = tx.Rollback()
 		return nil, err
+	}
+	if createdUser {
+		if _, err = tx.Subscription.Create().SetUserID(local.ID).SetCredit(3).Save(ctx); err != nil {
+			_ = tx.Rollback()
+			return nil, err
+		}
 	}
 	if err = tx.Commit(); err != nil {
 		return nil, err

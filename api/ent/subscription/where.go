@@ -285,6 +285,16 @@ func StatusHasSuffix(v string) predicate.Subscription {
 	return predicate.Subscription(sql.FieldHasSuffix(FieldStatus, v))
 }
 
+// StatusIsNil applies the IsNil predicate on the "status" field.
+func StatusIsNil() predicate.Subscription {
+	return predicate.Subscription(sql.FieldIsNull(FieldStatus))
+}
+
+// StatusNotNil applies the NotNil predicate on the "status" field.
+func StatusNotNil() predicate.Subscription {
+	return predicate.Subscription(sql.FieldNotNull(FieldStatus))
+}
+
 // StatusEqualFold applies the EqualFold predicate on the "status" field.
 func StatusEqualFold(v string) predicate.Subscription {
 	return predicate.Subscription(sql.FieldEqualFold(FieldStatus, v))
@@ -348,6 +358,16 @@ func RcAppUserIDHasPrefix(v string) predicate.Subscription {
 // RcAppUserIDHasSuffix applies the HasSuffix predicate on the "rc_app_user_id" field.
 func RcAppUserIDHasSuffix(v string) predicate.Subscription {
 	return predicate.Subscription(sql.FieldHasSuffix(FieldRcAppUserID, v))
+}
+
+// RcAppUserIDIsNil applies the IsNil predicate on the "rc_app_user_id" field.
+func RcAppUserIDIsNil() predicate.Subscription {
+	return predicate.Subscription(sql.FieldIsNull(FieldRcAppUserID))
+}
+
+// RcAppUserIDNotNil applies the NotNil predicate on the "rc_app_user_id" field.
+func RcAppUserIDNotNil() predicate.Subscription {
+	return predicate.Subscription(sql.FieldNotNull(FieldRcAppUserID))
 }
 
 // RcAppUserIDEqualFold applies the EqualFold predicate on the "rc_app_user_id" field.
@@ -415,6 +435,16 @@ func RcEnvironmentHasSuffix(v string) predicate.Subscription {
 	return predicate.Subscription(sql.FieldHasSuffix(FieldRcEnvironment, v))
 }
 
+// RcEnvironmentIsNil applies the IsNil predicate on the "rc_environment" field.
+func RcEnvironmentIsNil() predicate.Subscription {
+	return predicate.Subscription(sql.FieldIsNull(FieldRcEnvironment))
+}
+
+// RcEnvironmentNotNil applies the NotNil predicate on the "rc_environment" field.
+func RcEnvironmentNotNil() predicate.Subscription {
+	return predicate.Subscription(sql.FieldNotNull(FieldRcEnvironment))
+}
+
 // RcEnvironmentEqualFold applies the EqualFold predicate on the "rc_environment" field.
 func RcEnvironmentEqualFold(v string) predicate.Subscription {
 	return predicate.Subscription(sql.FieldEqualFold(FieldRcEnvironment, v))
@@ -480,6 +510,16 @@ func RcProductIDHasSuffix(v string) predicate.Subscription {
 	return predicate.Subscription(sql.FieldHasSuffix(FieldRcProductID, v))
 }
 
+// RcProductIDIsNil applies the IsNil predicate on the "rc_product_id" field.
+func RcProductIDIsNil() predicate.Subscription {
+	return predicate.Subscription(sql.FieldIsNull(FieldRcProductID))
+}
+
+// RcProductIDNotNil applies the NotNil predicate on the "rc_product_id" field.
+func RcProductIDNotNil() predicate.Subscription {
+	return predicate.Subscription(sql.FieldNotNull(FieldRcProductID))
+}
+
 // RcProductIDEqualFold applies the EqualFold predicate on the "rc_product_id" field.
 func RcProductIDEqualFold(v string) predicate.Subscription {
 	return predicate.Subscription(sql.FieldEqualFold(FieldRcProductID, v))
@@ -543,6 +583,16 @@ func RcStoreHasPrefix(v string) predicate.Subscription {
 // RcStoreHasSuffix applies the HasSuffix predicate on the "rc_store" field.
 func RcStoreHasSuffix(v string) predicate.Subscription {
 	return predicate.Subscription(sql.FieldHasSuffix(FieldRcStore, v))
+}
+
+// RcStoreIsNil applies the IsNil predicate on the "rc_store" field.
+func RcStoreIsNil() predicate.Subscription {
+	return predicate.Subscription(sql.FieldIsNull(FieldRcStore))
+}
+
+// RcStoreNotNil applies the NotNil predicate on the "rc_store" field.
+func RcStoreNotNil() predicate.Subscription {
+	return predicate.Subscription(sql.FieldNotNull(FieldRcStore))
 }
 
 // RcStoreEqualFold applies the EqualFold predicate on the "rc_store" field.

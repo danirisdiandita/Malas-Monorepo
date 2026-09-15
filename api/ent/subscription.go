@@ -25,15 +25,15 @@ type Subscription struct {
 	// EndDate holds the value of the "end_date" field.
 	EndDate *time.Time `json:"end_date,omitempty"`
 	// Status holds the value of the "status" field.
-	Status string `json:"status,omitempty"`
+	Status *string `json:"status,omitempty"`
 	// RcAppUserID holds the value of the "rc_app_user_id" field.
-	RcAppUserID string `json:"rc_app_user_id,omitempty"`
+	RcAppUserID *string `json:"rc_app_user_id,omitempty"`
 	// RcEnvironment holds the value of the "rc_environment" field.
-	RcEnvironment string `json:"rc_environment,omitempty"`
+	RcEnvironment *string `json:"rc_environment,omitempty"`
 	// RcProductID holds the value of the "rc_product_id" field.
-	RcProductID string `json:"rc_product_id,omitempty"`
+	RcProductID *string `json:"rc_product_id,omitempty"`
 	// RcStore holds the value of the "rc_store" field.
-	RcStore string `json:"rc_store,omitempty"`
+	RcStore *string `json:"rc_store,omitempty"`
 	// Credit holds the value of the "credit" field.
 	Credit int `json:"credit,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
@@ -122,31 +122,36 @@ func (_m *Subscription) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field status", values[i])
 			} else if value.Valid {
-				_m.Status = value.String
+				_m.Status = new(string)
+				*_m.Status = value.String
 			}
 		case subscription.FieldRcAppUserID:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field rc_app_user_id", values[i])
 			} else if value.Valid {
-				_m.RcAppUserID = value.String
+				_m.RcAppUserID = new(string)
+				*_m.RcAppUserID = value.String
 			}
 		case subscription.FieldRcEnvironment:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field rc_environment", values[i])
 			} else if value.Valid {
-				_m.RcEnvironment = value.String
+				_m.RcEnvironment = new(string)
+				*_m.RcEnvironment = value.String
 			}
 		case subscription.FieldRcProductID:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field rc_product_id", values[i])
 			} else if value.Valid {
-				_m.RcProductID = value.String
+				_m.RcProductID = new(string)
+				*_m.RcProductID = value.String
 			}
 		case subscription.FieldRcStore:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field rc_store", values[i])
 			} else if value.Valid {
-				_m.RcStore = value.String
+				_m.RcStore = new(string)
+				*_m.RcStore = value.String
 			}
 		case subscription.FieldCredit:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -220,20 +225,30 @@ func (_m *Subscription) String() string {
 		builder.WriteString(v.Format(time.ANSIC))
 	}
 	builder.WriteString(", ")
-	builder.WriteString("status=")
-	builder.WriteString(_m.Status)
+	if v := _m.Status; v != nil {
+		builder.WriteString("status=")
+		builder.WriteString(*v)
+	}
 	builder.WriteString(", ")
-	builder.WriteString("rc_app_user_id=")
-	builder.WriteString(_m.RcAppUserID)
+	if v := _m.RcAppUserID; v != nil {
+		builder.WriteString("rc_app_user_id=")
+		builder.WriteString(*v)
+	}
 	builder.WriteString(", ")
-	builder.WriteString("rc_environment=")
-	builder.WriteString(_m.RcEnvironment)
+	if v := _m.RcEnvironment; v != nil {
+		builder.WriteString("rc_environment=")
+		builder.WriteString(*v)
+	}
 	builder.WriteString(", ")
-	builder.WriteString("rc_product_id=")
-	builder.WriteString(_m.RcProductID)
+	if v := _m.RcProductID; v != nil {
+		builder.WriteString("rc_product_id=")
+		builder.WriteString(*v)
+	}
 	builder.WriteString(", ")
-	builder.WriteString("rc_store=")
-	builder.WriteString(_m.RcStore)
+	if v := _m.RcStore; v != nil {
+		builder.WriteString("rc_store=")
+		builder.WriteString(*v)
+	}
 	builder.WriteString(", ")
 	builder.WriteString("credit=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Credit))

@@ -97,6 +97,12 @@ func (_u *SubscriptionUpdate) SetNillableStatus(v *string) *SubscriptionUpdate {
 	return _u
 }
 
+// ClearStatus clears the value of the "status" field.
+func (_u *SubscriptionUpdate) ClearStatus() *SubscriptionUpdate {
+	_u.mutation.ClearStatus()
+	return _u
+}
+
 // SetRcAppUserID sets the "rc_app_user_id" field.
 func (_u *SubscriptionUpdate) SetRcAppUserID(v string) *SubscriptionUpdate {
 	_u.mutation.SetRcAppUserID(v)
@@ -108,6 +114,12 @@ func (_u *SubscriptionUpdate) SetNillableRcAppUserID(v *string) *SubscriptionUpd
 	if v != nil {
 		_u.SetRcAppUserID(*v)
 	}
+	return _u
+}
+
+// ClearRcAppUserID clears the value of the "rc_app_user_id" field.
+func (_u *SubscriptionUpdate) ClearRcAppUserID() *SubscriptionUpdate {
+	_u.mutation.ClearRcAppUserID()
 	return _u
 }
 
@@ -125,6 +137,12 @@ func (_u *SubscriptionUpdate) SetNillableRcEnvironment(v *string) *SubscriptionU
 	return _u
 }
 
+// ClearRcEnvironment clears the value of the "rc_environment" field.
+func (_u *SubscriptionUpdate) ClearRcEnvironment() *SubscriptionUpdate {
+	_u.mutation.ClearRcEnvironment()
+	return _u
+}
+
 // SetRcProductID sets the "rc_product_id" field.
 func (_u *SubscriptionUpdate) SetRcProductID(v string) *SubscriptionUpdate {
 	_u.mutation.SetRcProductID(v)
@@ -139,6 +157,12 @@ func (_u *SubscriptionUpdate) SetNillableRcProductID(v *string) *SubscriptionUpd
 	return _u
 }
 
+// ClearRcProductID clears the value of the "rc_product_id" field.
+func (_u *SubscriptionUpdate) ClearRcProductID() *SubscriptionUpdate {
+	_u.mutation.ClearRcProductID()
+	return _u
+}
+
 // SetRcStore sets the "rc_store" field.
 func (_u *SubscriptionUpdate) SetRcStore(v string) *SubscriptionUpdate {
 	_u.mutation.SetRcStore(v)
@@ -150,6 +174,12 @@ func (_u *SubscriptionUpdate) SetNillableRcStore(v *string) *SubscriptionUpdate 
 	if v != nil {
 		_u.SetRcStore(*v)
 	}
+	return _u
+}
+
+// ClearRcStore clears the value of the "rc_store" field.
+func (_u *SubscriptionUpdate) ClearRcStore() *SubscriptionUpdate {
+	_u.mutation.ClearRcStore()
 	return _u
 }
 
@@ -281,17 +311,32 @@ func (_u *SubscriptionUpdate) sqlSave(ctx context.Context) (_node int, err error
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(subscription.FieldStatus, field.TypeString, value)
 	}
+	if _u.mutation.StatusCleared() {
+		_spec.ClearField(subscription.FieldStatus, field.TypeString)
+	}
 	if value, ok := _u.mutation.RcAppUserID(); ok {
 		_spec.SetField(subscription.FieldRcAppUserID, field.TypeString, value)
+	}
+	if _u.mutation.RcAppUserIDCleared() {
+		_spec.ClearField(subscription.FieldRcAppUserID, field.TypeString)
 	}
 	if value, ok := _u.mutation.RcEnvironment(); ok {
 		_spec.SetField(subscription.FieldRcEnvironment, field.TypeString, value)
 	}
+	if _u.mutation.RcEnvironmentCleared() {
+		_spec.ClearField(subscription.FieldRcEnvironment, field.TypeString)
+	}
 	if value, ok := _u.mutation.RcProductID(); ok {
 		_spec.SetField(subscription.FieldRcProductID, field.TypeString, value)
 	}
+	if _u.mutation.RcProductIDCleared() {
+		_spec.ClearField(subscription.FieldRcProductID, field.TypeString)
+	}
 	if value, ok := _u.mutation.RcStore(); ok {
 		_spec.SetField(subscription.FieldRcStore, field.TypeString, value)
+	}
+	if _u.mutation.RcStoreCleared() {
+		_spec.ClearField(subscription.FieldRcStore, field.TypeString)
 	}
 	if value, ok := _u.mutation.Credit(); ok {
 		_spec.SetField(subscription.FieldCredit, field.TypeInt, value)
@@ -422,6 +467,12 @@ func (_u *SubscriptionUpdateOne) SetNillableStatus(v *string) *SubscriptionUpdat
 	return _u
 }
 
+// ClearStatus clears the value of the "status" field.
+func (_u *SubscriptionUpdateOne) ClearStatus() *SubscriptionUpdateOne {
+	_u.mutation.ClearStatus()
+	return _u
+}
+
 // SetRcAppUserID sets the "rc_app_user_id" field.
 func (_u *SubscriptionUpdateOne) SetRcAppUserID(v string) *SubscriptionUpdateOne {
 	_u.mutation.SetRcAppUserID(v)
@@ -433,6 +484,12 @@ func (_u *SubscriptionUpdateOne) SetNillableRcAppUserID(v *string) *Subscription
 	if v != nil {
 		_u.SetRcAppUserID(*v)
 	}
+	return _u
+}
+
+// ClearRcAppUserID clears the value of the "rc_app_user_id" field.
+func (_u *SubscriptionUpdateOne) ClearRcAppUserID() *SubscriptionUpdateOne {
+	_u.mutation.ClearRcAppUserID()
 	return _u
 }
 
@@ -450,6 +507,12 @@ func (_u *SubscriptionUpdateOne) SetNillableRcEnvironment(v *string) *Subscripti
 	return _u
 }
 
+// ClearRcEnvironment clears the value of the "rc_environment" field.
+func (_u *SubscriptionUpdateOne) ClearRcEnvironment() *SubscriptionUpdateOne {
+	_u.mutation.ClearRcEnvironment()
+	return _u
+}
+
 // SetRcProductID sets the "rc_product_id" field.
 func (_u *SubscriptionUpdateOne) SetRcProductID(v string) *SubscriptionUpdateOne {
 	_u.mutation.SetRcProductID(v)
@@ -464,6 +527,12 @@ func (_u *SubscriptionUpdateOne) SetNillableRcProductID(v *string) *Subscription
 	return _u
 }
 
+// ClearRcProductID clears the value of the "rc_product_id" field.
+func (_u *SubscriptionUpdateOne) ClearRcProductID() *SubscriptionUpdateOne {
+	_u.mutation.ClearRcProductID()
+	return _u
+}
+
 // SetRcStore sets the "rc_store" field.
 func (_u *SubscriptionUpdateOne) SetRcStore(v string) *SubscriptionUpdateOne {
 	_u.mutation.SetRcStore(v)
@@ -475,6 +544,12 @@ func (_u *SubscriptionUpdateOne) SetNillableRcStore(v *string) *SubscriptionUpda
 	if v != nil {
 		_u.SetRcStore(*v)
 	}
+	return _u
+}
+
+// ClearRcStore clears the value of the "rc_store" field.
+func (_u *SubscriptionUpdateOne) ClearRcStore() *SubscriptionUpdateOne {
+	_u.mutation.ClearRcStore()
 	return _u
 }
 
@@ -636,17 +711,32 @@ func (_u *SubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *Subscripti
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(subscription.FieldStatus, field.TypeString, value)
 	}
+	if _u.mutation.StatusCleared() {
+		_spec.ClearField(subscription.FieldStatus, field.TypeString)
+	}
 	if value, ok := _u.mutation.RcAppUserID(); ok {
 		_spec.SetField(subscription.FieldRcAppUserID, field.TypeString, value)
+	}
+	if _u.mutation.RcAppUserIDCleared() {
+		_spec.ClearField(subscription.FieldRcAppUserID, field.TypeString)
 	}
 	if value, ok := _u.mutation.RcEnvironment(); ok {
 		_spec.SetField(subscription.FieldRcEnvironment, field.TypeString, value)
 	}
+	if _u.mutation.RcEnvironmentCleared() {
+		_spec.ClearField(subscription.FieldRcEnvironment, field.TypeString)
+	}
 	if value, ok := _u.mutation.RcProductID(); ok {
 		_spec.SetField(subscription.FieldRcProductID, field.TypeString, value)
 	}
+	if _u.mutation.RcProductIDCleared() {
+		_spec.ClearField(subscription.FieldRcProductID, field.TypeString)
+	}
 	if value, ok := _u.mutation.RcStore(); ok {
 		_spec.SetField(subscription.FieldRcStore, field.TypeString, value)
+	}
+	if _u.mutation.RcStoreCleared() {
+		_spec.ClearField(subscription.FieldRcStore, field.TypeString)
 	}
 	if value, ok := _u.mutation.Credit(); ok {
 		_spec.SetField(subscription.FieldCredit, field.TypeInt, value)

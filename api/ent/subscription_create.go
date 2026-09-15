@@ -61,9 +61,25 @@ func (_c *SubscriptionCreate) SetStatus(v string) *SubscriptionCreate {
 	return _c
 }
 
+// SetNillableStatus sets the "status" field if the given value is not nil.
+func (_c *SubscriptionCreate) SetNillableStatus(v *string) *SubscriptionCreate {
+	if v != nil {
+		_c.SetStatus(*v)
+	}
+	return _c
+}
+
 // SetRcAppUserID sets the "rc_app_user_id" field.
 func (_c *SubscriptionCreate) SetRcAppUserID(v string) *SubscriptionCreate {
 	_c.mutation.SetRcAppUserID(v)
+	return _c
+}
+
+// SetNillableRcAppUserID sets the "rc_app_user_id" field if the given value is not nil.
+func (_c *SubscriptionCreate) SetNillableRcAppUserID(v *string) *SubscriptionCreate {
+	if v != nil {
+		_c.SetRcAppUserID(*v)
+	}
 	return _c
 }
 
@@ -73,15 +89,39 @@ func (_c *SubscriptionCreate) SetRcEnvironment(v string) *SubscriptionCreate {
 	return _c
 }
 
+// SetNillableRcEnvironment sets the "rc_environment" field if the given value is not nil.
+func (_c *SubscriptionCreate) SetNillableRcEnvironment(v *string) *SubscriptionCreate {
+	if v != nil {
+		_c.SetRcEnvironment(*v)
+	}
+	return _c
+}
+
 // SetRcProductID sets the "rc_product_id" field.
 func (_c *SubscriptionCreate) SetRcProductID(v string) *SubscriptionCreate {
 	_c.mutation.SetRcProductID(v)
 	return _c
 }
 
+// SetNillableRcProductID sets the "rc_product_id" field if the given value is not nil.
+func (_c *SubscriptionCreate) SetNillableRcProductID(v *string) *SubscriptionCreate {
+	if v != nil {
+		_c.SetRcProductID(*v)
+	}
+	return _c
+}
+
 // SetRcStore sets the "rc_store" field.
 func (_c *SubscriptionCreate) SetRcStore(v string) *SubscriptionCreate {
 	_c.mutation.SetRcStore(v)
+	return _c
+}
+
+// SetNillableRcStore sets the "rc_store" field if the given value is not nil.
+func (_c *SubscriptionCreate) SetNillableRcStore(v *string) *SubscriptionCreate {
+	if v != nil {
+		_c.SetRcStore(*v)
+	}
 	return _c
 }
 
@@ -174,21 +214,6 @@ func (_c *SubscriptionCreate) check() error {
 	if _, ok := _c.mutation.UserID(); !ok {
 		return &ValidationError{Name: "user_id", err: errors.New(`ent: missing required field "Subscription.user_id"`)}
 	}
-	if _, ok := _c.mutation.Status(); !ok {
-		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "Subscription.status"`)}
-	}
-	if _, ok := _c.mutation.RcAppUserID(); !ok {
-		return &ValidationError{Name: "rc_app_user_id", err: errors.New(`ent: missing required field "Subscription.rc_app_user_id"`)}
-	}
-	if _, ok := _c.mutation.RcEnvironment(); !ok {
-		return &ValidationError{Name: "rc_environment", err: errors.New(`ent: missing required field "Subscription.rc_environment"`)}
-	}
-	if _, ok := _c.mutation.RcProductID(); !ok {
-		return &ValidationError{Name: "rc_product_id", err: errors.New(`ent: missing required field "Subscription.rc_product_id"`)}
-	}
-	if _, ok := _c.mutation.RcStore(); !ok {
-		return &ValidationError{Name: "rc_store", err: errors.New(`ent: missing required field "Subscription.rc_store"`)}
-	}
 	if _, ok := _c.mutation.Credit(); !ok {
 		return &ValidationError{Name: "credit", err: errors.New(`ent: missing required field "Subscription.credit"`)}
 	}
@@ -237,23 +262,23 @@ func (_c *SubscriptionCreate) createSpec() (*Subscription, *sqlgraph.CreateSpec)
 	}
 	if value, ok := _c.mutation.Status(); ok {
 		_spec.SetField(subscription.FieldStatus, field.TypeString, value)
-		_node.Status = value
+		_node.Status = &value
 	}
 	if value, ok := _c.mutation.RcAppUserID(); ok {
 		_spec.SetField(subscription.FieldRcAppUserID, field.TypeString, value)
-		_node.RcAppUserID = value
+		_node.RcAppUserID = &value
 	}
 	if value, ok := _c.mutation.RcEnvironment(); ok {
 		_spec.SetField(subscription.FieldRcEnvironment, field.TypeString, value)
-		_node.RcEnvironment = value
+		_node.RcEnvironment = &value
 	}
 	if value, ok := _c.mutation.RcProductID(); ok {
 		_spec.SetField(subscription.FieldRcProductID, field.TypeString, value)
-		_node.RcProductID = value
+		_node.RcProductID = &value
 	}
 	if value, ok := _c.mutation.RcStore(); ok {
 		_spec.SetField(subscription.FieldRcStore, field.TypeString, value)
-		_node.RcStore = value
+		_node.RcStore = &value
 	}
 	if value, ok := _c.mutation.Credit(); ok {
 		_spec.SetField(subscription.FieldCredit, field.TypeInt, value)
