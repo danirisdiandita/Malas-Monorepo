@@ -25,6 +25,7 @@ import { ThemedText } from "@/components/themed-text";
 import { RecipeImage } from "@/components/recipe-image";
 import { ThemedView } from "@/components/themed-view";
 import { UpgradeSubscriptionSheet } from "@/components/upgrade-subscription-sheet";
+import AddTabScreen from "@/app/(tabs)/add";
 import { useCurrentUser } from "@/hooks/use-auth";
 import { useRecipes } from "@/hooks/use-recipes";
 import {
@@ -61,6 +62,7 @@ export default function Tab1Screen() {
   const [folderSearch, setFolderSearch] = useState("");
   const [editingFolder, setEditingFolder] = useState<Folder | null>(null);
   const [deleteFolderTarget, setDeleteFolderTarget] = useState<Folder | null>(null);
+  const [addSheetOpen, setAddSheetOpen] = useState(false);
   const { viewMode, setViewMode } = useRecipePreferences();
   const [newFolder, setNewFolder] = useState("");
   const { width: windowWidth } = useWindowDimensions();
@@ -461,7 +463,7 @@ export default function Tab1Screen() {
                 No recipes found.
               </ThemedText>
             ) : (
-              <EmptyRecipes />
+              <EmptyRecipes onAdd={() => setAddSheetOpen(true)} />
             )
           }
           onEndReached={() => {
@@ -476,11 +478,12 @@ export default function Tab1Screen() {
         />
       </SafeAreaView>
       <UpgradeSubscriptionSheet sheetRef={upgradeSheetRef} />
+      {addSheetOpen ? <AddTabScreen embedded onClose={() => setAddSheetOpen(false)} /> : null}
     </ThemedView>
   );
 }
 
-function EmptyRecipes() {
+function EmptyRecipes({ onAdd }: { onAdd: () => void }) {
   return (
     <View style={styles.emptyState}>
       <ThemedText style={styles.emptyEyebrow}>START YOUR COLLECTION</ThemedText>
@@ -491,7 +494,7 @@ function EmptyRecipes() {
       <Pressable
         accessibilityRole="button"
         style={styles.emptyPrimary}
-        onPress={() => router.push("/add")}
+        onPress={onAdd}
       >
         <Ionicons name="add" size={19} color="#FFFFFF" />
         <ThemedText style={styles.emptyPrimaryLabel}>

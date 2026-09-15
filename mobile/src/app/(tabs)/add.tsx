@@ -37,7 +37,7 @@ const options = [
   // Chat with AI: reserved for the later conversational recipe feature.
 ];
 
-export default function AddTabScreen() {
+export default function AddTabScreen({ embedded = false, onClose }: { embedded?: boolean; onClose?: () => void }) {
   const sheetRef = useRef<BottomSheetMethods>(null);
   const choosingOption = useRef(false);
   const cameraRef = useRef<CameraViewType>(null);
@@ -110,6 +110,10 @@ export default function AddTabScreen() {
       choosingOption.current = false;
       return;
     }
+    if (embedded) {
+      onClose?.();
+      return;
+    }
     router.replace("/recipes");
   };
 
@@ -145,7 +149,7 @@ export default function AddTabScreen() {
       <BottomSheet
         ref={sheetRef}
         index={-1}
-        snapPoints={["70%"]}
+        enableDynamicSizing
         enablePanDownToClose
         onClose={handleSheetClose}
         backgroundStyle={styles.sheet}
