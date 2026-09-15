@@ -56,6 +56,7 @@ func NewRouter(deps Dependencies) http.Handler {
 		r.Use(deps.Authenticate)
 		r.Use(deps.RequireSession)
 		r.Get("/me", handlers.HandleMe(deps.DB))
+		r.Delete("/account", handlers.HandleDeleteAccount(deps.DB))
 		r.Get("/recipes", recipes.StoredList(deps.DB, deps.Imports.Storage))
 		r.Get("/recipes/{id}", recipes.StoredGet(deps.DB, deps.Imports.Storage))
 		r.Patch("/recipes/{id}/folder", recipes.MoveFolder(deps.DB))

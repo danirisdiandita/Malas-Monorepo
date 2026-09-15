@@ -435,3 +435,8 @@ export async function signOut() {
   await SecureStore.deleteItemAsync(tokenKey);
   await SecureStore.deleteItemAsync(refreshTokenKey);
 }
+
+export async function deleteAccount() {
+  const response = await authenticatedFetch('/account', { method: 'DELETE' });
+  if (!response.ok) throw new Error((await response.text()) || 'Unable to delete account.');
+}
