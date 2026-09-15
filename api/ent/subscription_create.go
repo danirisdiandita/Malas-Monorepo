@@ -125,6 +125,20 @@ func (_c *SubscriptionCreate) SetNillableRcStore(v *string) *SubscriptionCreate 
 	return _c
 }
 
+// SetLatestPaymentProvider sets the "latest_payment_provider" field.
+func (_c *SubscriptionCreate) SetLatestPaymentProvider(v string) *SubscriptionCreate {
+	_c.mutation.SetLatestPaymentProvider(v)
+	return _c
+}
+
+// SetNillableLatestPaymentProvider sets the "latest_payment_provider" field if the given value is not nil.
+func (_c *SubscriptionCreate) SetNillableLatestPaymentProvider(v *string) *SubscriptionCreate {
+	if v != nil {
+		_c.SetLatestPaymentProvider(*v)
+	}
+	return _c
+}
+
 // SetCredit sets the "credit" field.
 func (_c *SubscriptionCreate) SetCredit(v int) *SubscriptionCreate {
 	_c.mutation.SetCredit(v)
@@ -279,6 +293,10 @@ func (_c *SubscriptionCreate) createSpec() (*Subscription, *sqlgraph.CreateSpec)
 	if value, ok := _c.mutation.RcStore(); ok {
 		_spec.SetField(subscription.FieldRcStore, field.TypeString, value)
 		_node.RcStore = &value
+	}
+	if value, ok := _c.mutation.LatestPaymentProvider(); ok {
+		_spec.SetField(subscription.FieldLatestPaymentProvider, field.TypeString, value)
+		_node.LatestPaymentProvider = &value
 	}
 	if value, ok := _c.mutation.Credit(); ok {
 		_spec.SetField(subscription.FieldCredit, field.TypeInt, value)

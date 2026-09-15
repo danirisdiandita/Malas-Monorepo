@@ -47,16 +47,21 @@ REVENUECAT_PROJECT_ID
 The RevenueCat-related columns are compatible, but the two projects are not
 identical database schemas:
 
-- Lecture AI has a unique `user_id` and unique `rc_app_user_id`.
-- Malas currently allows duplicate subscription and identity rows.
-- Lecture AI includes `latest_payment_provider`; Malas does not.
+- Lecture AI and Malas subscriptions now enforce unique `user_id` and unique
+  non-null `rc_app_user_id`.
+- Malas `revenue_cat_identities` still needs separate cleanup/constraints if
+  identity uniqueness is required there.
+- Both subscription schemas include nullable `latest_payment_provider`.
 - The identity table names differ between projects.
 
 The Malas account-creation flow currently creates one subscription row with
 `credit = 3`, so the webhook updates that row by `user_id`. Before adding
-unique constraints, check for existing duplicates and clean them up in a
-separate migration. Do not add a uniqueness migration blindly because it can
-fail when duplicate data already exists.
+Migration `000014_subscription_unique_keys.sql` can fail if old duplicate
+subscription rows already exist. Check and clean duplicates before running it;
+do not delete them automatically.
+
+Migration `000015_subscription_latest_payment_provider.sql` adds the nullable
+payment-provider field.
 
 ## Verification
 

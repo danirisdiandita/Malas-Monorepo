@@ -6826,26 +6826,27 @@ func (m *SessionMutation) ResetEdge(name string) error {
 // SubscriptionMutation represents an operation that mutates the Subscription nodes in the graph.
 type SubscriptionMutation struct {
 	config
-	op             Op
-	typ            string
-	id             *int
-	start_date     *time.Time
-	end_date       *time.Time
-	status         *string
-	rc_app_user_id *string
-	rc_environment *string
-	rc_product_id  *string
-	rc_store       *string
-	credit         *int
-	addcredit      *int
-	created_at     *time.Time
-	updated_at     *time.Time
-	clearedFields  map[string]struct{}
-	user           *int
-	cleareduser    bool
-	done           bool
-	oldValue       func(context.Context) (*Subscription, error)
-	predicates     []predicate.Subscription
+	op                      Op
+	typ                     string
+	id                      *int
+	start_date              *time.Time
+	end_date                *time.Time
+	status                  *string
+	rc_app_user_id          *string
+	rc_environment          *string
+	rc_product_id           *string
+	rc_store                *string
+	latest_payment_provider *string
+	credit                  *int
+	addcredit               *int
+	created_at              *time.Time
+	updated_at              *time.Time
+	clearedFields           map[string]struct{}
+	user                    *int
+	cleareduser             bool
+	done                    bool
+	oldValue                func(context.Context) (*Subscription, error)
+	predicates              []predicate.Subscription
 }
 
 var _ ent.Mutation = (*SubscriptionMutation)(nil)
@@ -7325,6 +7326,55 @@ func (m *SubscriptionMutation) ResetRcStore() {
 	delete(m.clearedFields, subscription.FieldRcStore)
 }
 
+// SetLatestPaymentProvider sets the "latest_payment_provider" field.
+func (m *SubscriptionMutation) SetLatestPaymentProvider(s string) {
+	m.latest_payment_provider = &s
+}
+
+// LatestPaymentProvider returns the value of the "latest_payment_provider" field in the mutation.
+func (m *SubscriptionMutation) LatestPaymentProvider() (r string, exists bool) {
+	v := m.latest_payment_provider
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLatestPaymentProvider returns the old "latest_payment_provider" field's value of the Subscription entity.
+// If the Subscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubscriptionMutation) OldLatestPaymentProvider(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLatestPaymentProvider is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLatestPaymentProvider requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLatestPaymentProvider: %w", err)
+	}
+	return oldValue.LatestPaymentProvider, nil
+}
+
+// ClearLatestPaymentProvider clears the value of the "latest_payment_provider" field.
+func (m *SubscriptionMutation) ClearLatestPaymentProvider() {
+	m.latest_payment_provider = nil
+	m.clearedFields[subscription.FieldLatestPaymentProvider] = struct{}{}
+}
+
+// LatestPaymentProviderCleared returns if the "latest_payment_provider" field was cleared in this mutation.
+func (m *SubscriptionMutation) LatestPaymentProviderCleared() bool {
+	_, ok := m.clearedFields[subscription.FieldLatestPaymentProvider]
+	return ok
+}
+
+// ResetLatestPaymentProvider resets all changes to the "latest_payment_provider" field.
+func (m *SubscriptionMutation) ResetLatestPaymentProvider() {
+	m.latest_payment_provider = nil
+	delete(m.clearedFields, subscription.FieldLatestPaymentProvider)
+}
+
 // SetCredit sets the "credit" field.
 func (m *SubscriptionMutation) SetCredit(i int) {
 	m.credit = &i
@@ -7514,7 +7564,7 @@ func (m *SubscriptionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *SubscriptionMutation) Fields() []string {
-	fields := make([]string, 0, 11)
+	fields := make([]string, 0, 12)
 	if m.user != nil {
 		fields = append(fields, subscription.FieldUserID)
 	}
@@ -7538,6 +7588,9 @@ func (m *SubscriptionMutation) Fields() []string {
 	}
 	if m.rc_store != nil {
 		fields = append(fields, subscription.FieldRcStore)
+	}
+	if m.latest_payment_provider != nil {
+		fields = append(fields, subscription.FieldLatestPaymentProvider)
 	}
 	if m.credit != nil {
 		fields = append(fields, subscription.FieldCredit)
@@ -7572,6 +7625,8 @@ func (m *SubscriptionMutation) Field(name string) (ent.Value, bool) {
 		return m.RcProductID()
 	case subscription.FieldRcStore:
 		return m.RcStore()
+	case subscription.FieldLatestPaymentProvider:
+		return m.LatestPaymentProvider()
 	case subscription.FieldCredit:
 		return m.Credit()
 	case subscription.FieldCreatedAt:
@@ -7603,6 +7658,8 @@ func (m *SubscriptionMutation) OldField(ctx context.Context, name string) (ent.V
 		return m.OldRcProductID(ctx)
 	case subscription.FieldRcStore:
 		return m.OldRcStore(ctx)
+	case subscription.FieldLatestPaymentProvider:
+		return m.OldLatestPaymentProvider(ctx)
 	case subscription.FieldCredit:
 		return m.OldCredit(ctx)
 	case subscription.FieldCreatedAt:
@@ -7673,6 +7730,13 @@ func (m *SubscriptionMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetRcStore(v)
+		return nil
+	case subscription.FieldLatestPaymentProvider:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLatestPaymentProvider(v)
 		return nil
 	case subscription.FieldCredit:
 		v, ok := value.(int)
@@ -7761,6 +7825,9 @@ func (m *SubscriptionMutation) ClearedFields() []string {
 	if m.FieldCleared(subscription.FieldRcStore) {
 		fields = append(fields, subscription.FieldRcStore)
 	}
+	if m.FieldCleared(subscription.FieldLatestPaymentProvider) {
+		fields = append(fields, subscription.FieldLatestPaymentProvider)
+	}
 	return fields
 }
 
@@ -7796,6 +7863,9 @@ func (m *SubscriptionMutation) ClearField(name string) error {
 	case subscription.FieldRcStore:
 		m.ClearRcStore()
 		return nil
+	case subscription.FieldLatestPaymentProvider:
+		m.ClearLatestPaymentProvider()
+		return nil
 	}
 	return fmt.Errorf("unknown Subscription nullable field %s", name)
 }
@@ -7827,6 +7897,9 @@ func (m *SubscriptionMutation) ResetField(name string) error {
 		return nil
 	case subscription.FieldRcStore:
 		m.ResetRcStore()
+		return nil
+	case subscription.FieldLatestPaymentProvider:
+		m.ResetLatestPaymentProvider()
 		return nil
 	case subscription.FieldCredit:
 		m.ResetCredit()

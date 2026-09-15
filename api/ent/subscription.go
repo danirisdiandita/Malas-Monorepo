@@ -34,6 +34,8 @@ type Subscription struct {
 	RcProductID *string `json:"rc_product_id,omitempty"`
 	// RcStore holds the value of the "rc_store" field.
 	RcStore *string `json:"rc_store,omitempty"`
+	// LatestPaymentProvider holds the value of the "latest_payment_provider" field.
+	LatestPaymentProvider *string `json:"latest_payment_provider,omitempty"`
 	// Credit holds the value of the "credit" field.
 	Credit int `json:"credit,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
@@ -73,7 +75,7 @@ func (*Subscription) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case subscription.FieldID, subscription.FieldUserID, subscription.FieldCredit:
 			values[i] = new(sql.NullInt64)
-		case subscription.FieldStatus, subscription.FieldRcAppUserID, subscription.FieldRcEnvironment, subscription.FieldRcProductID, subscription.FieldRcStore:
+		case subscription.FieldStatus, subscription.FieldRcAppUserID, subscription.FieldRcEnvironment, subscription.FieldRcProductID, subscription.FieldRcStore, subscription.FieldLatestPaymentProvider:
 			values[i] = new(sql.NullString)
 		case subscription.FieldStartDate, subscription.FieldEndDate, subscription.FieldCreatedAt, subscription.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -152,6 +154,13 @@ func (_m *Subscription) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.RcStore = new(string)
 				*_m.RcStore = value.String
+			}
+		case subscription.FieldLatestPaymentProvider:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field latest_payment_provider", values[i])
+			} else if value.Valid {
+				_m.LatestPaymentProvider = new(string)
+				*_m.LatestPaymentProvider = value.String
 			}
 		case subscription.FieldCredit:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -247,6 +256,11 @@ func (_m *Subscription) String() string {
 	builder.WriteString(", ")
 	if v := _m.RcStore; v != nil {
 		builder.WriteString("rc_store=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.LatestPaymentProvider; v != nil {
+		builder.WriteString("latest_payment_provider=")
 		builder.WriteString(*v)
 	}
 	builder.WriteString(", ")

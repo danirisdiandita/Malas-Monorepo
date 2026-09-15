@@ -30,6 +30,8 @@ const (
 	FieldRcProductID = "rc_product_id"
 	// FieldRcStore holds the string denoting the rc_store field in the database.
 	FieldRcStore = "rc_store"
+	// FieldLatestPaymentProvider holds the string denoting the latest_payment_provider field in the database.
+	FieldLatestPaymentProvider = "latest_payment_provider"
 	// FieldCredit holds the string denoting the credit field in the database.
 	FieldCredit = "credit"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
@@ -60,6 +62,7 @@ var Columns = []string{
 	FieldRcEnvironment,
 	FieldRcProductID,
 	FieldRcStore,
+	FieldLatestPaymentProvider,
 	FieldCredit,
 	FieldCreatedAt,
 	FieldUpdatedAt,
@@ -130,6 +133,11 @@ func ByRcProductID(opts ...sql.OrderTermOption) OrderOption {
 // ByRcStore orders the results by the rc_store field.
 func ByRcStore(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldRcStore, opts...).ToFunc()
+}
+
+// ByLatestPaymentProvider orders the results by the latest_payment_provider field.
+func ByLatestPaymentProvider(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLatestPaymentProvider, opts...).ToFunc()
 }
 
 // ByCredit orders the results by the credit field.

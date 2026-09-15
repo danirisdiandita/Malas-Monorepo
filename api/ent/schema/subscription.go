@@ -22,6 +22,7 @@ func (Subscription) Fields() []ent.Field {
 		field.String("rc_environment").Optional().Nillable(),
 		field.String("rc_product_id").Optional().Nillable(),
 		field.String("rc_store").Optional().Nillable(),
+		field.String("latest_payment_provider").Optional().Nillable(),
 		field.Int("credit"),
 		field.Time("created_at").Default(time.Now),
 		field.Time("updated_at").Default(time.Now).UpdateDefault(time.Now),

@@ -291,6 +291,7 @@ var (
 		{Name: "rc_environment", Type: field.TypeString, Nullable: true},
 		{Name: "rc_product_id", Type: field.TypeString, Nullable: true},
 		{Name: "rc_store", Type: field.TypeString, Nullable: true},
+		{Name: "latest_payment_provider", Type: field.TypeString, Nullable: true},
 		{Name: "credit", Type: field.TypeInt},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
@@ -304,7 +305,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "subscriptions_users_subscriptions",
-				Columns:    []*schema.Column{SubscriptionsColumns[11]},
+				Columns:    []*schema.Column{SubscriptionsColumns[12]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -313,7 +314,7 @@ var (
 			{
 				Name:    "subscription_user_id",
 				Unique:  true,
-				Columns: []*schema.Column{SubscriptionsColumns[11]},
+				Columns: []*schema.Column{SubscriptionsColumns[12]},
 			},
 			{
 				Name:    "subscription_rc_app_user_id",

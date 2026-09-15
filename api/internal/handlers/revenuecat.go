@@ -88,9 +88,18 @@ func validRevenueCatAuthorization(r *http.Request, secret string) bool {
 }
 
 func persistRevenueCatEvent(r *http.Request, client *ent.Client, event revenueCatEvent, projectID, apiKey string) error {
+	switch event.Type {
+	case "INITIAL_PURCHASE", "RENEWAL", "TRANSFER", "CANCELLATION", "EXPIRATION", "BILLING_ISSUE", "SUBSCRIPTION_PAUSED":
+	default:
+		return nil
+	}
+	if event.Type == "TRANSFER" && (len(event.TransferredFrom) == 0 || len(event.TransferredTo) == 0) {
+		return nil
+	}
 	appUserID := event.AppUserID
 	var transferStartDate, transferEndDate *time.Time
 	var transferProductID, transferStore, transferEnvironment string
+	var transferPaymentProvider string
 	if event.Type == "TRANSFER" && len(event.TransferredTo) > 0 {
 		appUserID = event.TransferredTo[0]
 		if len(event.TransferredFrom) > 0 {
@@ -105,6 +114,9 @@ func persistRevenueCatEvent(r *http.Request, client *ent.Client, event revenueCa
 				}
 				if previous.RcEnvironment != nil {
 					transferEnvironment = *previous.RcEnvironment
+				}
+				if previous.LatestPaymentProvider != nil {
+					transferPaymentProvider = *previous.LatestPaymentProvider
 				}
 				if transferStartDate == nil {
 					now := time.Now()
@@ -155,6 +167,9 @@ func persistRevenueCatEvent(r *http.Request, client *ent.Client, event revenueCa
 		if event.Store == "" {
 			event.Store = transferStore
 		}
+		if event.Store == "" {
+			event.Store = transferPaymentProvider
+		}
 		if event.Environment == "" {
 			event.Environment = transferEnvironment
 			if event.Environment == "" {
@@ -190,6 +205,9 @@ func persistRevenueCatEvent(r *http.Request, client *ent.Client, event revenueCa
 		if event.Environment != "" {
 			create.SetRcEnvironment(event.Environment)
 		}
+		if event.Store != "" {
+			create.SetLatestPaymentProvider(event.Store)
+		}
 		if startDate != nil {
 			create.SetStartDate(*startDate)
 		}
@@ -208,6 +226,9 @@ func persistRevenueCatEvent(r *http.Request, client *ent.Client, event revenueCa
 	}
 	if event.Environment != "" {
 		update.SetRcEnvironment(event.Environment)
+	}
+	if event.Store != "" {
+		update.SetLatestPaymentProvider(event.Store)
 	}
 	if startDate != nil {
 		update.SetStartDate(*startDate)

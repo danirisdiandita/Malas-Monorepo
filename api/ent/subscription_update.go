@@ -183,6 +183,26 @@ func (_u *SubscriptionUpdate) ClearRcStore() *SubscriptionUpdate {
 	return _u
 }
 
+// SetLatestPaymentProvider sets the "latest_payment_provider" field.
+func (_u *SubscriptionUpdate) SetLatestPaymentProvider(v string) *SubscriptionUpdate {
+	_u.mutation.SetLatestPaymentProvider(v)
+	return _u
+}
+
+// SetNillableLatestPaymentProvider sets the "latest_payment_provider" field if the given value is not nil.
+func (_u *SubscriptionUpdate) SetNillableLatestPaymentProvider(v *string) *SubscriptionUpdate {
+	if v != nil {
+		_u.SetLatestPaymentProvider(*v)
+	}
+	return _u
+}
+
+// ClearLatestPaymentProvider clears the value of the "latest_payment_provider" field.
+func (_u *SubscriptionUpdate) ClearLatestPaymentProvider() *SubscriptionUpdate {
+	_u.mutation.ClearLatestPaymentProvider()
+	return _u
+}
+
 // SetCredit sets the "credit" field.
 func (_u *SubscriptionUpdate) SetCredit(v int) *SubscriptionUpdate {
 	_u.mutation.ResetCredit()
@@ -337,6 +357,12 @@ func (_u *SubscriptionUpdate) sqlSave(ctx context.Context) (_node int, err error
 	}
 	if _u.mutation.RcStoreCleared() {
 		_spec.ClearField(subscription.FieldRcStore, field.TypeString)
+	}
+	if value, ok := _u.mutation.LatestPaymentProvider(); ok {
+		_spec.SetField(subscription.FieldLatestPaymentProvider, field.TypeString, value)
+	}
+	if _u.mutation.LatestPaymentProviderCleared() {
+		_spec.ClearField(subscription.FieldLatestPaymentProvider, field.TypeString)
 	}
 	if value, ok := _u.mutation.Credit(); ok {
 		_spec.SetField(subscription.FieldCredit, field.TypeInt, value)
@@ -553,6 +579,26 @@ func (_u *SubscriptionUpdateOne) ClearRcStore() *SubscriptionUpdateOne {
 	return _u
 }
 
+// SetLatestPaymentProvider sets the "latest_payment_provider" field.
+func (_u *SubscriptionUpdateOne) SetLatestPaymentProvider(v string) *SubscriptionUpdateOne {
+	_u.mutation.SetLatestPaymentProvider(v)
+	return _u
+}
+
+// SetNillableLatestPaymentProvider sets the "latest_payment_provider" field if the given value is not nil.
+func (_u *SubscriptionUpdateOne) SetNillableLatestPaymentProvider(v *string) *SubscriptionUpdateOne {
+	if v != nil {
+		_u.SetLatestPaymentProvider(*v)
+	}
+	return _u
+}
+
+// ClearLatestPaymentProvider clears the value of the "latest_payment_provider" field.
+func (_u *SubscriptionUpdateOne) ClearLatestPaymentProvider() *SubscriptionUpdateOne {
+	_u.mutation.ClearLatestPaymentProvider()
+	return _u
+}
+
 // SetCredit sets the "credit" field.
 func (_u *SubscriptionUpdateOne) SetCredit(v int) *SubscriptionUpdateOne {
 	_u.mutation.ResetCredit()
@@ -737,6 +783,12 @@ func (_u *SubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *Subscripti
 	}
 	if _u.mutation.RcStoreCleared() {
 		_spec.ClearField(subscription.FieldRcStore, field.TypeString)
+	}
+	if value, ok := _u.mutation.LatestPaymentProvider(); ok {
+		_spec.SetField(subscription.FieldLatestPaymentProvider, field.TypeString, value)
+	}
+	if _u.mutation.LatestPaymentProviderCleared() {
+		_spec.ClearField(subscription.FieldLatestPaymentProvider, field.TypeString)
 	}
 	if value, ok := _u.mutation.Credit(); ok {
 		_spec.SetField(subscription.FieldCredit, field.TypeInt, value)

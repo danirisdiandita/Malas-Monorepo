@@ -95,6 +95,11 @@ func RcStore(v string) predicate.Subscription {
 	return predicate.Subscription(sql.FieldEQ(FieldRcStore, v))
 }
 
+// LatestPaymentProvider applies equality check predicate on the "latest_payment_provider" field. It's identical to LatestPaymentProviderEQ.
+func LatestPaymentProvider(v string) predicate.Subscription {
+	return predicate.Subscription(sql.FieldEQ(FieldLatestPaymentProvider, v))
+}
+
 // Credit applies equality check predicate on the "credit" field. It's identical to CreditEQ.
 func Credit(v int) predicate.Subscription {
 	return predicate.Subscription(sql.FieldEQ(FieldCredit, v))
@@ -603,6 +608,81 @@ func RcStoreEqualFold(v string) predicate.Subscription {
 // RcStoreContainsFold applies the ContainsFold predicate on the "rc_store" field.
 func RcStoreContainsFold(v string) predicate.Subscription {
 	return predicate.Subscription(sql.FieldContainsFold(FieldRcStore, v))
+}
+
+// LatestPaymentProviderEQ applies the EQ predicate on the "latest_payment_provider" field.
+func LatestPaymentProviderEQ(v string) predicate.Subscription {
+	return predicate.Subscription(sql.FieldEQ(FieldLatestPaymentProvider, v))
+}
+
+// LatestPaymentProviderNEQ applies the NEQ predicate on the "latest_payment_provider" field.
+func LatestPaymentProviderNEQ(v string) predicate.Subscription {
+	return predicate.Subscription(sql.FieldNEQ(FieldLatestPaymentProvider, v))
+}
+
+// LatestPaymentProviderIn applies the In predicate on the "latest_payment_provider" field.
+func LatestPaymentProviderIn(vs ...string) predicate.Subscription {
+	return predicate.Subscription(sql.FieldIn(FieldLatestPaymentProvider, vs...))
+}
+
+// LatestPaymentProviderNotIn applies the NotIn predicate on the "latest_payment_provider" field.
+func LatestPaymentProviderNotIn(vs ...string) predicate.Subscription {
+	return predicate.Subscription(sql.FieldNotIn(FieldLatestPaymentProvider, vs...))
+}
+
+// LatestPaymentProviderGT applies the GT predicate on the "latest_payment_provider" field.
+func LatestPaymentProviderGT(v string) predicate.Subscription {
+	return predicate.Subscription(sql.FieldGT(FieldLatestPaymentProvider, v))
+}
+
+// LatestPaymentProviderGTE applies the GTE predicate on the "latest_payment_provider" field.
+func LatestPaymentProviderGTE(v string) predicate.Subscription {
+	return predicate.Subscription(sql.FieldGTE(FieldLatestPaymentProvider, v))
+}
+
+// LatestPaymentProviderLT applies the LT predicate on the "latest_payment_provider" field.
+func LatestPaymentProviderLT(v string) predicate.Subscription {
+	return predicate.Subscription(sql.FieldLT(FieldLatestPaymentProvider, v))
+}
+
+// LatestPaymentProviderLTE applies the LTE predicate on the "latest_payment_provider" field.
+func LatestPaymentProviderLTE(v string) predicate.Subscription {
+	return predicate.Subscription(sql.FieldLTE(FieldLatestPaymentProvider, v))
+}
+
+// LatestPaymentProviderContains applies the Contains predicate on the "latest_payment_provider" field.
+func LatestPaymentProviderContains(v string) predicate.Subscription {
+	return predicate.Subscription(sql.FieldContains(FieldLatestPaymentProvider, v))
+}
+
+// LatestPaymentProviderHasPrefix applies the HasPrefix predicate on the "latest_payment_provider" field.
+func LatestPaymentProviderHasPrefix(v string) predicate.Subscription {
+	return predicate.Subscription(sql.FieldHasPrefix(FieldLatestPaymentProvider, v))
+}
+
+// LatestPaymentProviderHasSuffix applies the HasSuffix predicate on the "latest_payment_provider" field.
+func LatestPaymentProviderHasSuffix(v string) predicate.Subscription {
+	return predicate.Subscription(sql.FieldHasSuffix(FieldLatestPaymentProvider, v))
+}
+
+// LatestPaymentProviderIsNil applies the IsNil predicate on the "latest_payment_provider" field.
+func LatestPaymentProviderIsNil() predicate.Subscription {
+	return predicate.Subscription(sql.FieldIsNull(FieldLatestPaymentProvider))
+}
+
+// LatestPaymentProviderNotNil applies the NotNil predicate on the "latest_payment_provider" field.
+func LatestPaymentProviderNotNil() predicate.Subscription {
+	return predicate.Subscription(sql.FieldNotNull(FieldLatestPaymentProvider))
+}
+
+// LatestPaymentProviderEqualFold applies the EqualFold predicate on the "latest_payment_provider" field.
+func LatestPaymentProviderEqualFold(v string) predicate.Subscription {
+	return predicate.Subscription(sql.FieldEqualFold(FieldLatestPaymentProvider, v))
+}
+
+// LatestPaymentProviderContainsFold applies the ContainsFold predicate on the "latest_payment_provider" field.
+func LatestPaymentProviderContainsFold(v string) predicate.Subscription {
+	return predicate.Subscription(sql.FieldContainsFold(FieldLatestPaymentProvider, v))
 }
 
 // CreditEQ applies the EQ predicate on the "credit" field.
