@@ -1,4 +1,5 @@
 import { router } from "expo-router";
+import * as StoreReview from "expo-store-review";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRef, useState } from "react";
 import type { BottomSheetMethods } from "@expo/ui/community/bottom-sheet";
@@ -11,6 +12,7 @@ import {
   StyleSheet,
   TextInput,
   View,
+  Linking,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -44,6 +46,34 @@ export default function ProfileScreen() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [deleting, setDeleting] = useState(false);
+  const [reviewing, setReviewing] = useState(false);
+  const [openingSupport, setOpeningSupport] = useState(false);
+  const handleRateAndFeedback = async () => {
+    if (reviewing) return;
+    setReviewing(true);
+    try {
+      if (await StoreReview.isAvailableAsync()) {
+        await StoreReview.requestReview();
+      } else {
+        Alert.alert("Rate & Feedback", "Store reviews are not available on this device.");
+      }
+    } catch {
+      Alert.alert("Rate & Feedback", "Unable to open the store review prompt.");
+    } finally {
+      setReviewing(false);
+    }
+  };
+  const handleSupport = async () => {
+    if (openingSupport) return;
+    setOpeningSupport(true);
+    try {
+      await Linking.openURL("mailto:dani@danirisdiandita.com?subject=Yuzu%20support");
+    } catch {
+      Alert.alert("Help & Support", "Unable to open your email app.");
+    } finally {
+      setOpeningSupport(false);
+    }
+  };
   const handleSignOut = async () => {
     try {
       await signOut();
@@ -99,9 +129,14 @@ export default function ProfileScreen() {
             {profileOptions.map(([icon, label]) => (
               <Pressable
                 key={label}
+                disabled={(label === "Rate & Feedback" && reviewing) || (label === "Help & Support" && openingSupport)}
                 style={styles.option}
                 onPress={() =>
-                  label === "Terms of Service"
+                  label === "Rate & Feedback"
+                    ? void handleRateAndFeedback()
+                    : label === "Help & Support"
+                      ? void handleSupport()
+                    : label === "Terms of Service"
                     ? setTermsOpen(true)
                     : label === "Privacy Policy"
                       ? setPrivacyOpen(true)
@@ -113,11 +148,11 @@ export default function ProfileScreen() {
               >
                 <Ionicons name={icon as never} size={19} color={colors.leaf} />
                 <ThemedText style={styles.optionLabel}>{label}</ThemedText>
-                <Ionicons
-                  name="chevron-forward"
-                  size={15}
-                  color={colors.muted}
-                />
+                {(label === "Rate & Feedback" && reviewing) || (label === "Help & Support" && openingSupport) ? (
+                  <ActivityIndicator size="small" color={colors.leaf} />
+                ) : (
+                  <Ionicons name="chevron-forward" size={15} color={colors.muted} />
+                )}
               </Pressable>
             ))}
           </View>
