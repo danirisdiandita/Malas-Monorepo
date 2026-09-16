@@ -58,6 +58,7 @@ func NewRouter(deps Dependencies) http.Handler {
 		r.Use(deps.RequireSession)
 		r.Get("/me", handlers.HandleMe(deps.DB))
 		r.Post("/revenuecat/app-user-id", handlers.HandleRevenueCatAppUserID(deps.DB))
+		r.Get("/subscription", handlers.HandleSubscriptionStatus(deps.DB))
 		r.Delete("/account", handlers.HandleDeleteAccount(deps.DB))
 		r.Get("/recipes", recipes.StoredList(deps.DB, deps.Imports.Storage))
 		r.Get("/recipes/{id}", recipes.StoredGet(deps.DB, deps.Imports.Storage))

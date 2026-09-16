@@ -36,6 +36,9 @@ const openAPISpec = `{
     "/me": {
       "get": {"summary": "Get the current user", "security": [{"jwtAuth": []}], "responses": {"200": {"description": "Current user"}, "401": {"description": "Unauthorized"}}}
     },
+    "/subscription": {
+      "get": {"summary": "Get current subscription status", "security": [{"jwtAuth": []}], "responses": {"200": {"description": "Subscription status"}, "401": {"description": "Unauthorized"}, "404": {"description": "User not found"}}}
+    },
     "/auth/user": {
       "get": {"summary": "Get or persist the current user", "security": [{"jwtAuth": []}], "responses": {"200": {"description": "Current user"}, "401": {"description": "Unauthorized"}}}
     },

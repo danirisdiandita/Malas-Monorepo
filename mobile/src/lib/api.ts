@@ -98,6 +98,14 @@ export interface Grocery {
   checked: boolean;
 }
 
+export interface SubscriptionStatus {
+  has_active_subscription: boolean;
+  free_trial_credit: number;
+  status: string | null;
+  expired_at: string | null;
+  start_subscription_at: string | null;
+}
+
 const tokenKey = 'malas.jwt';
 const refreshTokenKey = 'malas.refresh';
 const apiUrl =
@@ -174,6 +182,18 @@ export async function getRevenueCatAppUserId(): Promise<string> {
     throw new Error('The API returned an invalid RevenueCat identity.');
   }
   return body.rc_app_user_id;
+}
+
+export async function getSubscriptionStatus(): Promise<SubscriptionStatus> {
+  const response = await authenticatedFetch('/subscription');
+  if (!response.ok) throw new Error('Unable to load subscription status.');
+  const body: unknown = await response.json();
+  if (!body || typeof body !== 'object') throw new Error('Invalid subscription response.');
+  const value = body as Record<string, unknown>;
+  if (typeof value.has_active_subscription !== 'boolean' || typeof value.free_trial_credit !== 'number' || (value.status !== null && typeof value.status !== 'string') || (value.expired_at !== null && typeof value.expired_at !== 'string') || (value.start_subscription_at !== null && typeof value.start_subscription_at !== 'string')) {
+    throw new Error('Invalid subscription response.');
+  }
+  return body as SubscriptionStatus;
 }
 
 export async function getRecipes(page = 1, search = '', folderID = ''): Promise<RecipePage> {

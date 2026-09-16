@@ -47,6 +47,50 @@ func HandleRevenueCatAppUserID(client *ent.Client) http.HandlerFunc {
 	}
 }
 
+func HandleSubscriptionStatus(client *ent.Client) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		providerUser, err := token.GetUserInfo(r)
+		if err != nil {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+		owner, err := client.User.Query().Where(user.HasAccountsWith(account.ProviderAccountID(providerUser.ID))).Only(r.Context())
+		if err != nil {
+			http.Error(w, "user not found", http.StatusNotFound)
+			return
+		}
+
+		row, err := client.Subscription.Query().Where(subscription.UserIDEQ(owner.ID)).Only(r.Context())
+		if ent.IsNotFound(err) {
+			writeSubscriptionStatus(w, false, 0, nil, nil, nil)
+			return
+		}
+		if err != nil {
+			http.Error(w, "unable to load subscription", http.StatusInternalServerError)
+			return
+		}
+
+		now := time.Now()
+		active := row.StartDate != nil && row.EndDate != nil && now.After(*row.StartDate) && now.Before(*row.EndDate)
+		credit := row.Credit
+		if credit < 0 {
+			credit = 0
+		}
+		writeSubscriptionStatus(w, active, credit, row.Status, row.EndDate, row.StartDate)
+	}
+}
+
+func writeSubscriptionStatus(w http.ResponseWriter, active bool, credit int, status *string, endDate, startDate *time.Time) {
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"has_active_subscription": active,
+		"free_trial_credit":       credit,
+		"status":                  status,
+		"expired_at":              endDate,
+		"start_subscription_at":   startDate,
+	})
+}
+
 type revenueCatEvent struct {
 	Type            string   `json:"type"`
 	AppUserID       string   `json:"app_user_id"`
